@@ -43,7 +43,7 @@ import {
 import { cn } from "~/lib/utils";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
-const ALL_FILTER_OPTION = "__all__";
+const ALL_FILTER_OPTION = "All";
 
 interface IColumn<T = Record<string, unknown>>
 {
