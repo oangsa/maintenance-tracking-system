@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import Loading from "~/components/Common/Loading";
 import { buttonVariants } from "~/components/ui/button";
+import { cn } from "~/lib/utils";
 import { createUser, getUserById, updateUser } from "~/services/users.service";
 import UserForm from "./UserForm";
 import {
@@ -128,7 +129,7 @@ export default function ManageUserPage({ mode }: IManageUserPageProps)
         return (
             <div className="card">
                 <div className="alert alert-error">{pageError || "User not found."}</div>
-                <Link className={buttonVariants({ variant: "outline" })} to="/master/users">
+                <Link className={cn(buttonVariants({ variant: "outline" }), "!text-foreground hover:!text-foreground")} to="/master/users">
                     Back to Users
                 </Link>
             </div>
@@ -145,7 +146,7 @@ export default function ManageUserPage({ mode }: IManageUserPageProps)
                     </p>
                 </div>
 
-                <Link className={buttonVariants({ variant: "outline" })} to="/master/users">
+                <Link className={cn(buttonVariants({ variant: "outline" }), "!text-foreground hover:!text-foreground")} to="/master/users">
                     Back to Users
                 </Link>
             </div>

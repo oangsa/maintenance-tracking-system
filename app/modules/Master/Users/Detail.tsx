@@ -91,7 +91,7 @@ export default function UserDetailPage()
         return (
             <div className="card">
                 <div className="alert alert-error">{pageError || "User not found."}</div>
-                <Link className={buttonVariants({ variant: "outline" })} to="/master/users">
+                <Link className={cn(buttonVariants({ variant: "outline" }), "!text-foreground hover:!text-foreground")} to="/master/users">
                     Back to Users
                 </Link>
             </div>
@@ -134,10 +134,10 @@ export default function UserDetailPage()
                 </div>
 
                 <div className="flex gap-2">
-                    <Link className={buttonVariants({ variant: "outline" })} to="/master/users">
+                    <Link className={cn(buttonVariants({ variant: "outline" }), "!text-foreground hover:!text-foreground")} to="/master/users">
                         Back to Users
                     </Link>
-                    <Link className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")} to={`/master/users/${user.id}/edit`}>
+                    <Link className={cn(buttonVariants({ variant: "outline" }), "gap-1.5 !text-foreground hover:!text-foreground")} to={`/master/users/${user.id}/edit`}>
                         Edit User
                     </Link>
                     <Button variant="destructive" onClick={() => setConfirmState({ isOpen: true })} type="button">

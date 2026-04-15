@@ -233,7 +233,10 @@ export default function DataTable<T extends Record<string, unknown>>({
                 <h3 className="text-xl font-bold">{title}</h3>
                 <Link
                     to={`${basePath}/new`}
-                    className={cn(buttonVariants({ variant: "default" }), "gap-1.5")}
+                    className={cn(
+                        buttonVariants({ variant: "default" }),
+                        "gap-1.5 !text-primary-foreground hover:!text-primary-foreground"
+                    )}
                 >
                     <FiPlus size={15} />
                     Create New
@@ -321,7 +324,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                                                                 ? (
                                                                     <Link
                                                                         to={`${basePath}/${pathSegment}`}
-                                                                        className="font-medium text-primary hover:underline"
+                                                                        className="font-medium !text-primary hover:underline"
                                                                     >
                                                                         {col.render ? col.render(item[col.key], item) : String(item[col.key] ?? "")}
                                                                     </Link>
@@ -333,7 +336,10 @@ export default function DataTable<T extends Record<string, unknown>>({
                                                     <TableCell className="text-right">
                                                         <Link
                                                             to={`${basePath}/${pathSegment}/edit`}
-                                                            className={cn(buttonVariants({ variant: "outline", size: "xs" }), "mr-2")}
+                                                            className={cn(
+                                                                buttonVariants({ variant: "outline", size: "xs" }),
+                                                                "mr-2 !text-foreground hover:!text-foreground"
+                                                            )}
                                                         >
                                                             <FiEdit2 size={12} />
                                                             Edit
