@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useLocation } from "react-router";
 import {
     FiFileText,
+    FiLayers,
     FiHome,
     FiLogOut,
     FiTool,
@@ -143,6 +144,7 @@ const defaultNavSections: INavSection[] = [
     {
         label: "Master",
         items: [
+            { label: "Departments", path: "/master/departments", icon: <FiLayers size={18} /> },
             { label: "Users", path: "/master/users", icon: <FiUsers size={18} /> },
         ],
     },
