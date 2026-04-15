@@ -2,6 +2,7 @@ export interface IListSearchParamUpdates
 {
     page?: number;
     search?: string;
+    extraParams?: Record<string, string | undefined>;
 }
 
 export function buildOrderBy(sortBy?: string, sortDir?: "asc" | "desc", fallback = "id asc"): string
@@ -46,6 +47,23 @@ export function buildListSearchParams(searchParams: URLSearchParams, updates: IL
         else
         {
             nextSearchParams.delete("search");
+        }
+    }
+
+    if (updates.extraParams !== undefined)
+    {
+        for (const [key, value] of Object.entries(updates.extraParams))
+        {
+            const normalizedValue = value?.trim() ?? "";
+
+            if (normalizedValue)
+            {
+                nextSearchParams.set(key, normalizedValue);
+            }
+            else
+            {
+                nextSearchParams.delete(key);
+            }
         }
     }
 

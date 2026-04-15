@@ -3,10 +3,12 @@ import { Link } from "react-router";
 import {
     FiPlus,
     FiSearch,
+    FiFilter,
     FiChevronUp,
     FiChevronDown,
     FiEdit2,
     FiTrash2,
+    FiX,
     FiChevronsLeft,
     FiChevronLeft,
     FiChevronRight,
@@ -23,6 +25,7 @@ import {
 } from "~/components/ui/table";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -30,9 +33,17 @@ import {
     SelectTrigger,
     SelectValue,
 } from "~/components/ui/select";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "~/components/ui/dialog";
 import { cn } from "~/lib/utils";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const ALL_FILTER_OPTION = "__all__";
 
 interface IColumn<T = Record<string, unknown>>
 {
@@ -46,11 +57,27 @@ interface IColumn<T = Record<string, unknown>>
 
 interface IFetchParams
 {
-    search: string;
+    searchTerm: string;
     page: number;
     limit: number;
+    search?: Record<string, string>;
     sortBy?: string;
     sortDir?: "asc" | "desc";
+}
+
+interface IDataTableFilterOption
+{
+    label: string;
+    value: string;
+}
+
+interface IDataTableFilterField
+{
+    key: string;
+    label: string;
+    placeholder?: string;
+    type: "text" | "select";
+    options?: IDataTableFilterOption[];
 }
 
 interface IFetchResult<T>
@@ -69,6 +96,8 @@ interface IDataTableProps<T = Record<string, unknown>>
     title: string;
     fetchData: (params: IFetchParams) => Promise<IFetchResult<T>>;
     columns: IColumn<T>[];
+    filterFields?: IDataTableFilterField[];
+    filterValues?: Record<string, string>;
     searchPlaceholder?: string;
     itemName?: string;
     basePath?: string;
@@ -79,6 +108,7 @@ interface IDataTableProps<T = Record<string, unknown>>
     refreshTrigger?: number;
     searchValue?: string;
     currentPageValue?: number;
+    onFilterChange?: (filters: Record<string, string>) => void;
     onSearchChange?: (search: string) => void;
     onCurrentPageChange?: (page: number) => void;
 }
@@ -106,10 +136,29 @@ function SortIcon({ columnKey, sortable, sortKey, sortDir }: ISortIconProps)
     );
 }
 
+function normalizeFilterValues(filterFields: IDataTableFilterField[], values?: Record<string, string>): Record<string, string>
+{
+    const nextValues: Record<string, string> = {};
+
+    for (const field of filterFields)
+    {
+        nextValues[field.key] = values?.[field.key] ?? "";
+    }
+
+    return nextValues;
+}
+
+function hasActiveFilterValue(value?: string): boolean
+{
+    return Boolean(value?.trim());
+}
+
 export default function DataTable<T extends Record<string, unknown>>({
     title,
     fetchData,
     columns = [],
+    filterFields = [],
+    filterValues,
     searchPlaceholder = "Search...",
     itemName = "items",
     basePath = "",
@@ -120,6 +169,7 @@ export default function DataTable<T extends Record<string, unknown>>({
     refreshTrigger = 0,
     searchValue,
     currentPageValue,
+    onFilterChange,
     onSearchChange,
     onCurrentPageChange,
 }: IDataTableProps<T>)
@@ -138,9 +188,36 @@ export default function DataTable<T extends Record<string, unknown>>({
     const [currentPageState, setCurrentPageState] = React.useState(currentPageValue ?? 1);
     const [pageLimit, setPageLimit] = React.useState(defaultPageSize);
     const [pageItemCount, setPageItemCount] = React.useState(0);
+    const [filterState, setFilterState] = React.useState<Record<string, string>>(() => normalizeFilterValues(filterFields, filterValues));
+    const [filterDraft, setFilterDraft] = React.useState<Record<string, string>>(() => normalizeFilterValues(filterFields, filterValues));
+    const [isFilterDialogOpen, setIsFilterDialogOpen] = React.useState(false);
 
     const search = searchValue ?? searchState;
     const currentPage = currentPageValue ?? currentPageState;
+    const filters = React.useMemo(() =>
+    {
+        if (filterValues !== undefined)
+        {
+            return normalizeFilterValues(filterFields, filterValues);
+        }
+
+        return normalizeFilterValues(filterFields, filterState);
+    }, [filterFields, filterState, filterValues]);
+    const activeFilters = React.useMemo(() => filterFields
+        .filter((field) => hasActiveFilterValue(filters[field.key]))
+        .map((field) =>
+        {
+            const rawValue = filters[field.key];
+            const displayValue = field.type === "select"
+                ? field.options?.find((option) => option.value === rawValue)?.label ?? rawValue
+                : rawValue;
+
+            return {
+                displayValue,
+                field,
+            };
+        }), [filterFields, filters]);
+    const activeFilterCount = activeFilters.length;
 
     const setResolvedCurrentPage = React.useCallback((nextPage: number) =>
     {
@@ -160,13 +237,40 @@ export default function DataTable<T extends Record<string, unknown>>({
         setCurrentPageState(normalizedPage);
     }, [currentPage, currentPageValue, onCurrentPageChange]);
 
+    const updateFilters = React.useCallback((nextFilters: Record<string, string>) =>
+    {
+        const normalizedFilters = normalizeFilterValues(filterFields, nextFilters);
+
+        if (filterValues !== undefined)
+        {
+            onFilterChange?.(normalizedFilters);
+            return;
+        }
+
+        setFilterState(normalizedFilters);
+        setResolvedCurrentPage(1);
+    }, [filterFields, filterValues, onFilterChange, setResolvedCurrentPage]);
+
     React.useEffect(() =>
     {
-        if (searchValue !== undefined && searchValue !== searchInput)
+        if (searchValue !== undefined)
         {
             setSearchInput(searchValue);
         }
-    }, [searchInput, searchValue]);
+    }, [searchValue]);
+
+    React.useEffect(() =>
+    {
+        setFilterState((currentValues) => normalizeFilterValues(filterFields, currentValues));
+    }, [filterFields]);
+
+    React.useEffect(() =>
+    {
+        if (filterValues !== undefined && !isFilterDialogOpen)
+        {
+            setFilterDraft(normalizeFilterValues(filterFields, filterValues));
+        }
+    }, [filterFields, filterValues, isFilterDialogOpen]);
 
     React.useEffect(() =>
     {
@@ -180,12 +284,10 @@ export default function DataTable<T extends Record<string, unknown>>({
             if (searchValue !== undefined)
             {
                 onSearchChange?.(searchInput);
-            }
-            else
-            {
-                setSearchState(searchInput);
+                return;
             }
 
+            setSearchState(searchInput);
             setResolvedCurrentPage(1);
         }, 300);
 
@@ -199,7 +301,7 @@ export default function DataTable<T extends Record<string, unknown>>({
 
         try
         {
-            const params: IFetchParams = { search, page: currentPage, limit: pageLimit };
+            const params: IFetchParams = { searchTerm: search, page: currentPage, limit: pageLimit, search: filters };
 
             if (sortKey)
             {
@@ -253,7 +355,7 @@ export default function DataTable<T extends Record<string, unknown>>({
             setLoading(false);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [fetchData, search, currentPage, pageLimit, sortKey, sortDir, refreshTrigger, setResolvedCurrentPage]);
+    }, [fetchData, filters, search, currentPage, pageLimit, sortKey, sortDir, refreshTrigger, setResolvedCurrentPage]);
 
     React.useEffect(() =>
     {
@@ -282,6 +384,43 @@ export default function DataTable<T extends Record<string, unknown>>({
     const handleDelete = (item: T) =>
     {
         onDelete?.(getItemKey(item));
+    };
+
+    const handleFilterDialogOpen = () =>
+    {
+        setFilterDraft(filters);
+        setIsFilterDialogOpen(true);
+    };
+
+    const handleFilterDraftChange = (fieldKey: string, value: string) =>
+    {
+        setFilterDraft((currentValues) => ({
+            ...currentValues,
+            [fieldKey]: value,
+        }));
+    };
+
+    const handleApplyFilters = () =>
+    {
+        updateFilters(filterDraft);
+        setIsFilterDialogOpen(false);
+    };
+
+    const handleResetFilters = () =>
+    {
+        const emptyFilters = normalizeFilterValues(filterFields, {});
+
+        setFilterDraft(emptyFilters);
+        updateFilters(emptyFilters);
+        setIsFilterDialogOpen(false);
+    };
+
+    const handleClearSingleFilter = (fieldKey: string) =>
+    {
+        updateFilters({
+            ...filters,
+            [fieldKey]: "",
+        });
     };
 
     const resolvedTotalPages = Math.max(totalPages, currentPage + (hasNext ? 1 : 0), 1);
@@ -334,14 +473,27 @@ export default function DataTable<T extends Record<string, unknown>>({
                 )}
 
                 <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
-                    <div className="relative w-64">
-                        <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-4 pointer-events-none" />
-                        <Input
-                            placeholder={searchPlaceholder}
-                            value={searchInput}
-                            onChange={(e) => setSearchInput(e.target.value)}
-                            className="pl-8"
-                        />
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <div className="relative w-64">
+                            <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-4 pointer-events-none" />
+                            <Input
+                                placeholder={searchPlaceholder}
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
+                                className="pl-8"
+                            />
+                        </div>
+                        {filterFields.length > 0 && (
+                            <Button
+                                variant={activeFilterCount > 0 ? "default" : "outline"}
+                                size="sm"
+                                onClick={handleFilterDialogOpen}
+                            >
+                                <FiFilter size={14} />
+                                Filter
+                                {activeFilterCount > 0 && <span>({activeFilterCount})</span>}
+                            </Button>
+                        )}
                     </div>
                     <div className="flex items-center gap-3">
                         <span className="text-sm text-muted-foreground">{rangeLabel}</span>
@@ -366,6 +518,31 @@ export default function DataTable<T extends Record<string, unknown>>({
                         </Select>
                     </div>
                 </div>
+
+                {activeFilterCount > 0 && (
+                    <div className="mb-4 flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                            Filters
+                        </span>
+                        {activeFilters.map(({ displayValue, field }) => (
+                            <Button
+                                key={field.key}
+                                variant="outline"
+                                size="xs"
+                                className="max-w-full"
+                                onClick={() => handleClearSingleFilter(field.key)}
+                            >
+                                <span className="truncate">
+                                    {field.label}: {displayValue}
+                                </span>
+                                <FiX size={12} />
+                            </Button>
+                        ))}
+                        <Button variant="ghost" size="xs" onClick={handleResetFilters}>
+                            Clear all
+                        </Button>
+                    </div>
+                )}
 
                 <div className="overflow-x-auto rounded-md border">
                     <Table>
@@ -497,7 +674,60 @@ export default function DataTable<T extends Record<string, unknown>>({
                         </Button>
                     </div>
                 )}
+
+                {filterFields.length > 0 && (
+                    <Dialog open={isFilterDialogOpen} onOpenChange={setIsFilterDialogOpen}>
+                        <DialogContent className="sm:max-w-lg">
+                            <DialogHeader>
+                                <DialogTitle>Filter {title}</DialogTitle>
+                            </DialogHeader>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                {filterFields.map((field) => (
+                                    <div className="grid gap-2" key={field.key}>
+                                        <Label htmlFor={`filter-${field.key}`}>{field.label}</Label>
+                                        {field.type === "select"
+                                            ? (
+                                                <Select
+                                                    value={filterDraft[field.key] || ALL_FILTER_OPTION}
+                                                    onValueChange={(value) => handleFilterDraftChange(field.key, value === ALL_FILTER_OPTION ? "" : (value ?? ""))}
+                                                >
+                                                    <SelectTrigger id={`filter-${field.key}`}>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value={ALL_FILTER_OPTION}>All</SelectItem>
+                                                        {field.options?.map((option) => (
+                                                            <SelectItem key={option.value} value={option.value}>
+                                                                {option.label}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            )
+                                            : (
+                                                <Input
+                                                    id={`filter-${field.key}`}
+                                                    placeholder={field.placeholder}
+                                                    value={filterDraft[field.key] ?? ""}
+                                                    onChange={(e) => handleFilterDraftChange(field.key, e.target.value)}
+                                                />
+                                            )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <DialogFooter>
+                                <Button variant="ghost" onClick={handleResetFilters}>Reset</Button>
+                                <Button variant="outline" onClick={() => setIsFilterDialogOpen(false)}>Cancel</Button>
+                                <Button onClick={handleApplyFilters}>Apply Filters</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                )}
             </div>
         </div>
     );
 }
+
+export type { IDataTableFilterField, IDataTableFilterOption, IFetchParams, IFetchResult };

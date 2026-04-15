@@ -5,12 +5,14 @@ import { ConfirmModal } from "~/components/Common/Modal";
 import { buildListSearchParams, buildOrderBy, parsePositiveIntegerParam } from "~/lib/pageUtils";
 import { deleteUser, searchUsers } from "~/services/users.service";
 import useColumns, { type IUserTableRow } from "./useColumns";
+import useFieldFilter from "./useFieldFilter";
 
 interface IFetchParams
 {
-    search: string;
+    searchTerm: string;
     page: number;
     limit: number;
+    search?: Record<string, string>;
     sortBy?: string;
     sortDir?: "asc" | "desc";
 }
@@ -39,6 +41,15 @@ export default function UsersListPage()
     const [refreshTrigger, setRefreshTrigger] = React.useState(0);
     const [pageError, setPageError] = React.useState("");
     const columns = useColumns();
+    const {
+        buildFilterParams,
+        buildFilterSearch,
+        currentFilters,
+        currentFiltersRecord,
+        fieldFilters,
+        normalizeFilters,
+        searchTerm,
+    } = useFieldFilter({ searchParams });
     const currentPage = parsePositiveIntegerParam(searchParams.get("page"));
     const currentSearch = searchParams.get("search") ?? "";
 
@@ -60,16 +71,29 @@ export default function UsersListPage()
         setSearchParams(buildListSearchParams(searchParams, {
             page: 1,
             search: nextSearch,
+            extraParams: buildFilterParams(currentFilters),
         }), { replace: true });
-    }, [searchParams, setSearchParams]);
+    }, [buildFilterParams, currentFilters, searchParams, setSearchParams]);
+
+    const handleFilterChange = React.useCallback((nextFilters: Record<string, string>) =>
+    {
+        const normalizedFilters = normalizeFilters(nextFilters);
+
+        setSearchParams(buildListSearchParams(searchParams, {
+            page: 1,
+            search: currentSearch,
+            extraParams: buildFilterParams(normalizedFilters),
+        }), { replace: true });
+    }, [buildFilterParams, currentSearch, normalizeFilters, searchParams, setSearchParams]);
 
     const handleCurrentPageChange = React.useCallback((nextPage: number) =>
     {
         setSearchParams(buildListSearchParams(searchParams, {
             page: nextPage,
             search: currentSearch,
+            extraParams: buildFilterParams(currentFilters),
         }));
-    }, [currentSearch, searchParams, setSearchParams]);
+    }, [buildFilterParams, currentFilters, currentSearch, searchParams, setSearchParams]);
 
     const fetchData = React.useCallback(async (params: IFetchParams): Promise<IFetchResult> =>
     {
@@ -78,10 +102,11 @@ export default function UsersListPage()
             orderBy: buildOrderBy(params.sortBy, params.sortDir),
             pageNumber: params.page,
             pageSize: params.limit,
-            searchTerm: params.search
+            search: buildFilterSearch(params.search),
+            searchTerm: params.searchTerm
                 ? {
-                    name: "name,email",
-                    value: params.search,
+                    name: searchTerm,
+                    value: params.searchTerm,
                 }
                 : undefined,
         });
@@ -95,7 +120,7 @@ export default function UsersListPage()
             hasNext: response.pagination.hasNext,
             hasPrevious: response.pagination.hasPrevious,
         };
-    }, []);
+    }, [buildFilterSearch, searchTerm]);
 
     function closeConfirm()
     {
@@ -154,15 +179,18 @@ export default function UsersListPage()
                 columns={columns}
                 emptyMessage="No users found. Create one to get started."
                 fetchData={fetchData}
+                filterFields={fieldFilters}
+                filterValues={currentFiltersRecord}
                 itemKey="id"
                 itemName="users"
                 onDelete={handleDelete}
+                onFilterChange={handleFilterChange}
                 currentPageValue={currentPage}
                 onCurrentPageChange={handleCurrentPageChange}
                 onSearchChange={handleSearchChange}
                 refreshTrigger={refreshTrigger}
                 searchValue={currentSearch}
-                searchPlaceholder="Search name, email, department, or role..."
+                searchPlaceholder="Search name or email..."
                 title="Users"
             />
         </>
