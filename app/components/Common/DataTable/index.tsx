@@ -97,7 +97,7 @@ function SortIcon({ columnKey, sortable, sortKey, sortDir }: ISortIconProps)
     const isActive = sortKey === columnKey;
 
     return (
-        <span className="ml-1" style={{ opacity: isActive ? 1 : 0.3 }}>
+        <span className="inline-flex shrink-0 items-center" style={{ opacity: isActive ? 1 : 0.3 }}>
             {isActive && sortDir === "desc"
                 ? <FiChevronDown size={12} />
                 : <FiChevronUp size={12} />
@@ -378,8 +378,19 @@ export default function DataTable<T extends Record<string, unknown>>({
                                         style={{ cursor: col.sortable !== false ? "pointer" : "default", userSelect: "none" }}
                                         onClick={() => handleSort(col.key, col.sortable)}
                                     >
-                                        {col.label}
-                                        <SortIcon columnKey={col.key} sortable={col.sortable} sortKey={sortKey} sortDir={sortDir} />
+                                        <div
+                                            className={cn(
+                                                "inline-flex items-center gap-1 whitespace-nowrap align-middle",
+                                                col.align === "right"
+                                                    ? "justify-end"
+                                                    : col.align === "center"
+                                                        ? "justify-center"
+                                                        : "justify-start"
+                                            )}
+                                        >
+                                            <span>{col.label}</span>
+                                            <SortIcon columnKey={col.key} sortable={col.sortable} sortKey={sortKey} sortDir={sortDir} />
+                                        </div>
                                     </TableHead>
                                 ))}
                                 <TableHead className="text-right">Actions</TableHead>

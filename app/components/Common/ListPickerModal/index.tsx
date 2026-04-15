@@ -32,6 +32,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "~/components/ui/select";
+import { cn } from "~/lib/utils";
 
 interface IPickerColumn<T = Record<string, unknown>>
 {
@@ -269,13 +270,24 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
                                         className={col.align === "right" ? "text-right cursor-pointer select-none" : "cursor-pointer select-none"}
                                         onClick={() => handleSort(col.key)}
                                     >
-                                        {col.label}
-                                        <span className="ml-1" style={{ opacity: sortBy === col.key ? 1 : 0.3 }}>
-                                            {sortBy === col.key && sortDir === "desc"
-                                                ? <FiChevronDown size={12} />
-                                                : <FiChevronUp size={12} />
-                                            }
-                                        </span>
+                                        <div
+                                            className={cn(
+                                                "inline-flex items-center gap-1 whitespace-nowrap align-middle",
+                                                col.align === "right"
+                                                    ? "justify-end"
+                                                    : col.align === "center"
+                                                        ? "justify-center"
+                                                        : "justify-start"
+                                            )}
+                                        >
+                                            <span>{col.label}</span>
+                                            <span className="inline-flex shrink-0 items-center" style={{ opacity: sortBy === col.key ? 1 : 0.3 }}>
+                                                {sortBy === col.key && sortDir === "desc"
+                                                    ? <FiChevronDown size={12} />
+                                                    : <FiChevronUp size={12} />
+                                                }
+                                            </span>
+                                        </div>
                                     </TableHead>
                                 ))}
                                 <TableHead className="w-24 text-center">Action</TableHead>
