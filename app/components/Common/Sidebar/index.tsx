@@ -143,8 +143,8 @@ export default function AppSidebar({ navItems = defaultNavItems, profile }: IApp
                             size="lg"
                             tooltip="Maintainance Tracking System"
                         >
-                            <span className="flex aspect-square size-8 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
-                                <FiTool size={18} />
+                            <span className="flex aspect-square size-9 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-sm group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:px-1">
+                                <FiTool size={20} />
                             </span>
                             <span className="grid min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
                                 <span className="truncate text-[10px] font-semibold uppercase tracking-[0.24em] text-sidebar-foreground/55">
@@ -163,7 +163,7 @@ export default function AppSidebar({ navItems = defaultNavItems, profile }: IApp
                 <SidebarGroup className="pt-3">
                     <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
                     <SidebarGroupContent>
-                        <SidebarMenu>
+                        <SidebarMenu className="px-1">
                             {navItems.map((item) => (
                                 <NavItem item={item} key={item.path} />
                             ))}
