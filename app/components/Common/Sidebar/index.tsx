@@ -5,6 +5,7 @@ import {
     FiHome,
     FiLogOut,
     FiTool,
+    FiUsers,
 } from "react-icons/fi";
 import {
     Sidebar,
@@ -29,6 +30,12 @@ interface INavItem
     icon: React.ReactNode;
 }
 
+interface INavSection
+{
+    label: string;
+    items: INavItem[];
+}
+
 type TSidebarActionHandler = () => void | Promise<void>;
 
 interface ISidebarProfileProps
@@ -40,7 +47,7 @@ interface ISidebarProfileProps
 
 interface IAppSidebarProps
 {
-    navItems?: INavItem[];
+    navSections?: INavSection[];
     profile: ISidebarProfileProps;
 }
 
@@ -125,12 +132,28 @@ function NavItem({ item }: INavItemProps)
     );
 }
 
-const defaultNavItems: INavItem[] = [
-    { label: "Home", path: "/", icon: <FiHome size={18} /> },
-    { label: "Test", path: "/test", icon: <FiFileText size={18} /> },
+const defaultNavSections: INavSection[] = [
+    {
+        label: "Main",
+        items: [
+            { label: "Home", path: "/", icon: <FiHome size={18} /> },
+            { label: "Test", path: "/test", icon: <FiFileText size={18} /> },
+        ],
+    },
+    {
+        label: "Master",
+        items: [
+            { label: "Users", path: "/master/users", icon: <FiUsers size={18} /> },
+        ],
+    },
 ];
 
-export default function AppSidebar({ navItems = defaultNavItems, profile }: IAppSidebarProps)
+function flattenNavItems(navSections: INavSection[]): INavItem[]
+{
+    return navSections.flatMap((section) => section.items);
+}
+
+export default function AppSidebar({ navSections = defaultNavSections, profile }: IAppSidebarProps)
 {
     return (
         <Sidebar collapsible="icon">
@@ -160,16 +183,18 @@ export default function AppSidebar({ navItems = defaultNavItems, profile }: IApp
             </SidebarHeader>
 
             <SidebarContent>
-                <SidebarGroup className="pt-3">
-                    <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
-                    <SidebarGroupContent>
-                        <SidebarMenu className="px-1">
-                            {navItems.map((item) => (
-                                <NavItem item={item} key={item.path} />
-                            ))}
-                        </SidebarMenu>
-                    </SidebarGroupContent>
-                </SidebarGroup>
+                {navSections.map((section) => (
+                    <SidebarGroup className="pt-3" key={section.label}>
+                        <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+                        <SidebarGroupContent>
+                            <SidebarMenu className="px-1">
+                                {section.items.map((item) => (
+                                    <NavItem item={item} key={item.path} />
+                                ))}
+                            </SidebarMenu>
+                        </SidebarGroupContent>
+                    </SidebarGroup>
+                ))}
             </SidebarContent>
 
             <SidebarSeparator />
@@ -201,5 +226,5 @@ export default function AppSidebar({ navItems = defaultNavItems, profile }: IApp
     );
 }
 
-export { defaultNavItems };
-export type { INavItem, ISidebarProfileProps, IAppSidebarProps, TSidebarActionHandler };
+export { defaultNavSections, flattenNavItems };
+export type { INavItem, INavSection, ISidebarProfileProps, IAppSidebarProps, TSidebarActionHandler };

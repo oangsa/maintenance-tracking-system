@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { FiTool } from "react-icons/fi";
 import { Outlet, useLocation, useNavigate } from "react-router";
-import AppSidebar, { defaultNavItems } from "~/components/Common/Sidebar";
+import AppSidebar, { defaultNavSections, flattenNavItems } from "~/components/Common/Sidebar";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "~/components/ui/sidebar";
 import { getCurrentUser, logout } from "~/services/auth.service";
 
 function getPageTitle(pathname: string): string
 {
-    const activeItem = defaultNavItems.find((item) =>
+    const activeItem = flattenNavItems(defaultNavSections).find((item) =>
     {
         if (item.path === "/")
         {
@@ -48,7 +48,7 @@ export default function LayoutMain()
     return (
         <SidebarProvider>
             <AppSidebar
-                navItems={defaultNavItems}
+                navSections={defaultNavSections}
                 profile={{
                     name: userName,
                     role: userRole,
