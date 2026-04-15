@@ -93,6 +93,83 @@ interface IRawResponse<T>
     status: number;
 }
 
+function createFallbackPagination(itemCount: number): IPaginationMeta
+{
+    return {
+        currentPage: 1,
+        totalPages: 1,
+        pageSize: itemCount,
+        totalCount: itemCount,
+        hasPrevious: false,
+        hasNext: false,
+    };
+}
+
+function normalizeNumber(value: unknown, fallback: number): number
+{
+    if (typeof value === "number" && Number.isFinite(value))
+    {
+        return value;
+    }
+
+    if (typeof value === "string")
+    {
+        const parsed = Number(value);
+
+        if (Number.isFinite(parsed))
+        {
+            return parsed;
+        }
+    }
+
+    return fallback;
+}
+
+function normalizeBoolean(value: unknown, fallback: boolean): boolean
+{
+    if (typeof value === "boolean")
+    {
+        return value;
+    }
+
+    if (typeof value === "string")
+    {
+        if (value.toLowerCase() === "true") return true;
+        if (value.toLowerCase() === "false") return false;
+    }
+
+    return fallback;
+}
+
+function parsePaginationHeader(headers: Headers, itemCount: number): IPaginationMeta
+{
+    const fallback = createFallbackPagination(itemCount);
+    const rawPagination = headers.get("X-Pagination") ?? headers.get("x-pagination");
+
+    if (!rawPagination)
+    {
+        return fallback;
+    }
+
+    try
+    {
+        const parsed = JSON.parse(rawPagination) as Partial<IPaginationMeta>;
+
+        return {
+            currentPage: normalizeNumber(parsed.currentPage, fallback.currentPage),
+            totalPages: normalizeNumber(parsed.totalPages, fallback.totalPages),
+            pageSize: normalizeNumber(parsed.pageSize, fallback.pageSize),
+            totalCount: normalizeNumber(parsed.totalCount, fallback.totalCount),
+            hasPrevious: normalizeBoolean(parsed.hasPrevious, fallback.hasPrevious),
+            hasNext: normalizeBoolean(parsed.hasNext, fallback.hasNext),
+        };
+    }
+    catch
+    {
+        return fallback;
+    }
+}
+
 async function rawFetch<T>(path: string, options: RequestInit, tokenOverride?: string | null): Promise<IRawResponse<T>>
 {
     const token = tokenOverride !== undefined ? tokenOverride : getAccessToken();
@@ -213,17 +290,8 @@ export async function httpPaginated<T>(path: string, options: RequestInit = {}):
         rawRes = await rawFetch<T[]>(path, options, newToken);
     }
 
-    const paginationHeader = rawRes.headers.get("X-Pagination");
-    const pagination: IPaginationMeta = paginationHeader
-        ? (JSON.parse(paginationHeader) as IPaginationMeta)
-        : {
-            currentPage: 1,
-            totalPages: 1,
-            pageSize: rawRes.body.length,
-            totalCount: rawRes.body.length,
-            hasPrevious: false,
-            hasNext: false,
-        };
+    const data = Array.isArray(rawRes.body) ? rawRes.body : [];
+    const pagination = parsePaginationHeader(rawRes.headers, data.length);
 
-    return { data: rawRes.body, pagination };
+    return { data, pagination };
 }
