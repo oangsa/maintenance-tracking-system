@@ -44,6 +44,7 @@ import { cn } from "~/lib/utils";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const ALL_FILTER_OPTION = "All";
+const EMPTY_FILTER_FIELDS: IDataTableFilterField[] = [];
 
 interface IColumn<T = Record<string, unknown>>
 {
@@ -153,11 +154,24 @@ function hasActiveFilterValue(value?: string): boolean
     return Boolean(value?.trim());
 }
 
+function areFilterValuesEqual(left: Record<string, string>, right: Record<string, string>): boolean
+{
+    const leftKeys = Object.keys(left);
+    const rightKeys = Object.keys(right);
+
+    if (leftKeys.length !== rightKeys.length)
+    {
+        return false;
+    }
+
+    return leftKeys.every((key) => left[key] === right[key]);
+}
+
 export default function DataTable<T extends Record<string, unknown>>({
     title,
     fetchData,
     columns = [],
-    filterFields = [],
+    filterFields = EMPTY_FILTER_FIELDS,
     filterValues,
     searchPlaceholder = "Search...",
     itemName = "items",
@@ -261,14 +275,34 @@ export default function DataTable<T extends Record<string, unknown>>({
 
     React.useEffect(() =>
     {
-        setFilterState((currentValues) => normalizeFilterValues(filterFields, currentValues));
+        setFilterState((currentValues) =>
+        {
+            const normalizedValues = normalizeFilterValues(filterFields, currentValues);
+
+            if (areFilterValuesEqual(currentValues, normalizedValues))
+            {
+                return currentValues;
+            }
+
+            return normalizedValues;
+        });
     }, [filterFields]);
 
     React.useEffect(() =>
     {
         if (filterValues !== undefined && !isFilterDialogOpen)
         {
-            setFilterDraft(normalizeFilterValues(filterFields, filterValues));
+            setFilterDraft((currentValues) =>
+            {
+                const normalizedValues = normalizeFilterValues(filterFields, filterValues);
+
+                if (areFilterValuesEqual(currentValues, normalizedValues))
+                {
+                    return currentValues;
+                }
+
+                return normalizedValues;
+            });
         }
     }, [filterFields, filterValues, isFilterDialogOpen]);
 
