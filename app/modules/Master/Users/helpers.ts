@@ -8,6 +8,8 @@ interface IUserFormValues
     password: string;
     role: IRole;
     departmentId: string;
+    departmentCode: string;
+    departmentName: string;
     avatarUrl: string;
 }
 
@@ -54,6 +56,8 @@ function createEmptyUserFormValues(): IUserFormValues
         password: "",
         role: "employee",
         departmentId: "",
+        departmentCode: "",
+        departmentName: "",
         avatarUrl: "",
     };
 }
@@ -66,6 +70,8 @@ function mapUserToFormValues(user: IUser): IUserFormValues
         password: "",
         role: user.role,
         departmentId: user.departmentId !== null ? String(user.departmentId) : "",
+        departmentCode: user.departmentCode ?? "",
+        departmentName: user.departmentName ?? "",
         avatarUrl: "",
     };
 }
@@ -87,6 +93,20 @@ function parseDepartmentId(departmentId: string): number | undefined
     }
 
     return parsedDepartmentId;
+}
+
+function formatDepartmentLabel(departmentCode?: string | null, departmentName?: string | null): string
+{
+    const parts = [departmentCode, departmentName]
+        .map((value) => value?.trim() ?? "")
+        .filter(Boolean);
+
+    if (parts.length === 0)
+    {
+        return "";
+    }
+
+    return parts.join(" - ");
 }
 
 function buildCreatePayload(values: IUserFormValues): IUserForCreate
@@ -153,6 +173,7 @@ export {
     buildCreatePayload,
     buildUpdatePayload,
     createEmptyUserFormValues,
+    formatDepartmentLabel,
     formatDateTime,
     formatRoleLabel,
     mapUserToFormValues,

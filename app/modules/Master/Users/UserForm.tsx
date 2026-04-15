@@ -1,7 +1,12 @@
 import React from "react";
+import ListPickerModal from "~/components/Common/ListPickerModal";
 import Loading from "~/components/Common/Loading";
-import { formatRoleLabel, roleOptions } from "./helpers";
+import type { IDepartment } from "~/api/types";
+import { searchDepartments } from "~/services/departments.service";
+import { formatDepartmentLabel, formatRoleLabel, roleOptions } from "./helpers";
 import type { IUserFormValues } from "./helpers";
+
+type IDepartmentPickerRow = IDepartment & Record<string, unknown>;
 
 interface IUserFormProps
 {
@@ -91,6 +96,18 @@ export default function UserForm({
 {
     const [values, setValues] = React.useState<IUserFormValues>(initialValues);
     const [formErrors, setFormErrors] = React.useState<IUserFormErrors>({});
+    const [isDepartmentLookupOpen, setIsDepartmentLookupOpen] = React.useState(false);
+
+    const departmentColumns = React.useMemo(() => [
+        {
+            key: "code",
+            label: "Code",
+        },
+        {
+            key: "name",
+            label: "Name",
+        },
+    ], []);
 
     React.useEffect(() =>
     {
@@ -127,6 +144,68 @@ export default function UserForm({
 
         void onSubmit(values);
     }
+
+    const fetchDepartments = React.useCallback(async (params: {
+        search: string;
+        page: number;
+        limit: number;
+        sortBy?: string;
+        sortDir?: "asc" | "desc";
+    }) =>
+    {
+        const response = await searchDepartments({
+            deleted: false,
+            orderBy: params.sortBy
+                ? `${params.sortBy} ${params.sortDir === "desc" ? "desc" : "asc"}`
+                : "code asc",
+            pageNumber: params.page,
+            pageSize: params.limit,
+            searchTerm: params.search
+                ? {
+                    name: "code,name",
+                    value: params.search,
+                }
+                : undefined,
+        });
+
+        return {
+            data: response.data as IDepartmentPickerRow[],
+            total: response.pagination.totalCount,
+            totalPages: response.pagination.totalPages,
+        };
+    }, []);
+
+    function handleDepartmentSelect(department: IDepartmentPickerRow)
+    {
+        setValues((currentValues) => ({
+            ...currentValues,
+            departmentCode: department.code,
+            departmentId: String(department.id),
+            departmentName: department.name,
+        }));
+
+        setFormErrors((currentErrors) => ({
+            ...currentErrors,
+            departmentId: undefined,
+        }));
+    }
+
+    function handleDepartmentClear()
+    {
+        setValues((currentValues) => ({
+            ...currentValues,
+            departmentCode: "",
+            departmentId: "",
+            departmentName: "",
+        }));
+
+        setFormErrors((currentErrors) => ({
+            ...currentErrors,
+            departmentId: undefined,
+        }));
+    }
+
+    const departmentDisplayValue = formatDepartmentLabel(values.departmentCode, values.departmentName);
 
     if (loading)
     {
@@ -221,24 +300,51 @@ export default function UserForm({
                         {formErrors.role && <span className="form-error">{formErrors.role}</span>}
                     </div>
 
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="departmentId">
-                            Department ID
+                    <div className="form-group md:col-span-2">
+                        <label className="form-label" htmlFor="departmentLookupDisplay">
+                            Department
                         </label>
-                        <input
-                            className="form-control"
-                            disabled={submitting}
-                            id="departmentId"
-                            name="departmentId"
-                            onChange={handleFieldChange}
-                            placeholder="Optional numeric department id"
-                            type="text"
-                            value={values.departmentId}
-                        />
-                        <span className="mt-1 block text-xs text-[var(--text-muted)]">
-                            Department lookup is not wired in this project yet, so this field accepts a numeric department ID.
+                        <div className="flex flex-col gap-3 md:flex-row md:items-start">
+                            <div className="flex-1">
+                                <input
+                                    className="form-control"
+                                    disabled={submitting}
+                                    id="departmentLookupDisplay"
+                                    placeholder="No department selected"
+                                    readOnly={true}
+                                    type="text"
+                                    value={departmentDisplayValue}
+                                />
+                                {values.departmentId && (
+                                    <span className="mt-1 block text-xs text-[var(--text-muted)]">
+                                        Department ID: {values.departmentId}
+                                    </span>
+                                )}
+                                {formErrors.departmentId && <span className="form-error">{formErrors.departmentId}</span>}
+                            </div>
+
+                            <div className="flex gap-2 md:pt-[2px]">
+                                <button
+                                    className="btn btn-outline"
+                                    disabled={submitting}
+                                    onClick={() => setIsDepartmentLookupOpen(true)}
+                                    type="button"
+                                >
+                                    Lookup Department
+                                </button>
+                                <button
+                                    className="btn btn-outline"
+                                    disabled={submitting || !values.departmentId}
+                                    onClick={handleDepartmentClear}
+                                    type="button"
+                                >
+                                    Clear
+                                </button>
+                            </div>
+                        </div>
+                        <span className="mt-2 block text-xs text-[var(--text-muted)]">
+                            Search and select a department from the lookup table.
                         </span>
-                        {formErrors.departmentId && <span className="form-error">{formErrors.departmentId}</span>}
                     </div>
 
                     <div className="form-group">
@@ -276,6 +382,20 @@ export default function UserForm({
                     </button>
                 </div>
             </form>
+
+            <ListPickerModal<IDepartmentPickerRow>
+                columns={departmentColumns}
+                emptyDefault="No departments found."
+                emptySearch="No matching departments found."
+                fetchData={fetchDepartments}
+                initialSearch={values.departmentCode || values.departmentName}
+                isOpen={isDepartmentLookupOpen}
+                itemName="department"
+                onClose={() => setIsDepartmentLookupOpen(false)}
+                onSelect={handleDepartmentSelect}
+                searchPlaceholder="Search code or department name..."
+                title="Select Department"
+            />
         </div>
     );
 }
