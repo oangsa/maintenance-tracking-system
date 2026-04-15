@@ -10,6 +10,9 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 import { TooltipProvider } from "~/components/ui/tooltip";
+import { initAuthService } from "~/services/auth.service";
+
+initAuthService();
 
 export const links: Route.LinksFunction = () => [
     { rel: "preconnect", href: "https://fonts.googleapis.com" },

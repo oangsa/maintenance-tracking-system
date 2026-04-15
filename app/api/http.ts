@@ -2,12 +2,16 @@ import type { IPaginationMeta, IPagedResult } from "./types";
 
 const BASE_URL: string = (import.meta.env.VITE_BASE_API_URL ?? "").replace(/\/$/, "");
 
-console.log("API base URL:", BASE_URL);
-
 // ---- Token store ------------------------------------------
 // In-memory primary; sessionStorage as client-side persistence (SSR-safe).
 
 let _accessToken: string | null = null;
+
+export interface IHttpRequestOptions extends RequestInit
+{
+    skipAuth?: boolean;
+    skipRefresh?: boolean;
+}
 
 export function setAccessToken(token: string | null): void
 {
@@ -170,22 +174,23 @@ function parsePaginationHeader(headers: Headers, itemCount: number): IPagination
     }
 }
 
-async function rawFetch<T>(path: string, options: RequestInit, tokenOverride?: string | null): Promise<IRawResponse<T>>
+async function rawFetch<T>(path: string, options: IHttpRequestOptions, tokenOverride?: string | null): Promise<IRawResponse<T>>
 {
+    const { skipAuth = false, skipRefresh: _skipRefresh, ...fetchOptions } = options as IHttpRequestOptions;
     const token = tokenOverride !== undefined ? tokenOverride : getAccessToken();
 
     const baseHeaders: Record<string, string> = {
         "Content-Type": "application/json",
-        ...(options.headers as Record<string, string> ?? {}),
+        ...(fetchOptions.headers as Record<string, string> ?? {}),
     };
 
-    if (token)
+    if (!skipAuth && token)
     {
         baseHeaders["Authorization"] = `Bearer ${token}`;
     }
 
     const res = await fetch(`${BASE_URL}${path}`, {
-        ...options,
+        ...fetchOptions,
         headers: baseHeaders,
         credentials: "include",
     });
@@ -210,12 +215,52 @@ async function rawFetch<T>(path: string, options: RequestInit, tokenOverride?: s
     return { body: body as T, headers: res.headers, status: res.status };
 }
 
+function shouldAttemptRefresh(err: unknown, options: IHttpRequestOptions): boolean
+{
+    return !options.skipRefresh && err instanceof ApiError && err.statusCode === 401 && _refreshFn !== null;
+}
+
+async function getRefreshedAccessToken(): Promise<string>
+{
+    if (!_refreshFn)
+    {
+        throw new Error("Refresh function is not registered.");
+    }
+
+    if (_isRefreshing)
+    {
+        return new Promise<string>((resolve, reject) =>
+        {
+            _pendingQueue.push({ resolve, reject });
+        });
+    }
+
+    _isRefreshing = true;
+
+    try
+    {
+        const nextToken = await _refreshFn();
+
+        setAccessToken(nextToken);
+        processQueue(null, nextToken);
+
+        return nextToken;
+    }
+    catch (refreshErr)
+    {
+        clearAccessToken();
+        processQueue(refreshErr);
+
+        throw refreshErr;
+    }
+}
+
 /**
  * Makes an authenticated HTTP request.
  * Automatically injects the Bearer token and retries once after a
  * transparent token refresh when the server responds with 401.
  */
-export async function http<T>(path: string, options: RequestInit = {}): Promise<T>
+export async function http<T>(path: string, options: IHttpRequestOptions = {}): Promise<T>
 {
     try
     {
@@ -224,44 +269,17 @@ export async function http<T>(path: string, options: RequestInit = {}): Promise<
     }
     catch (err)
     {
-        if (!(err instanceof ApiError) || err.statusCode !== 401 || !_refreshFn)
+        const requestOptions = options as IHttpRequestOptions;
+
+        if (!shouldAttemptRefresh(err, requestOptions))
         {
             throw err;
         }
 
-        // If another call is already refreshing, queue this one
-        if (_isRefreshing)
-        {
-            return new Promise<T>((resolve, reject) =>
-            {
-                _pendingQueue.push({
-                    resolve: (newToken) =>
-                    {
-                        rawFetch<T>(path, options, newToken)
-                            .then(({ body }) => resolve(body))
-                            .catch(reject);
-                    },
-                    reject,
-                });
-            });
-        }
+        const newToken = await getRefreshedAccessToken();
+        const { body } = await rawFetch<T>(path, requestOptions, newToken);
 
-        _isRefreshing = true;
-
-        try
-        {
-            const newToken = await _refreshFn();
-            setAccessToken(newToken);
-            processQueue(null, newToken);
-            const { body } = await rawFetch<T>(path, options, newToken);
-            return body;
-        }
-        catch (refreshErr)
-        {
-            processQueue(refreshErr);
-            clearAccessToken();
-            throw refreshErr;
-        }
+        return body;
     }
 }
 
@@ -270,24 +288,24 @@ export async function http<T>(path: string, options: RequestInit = {}): Promise<
  * pagination metadata in the X-Pagination response header.
  * Used by all /search POST endpoints.
  */
-export async function httpPaginated<T>(path: string, options: RequestInit = {}): Promise<IPagedResult<T>>
+export async function httpPaginated<T>(path: string, options: IHttpRequestOptions = {}): Promise<IPagedResult<T>>
 {
     let rawRes: IRawResponse<T[]>;
+    const requestOptions = options as IHttpRequestOptions;
 
     try
     {
-        rawRes = await rawFetch<T[]>(path, options);
+        rawRes = await rawFetch<T[]>(path, requestOptions);
     }
     catch (err)
     {
-        if (!(err instanceof ApiError) || err.statusCode !== 401 || !_refreshFn)
+        if (!shouldAttemptRefresh(err, requestOptions))
         {
             throw err;
         }
 
-        const newToken = await _refreshFn();
-        setAccessToken(newToken);
-        rawRes = await rawFetch<T[]>(path, options, newToken);
+        const newToken = await getRefreshedAccessToken();
+        rawRes = await rawFetch<T[]>(path, requestOptions, newToken);
     }
 
     const data = Array.isArray(rawRes.body) ? rawRes.body : [];

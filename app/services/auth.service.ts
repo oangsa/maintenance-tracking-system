@@ -23,6 +23,7 @@ import type { ILoginRequest, IUser } from "../api/types";
 // ---- In-memory session state ------------------------------
 
 let _currentUser: IUser | null = null;
+let _isInitialized = false;
 
 // ---- Initialization ---------------------------------------
 
@@ -34,7 +35,13 @@ let _currentUser: IUser | null = null;
  */
 export function initAuthService(): void
 {
+    if (_isInitialized)
+    {
+        return;
+    }
+
     registerRefreshFn(refreshAccessToken);
+    _isInitialized = true;
 }
 
 // ---- Public service functions -----------------------------
@@ -46,7 +53,6 @@ export function initAuthService(): void
  */
 export async function login(credentials: ILoginRequest): Promise<IUser>
 {
-    console.log("Logging in with credentials:", credentials);
     const response = await loginRequest(credentials);
     setAccessToken(response.accessToken);
     _currentUser = response.user;
@@ -60,9 +66,21 @@ export async function login(credentials: ILoginRequest): Promise<IUser>
  */
 export async function refreshAccessToken(): Promise<string>
 {
-    const response = await refreshTokenRequest();
-    setAccessToken(response.accessToken);
-    return response.accessToken;
+    try
+    {
+        const response = await refreshTokenRequest();
+
+        setAccessToken(response.accessToken);
+
+        return response.accessToken;
+    }
+    catch (error)
+    {
+        clearAccessToken();
+        _currentUser = null;
+
+        throw error;
+    }
 }
 
 /**
