@@ -1,6 +1,33 @@
 import type { IPaginationMeta, IPagedResult } from "./types";
 
-const BASE_URL: string = (import.meta.env.VITE_BASE_API_URL ?? "").replace(/\/$/, "");
+const CONFIGURED_BASE_URL: string = (import.meta.env.VITE_BASE_API_URL ?? "").replace(/\/$/, "");
+
+function getBaseUrl(): string
+{
+    if (!import.meta.env.DEV || typeof window === "undefined" || CONFIGURED_BASE_URL === "")
+    {
+        return CONFIGURED_BASE_URL;
+    }
+
+    try
+    {
+        const configuredUrl = new URL(CONFIGURED_BASE_URL);
+        const currentUrl = new URL(window.location.origin);
+        const isLoopbackApi = configuredUrl.hostname === "localhost" || configuredUrl.hostname === "127.0.0.1";
+        const hasNoBasePath = configuredUrl.pathname === "" || configuredUrl.pathname === "/";
+
+        if (isLoopbackApi && hasNoBasePath && configuredUrl.origin !== currentUrl.origin)
+        {
+            return "";
+        }
+    }
+    catch
+    {
+        return CONFIGURED_BASE_URL;
+    }
+
+    return CONFIGURED_BASE_URL;
+}
 
 // ---- Token store ------------------------------------------
 // In-memory primary; sessionStorage as client-side persistence (SSR-safe).
@@ -150,6 +177,8 @@ function parsePaginationHeader(headers: Headers, itemCount: number): IPagination
     const fallback = createFallbackPagination(itemCount);
     const rawPagination = headers.get("X-Pagination") ?? headers.get("x-pagination");
 
+    console.debug("Raw pagination header:", rawPagination); // Debug log
+
     if (!rawPagination)
     {
         return fallback;
@@ -189,7 +218,7 @@ async function rawFetch<T>(path: string, options: IHttpRequestOptions, tokenOver
         baseHeaders["Authorization"] = `Bearer ${token}`;
     }
 
-    const res = await fetch(`${BASE_URL}${path}`, {
+    const res = await fetch(`${getBaseUrl()}${path}`, {
         ...fetchOptions,
         headers: baseHeaders,
         credentials: "include",

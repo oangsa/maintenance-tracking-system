@@ -192,6 +192,10 @@ export default function UserForm({
             data: response.data as IDepartmentPickerRow[],
             total: response.pagination.totalCount,
             totalPages: response.pagination.totalPages,
+            pageItemCount: response.pagination.pageSize,
+            currentPage: response.pagination.currentPage,
+            hasNext: response.pagination.hasNext,
+            hasPrevious: response.pagination.hasPrevious,
         };
     }, []);
 

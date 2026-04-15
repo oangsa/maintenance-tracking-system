@@ -58,6 +58,7 @@ interface IFetchResult<T>
     data: T[];
     total: number;
     totalPages: number;
+    pageItemCount?: number;
     currentPage?: number;
     hasNext?: boolean;
     hasPrevious?: boolean;
@@ -135,7 +136,8 @@ export default function DataTable<T extends Record<string, unknown>>({
     const [sortKey, setSortKey] = React.useState<string | null>(null);
     const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
     const [currentPageState, setCurrentPageState] = React.useState(currentPageValue ?? 1);
-    const [pageSize, setPageSize] = React.useState(defaultPageSize);
+    const [pageLimit, setPageLimit] = React.useState(defaultPageSize);
+    const [pageItemCount, setPageItemCount] = React.useState(0);
 
     const search = searchValue ?? searchState;
     const currentPage = currentPageValue ?? currentPageState;
@@ -197,7 +199,7 @@ export default function DataTable<T extends Record<string, unknown>>({
 
         try
         {
-            const params: IFetchParams = { search, page: currentPage, limit: pageSize };
+            const params: IFetchParams = { search, page: currentPage, limit: pageLimit };
 
             if (sortKey)
             {
@@ -207,33 +209,42 @@ export default function DataTable<T extends Record<string, unknown>>({
 
             const result = await fetchData(params);
             const nextTotalPages = Number(result.totalPages || 0);
+            const nextCurrentPage = typeof result.currentPage === "number" && result.currentPage > 0
+                ? result.currentPage
+                : currentPage;
+            const nextData = result.data || [];
+            const nextPageItemCount = typeof result.pageItemCount === "number" && result.pageItemCount >= 0
+                ? result.pageItemCount
+                : nextData.length;
 
-            if (nextTotalPages > 0 && currentPage > nextTotalPages)
+            if (nextTotalPages > 0 && nextCurrentPage > nextTotalPages)
             {
                 setResolvedCurrentPage(nextTotalPages);
                 return;
             }
 
-            if (nextTotalPages === 0 && currentPage !== 1)
+            if (nextTotalPages === 0 && nextCurrentPage !== 1)
             {
                 setResolvedCurrentPage(1);
                 return;
             }
 
-            if (typeof result.currentPage === "number" && result.currentPage > 0 && result.currentPage !== currentPage)
+            if (nextCurrentPage !== currentPage)
             {
-                setResolvedCurrentPage(result.currentPage);
+                setResolvedCurrentPage(nextCurrentPage);
             }
 
-            setData(result.data || []);
+            setData(nextData);
             setTotal(result.total || 0);
             setTotalPages(nextTotalPages);
+            setPageItemCount(nextPageItemCount);
             setHasNext(Boolean(result.hasNext));
             setHasPrevious(Boolean(result.hasPrevious));
         }
         catch (e)
         {
             setError(String((e as Error).message || e));
+            setPageItemCount(0);
             setHasNext(false);
             setHasPrevious(false);
         }
@@ -242,7 +253,7 @@ export default function DataTable<T extends Record<string, unknown>>({
             setLoading(false);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [fetchData, search, currentPage, pageSize, sortKey, sortDir, refreshTrigger, setResolvedCurrentPage]);
+    }, [fetchData, search, currentPage, pageLimit, sortKey, sortDir, refreshTrigger, setResolvedCurrentPage]);
 
     React.useEffect(() =>
     {
@@ -273,19 +284,24 @@ export default function DataTable<T extends Record<string, unknown>>({
         onDelete?.(getItemKey(item));
     };
 
-    const getPageNumbers = () =>
+    const resolvedTotalPages = Math.max(totalPages, currentPage + (hasNext ? 1 : 0), 1);
+    const canGoPrevious = hasPrevious || currentPage > 1;
+    const canGoNext = hasNext || currentPage < resolvedTotalPages;
+    const shouldShowPagination = total > 0 || currentPage > 1 || hasPrevious || hasNext;
+
+    const getPageNumbers = (pageCount: number) =>
     {
         const size = 5;
         let start = Math.max(1, currentPage - Math.floor(size / 2));
-        let end = Math.min(totalPages, start + size - 1);
+        let end = Math.min(pageCount, start + size - 1);
         if (end - start + 1 < size) start = Math.max(1, end - size + 1);
         const pages: number[] = [];
         for (let i = start; i <= end; i++) pages.push(i);
         return pages;
     };
 
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = Math.min(startIndex + data.length, total);
+    const startIndex = (currentPage - 1) * pageLimit;
+    const endIndex = Math.min(startIndex + pageItemCount, total);
     const rangeLabel = loading
         ? "Loading..."
         : total === 0
@@ -330,10 +346,10 @@ export default function DataTable<T extends Record<string, unknown>>({
                     <div className="flex items-center gap-3">
                         <span className="text-sm text-muted-foreground">{rangeLabel}</span>
                         <Select
-                            value={String(pageSize)}
+                            value={String(pageLimit)}
                             onValueChange={(val) =>
                             {
-                                setPageSize(Number(val));
+                                setPageLimit(Number(val));
                                 setResolvedCurrentPage(1);
                             }}
                         >
@@ -444,15 +460,15 @@ export default function DataTable<T extends Record<string, unknown>>({
                     </Table>
                 </div>
 
-                {(totalPages > 1 || hasPrevious || hasNext) && (
+                {shouldShowPagination && (
                     <div className="mt-4 flex justify-end items-center gap-1">
-                        <Button variant="outline" size="icon-xs" disabled={!hasPrevious} onClick={() => setResolvedCurrentPage(1)}>
+                        <Button variant="outline" size="icon-xs" disabled={!canGoPrevious} onClick={() => setResolvedCurrentPage(1)}>
                             <FiChevronsLeft size={13} />
                         </Button>
-                        <Button variant="outline" size="icon-xs" disabled={!hasPrevious} onClick={() => setResolvedCurrentPage(currentPage - 1)}>
+                        <Button variant="outline" size="icon-xs" disabled={!canGoPrevious} onClick={() => setResolvedCurrentPage(currentPage - 1)}>
                             <FiChevronLeft size={13} />
                         </Button>
-                        {getPageNumbers().map((page) => (
+                        {getPageNumbers(resolvedTotalPages).map((page) => (
                             <Button
                                 key={page}
                                 variant={currentPage === page ? "default" : "outline"}
@@ -462,10 +478,10 @@ export default function DataTable<T extends Record<string, unknown>>({
                                 {page}
                             </Button>
                         ))}
-                        <Button variant="outline" size="icon-xs" disabled={!hasNext} onClick={() => setResolvedCurrentPage(currentPage + 1)}>
+                        <Button variant="outline" size="icon-xs" disabled={!canGoNext} onClick={() => setResolvedCurrentPage(currentPage + 1)}>
                             <FiChevronRight size={13} />
                         </Button>
-                        <Button variant="outline" size="icon-xs" disabled={!hasNext} onClick={() => setResolvedCurrentPage(totalPages)}>
+                        <Button variant="outline" size="icon-xs" disabled={!canGoNext} onClick={() => setResolvedCurrentPage(resolvedTotalPages)}>
                             <FiChevronsRight size={13} />
                         </Button>
                     </div>

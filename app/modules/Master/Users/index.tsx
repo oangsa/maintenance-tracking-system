@@ -20,6 +20,7 @@ interface IFetchResult
     data: IUserTableRow[];
     total: number;
     totalPages: number;
+    pageItemCount: number;
     currentPage: number;
     hasNext: boolean;
     hasPrevious: boolean;
@@ -89,6 +90,7 @@ export default function UsersListPage()
             data: response.data as IUserTableRow[],
             total: response.pagination.totalCount,
             totalPages: response.pagination.totalPages,
+            pageItemCount: response.pagination.pageSize,
             currentPage: response.pagination.currentPage,
             hasNext: response.pagination.hasNext,
             hasPrevious: response.pagination.hasPrevious,
