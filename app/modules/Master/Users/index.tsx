@@ -1,6 +1,8 @@
 import React from "react";
+import { useSearchParams } from "react-router";
 import DataTable from "~/components/Common/DataTable";
 import { ConfirmModal } from "~/components/Common/Modal";
+import { buildListSearchParams, buildOrderBy, parsePositiveIntegerParam } from "~/lib/pageUtils";
 import { deleteUser, searchUsers } from "~/services/users.service";
 import useColumns, { type IUserTableRow } from "./useColumns";
 
@@ -18,6 +20,9 @@ interface IFetchResult
     data: IUserTableRow[];
     total: number;
     totalPages: number;
+    currentPage: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
 }
 
 interface IConfirmState
@@ -26,22 +31,44 @@ interface IConfirmState
     id: number | null;
 }
 
-function buildOrderBy(sortBy?: string, sortDir?: "asc" | "desc"): string
-{
-    if (!sortBy)
-    {
-        return "id asc";
-    }
-
-    return `${sortBy} ${sortDir === "desc" ? "desc" : "asc"}`;
-}
-
 export default function UsersListPage()
 {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [confirmState, setConfirmState] = React.useState<IConfirmState>({ isOpen: false, id: null });
     const [refreshTrigger, setRefreshTrigger] = React.useState(0);
     const [pageError, setPageError] = React.useState("");
     const columns = useColumns();
+    const currentPage = parsePositiveIntegerParam(searchParams.get("page"));
+    const currentSearch = searchParams.get("search") ?? "";
+
+    React.useEffect(() =>
+    {
+        if (searchParams.get("page") === String(currentPage))
+        {
+            return;
+        }
+
+        setSearchParams(buildListSearchParams(searchParams, {
+            page: currentPage,
+            search: currentSearch,
+        }), { replace: true });
+    }, [currentPage, currentSearch, searchParams, setSearchParams]);
+
+    const handleSearchChange = React.useCallback((nextSearch: string) =>
+    {
+        setSearchParams(buildListSearchParams(searchParams, {
+            page: 1,
+            search: nextSearch,
+        }), { replace: true });
+    }, [searchParams, setSearchParams]);
+
+    const handleCurrentPageChange = React.useCallback((nextPage: number) =>
+    {
+        setSearchParams(buildListSearchParams(searchParams, {
+            page: nextPage,
+            search: currentSearch,
+        }));
+    }, [currentSearch, searchParams, setSearchParams]);
 
     const fetchData = React.useCallback(async (params: IFetchParams): Promise<IFetchResult> =>
     {
@@ -62,6 +89,9 @@ export default function UsersListPage()
             data: response.data as IUserTableRow[],
             total: response.pagination.totalCount,
             totalPages: response.pagination.totalPages,
+            currentPage: response.pagination.currentPage,
+            hasNext: response.pagination.hasNext,
+            hasPrevious: response.pagination.hasPrevious,
         };
     }, []);
 
@@ -125,7 +155,11 @@ export default function UsersListPage()
                 itemKey="id"
                 itemName="users"
                 onDelete={handleDelete}
+                currentPageValue={currentPage}
+                onCurrentPageChange={handleCurrentPageChange}
+                onSearchChange={handleSearchChange}
                 refreshTrigger={refreshTrigger}
+                searchValue={currentSearch}
                 searchPlaceholder="Search name, email, department, or role..."
                 title="Users"
             />

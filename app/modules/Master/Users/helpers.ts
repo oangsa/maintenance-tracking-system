@@ -1,5 +1,6 @@
 import type { IUser, IUserForCreate, IUserForUpdate } from "~/api/types";
 import type { IRole } from "~/constants";
+import { roleOptions } from "~/constants/role.constant";
 
 interface IUserFormValues
 {
@@ -12,8 +13,6 @@ interface IUserFormValues
     departmentName: string;
     avatarUrl: string;
 }
-
-const roleOptions: IRole[] = ["admin", "manager", "employee"];
 
 function formatRoleLabel(role?: string | null): string
 {

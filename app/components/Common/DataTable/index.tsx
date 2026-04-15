@@ -58,6 +58,9 @@ interface IFetchResult<T>
     data: T[];
     total: number;
     totalPages: number;
+    currentPage?: number;
+    hasNext?: boolean;
+    hasPrevious?: boolean;
 }
 
 interface IDataTableProps<T = Record<string, unknown>>
@@ -73,6 +76,10 @@ interface IDataTableProps<T = Record<string, unknown>>
     emptyMessage?: string;
     defaultPageSize?: number;
     refreshTrigger?: number;
+    searchValue?: string;
+    currentPageValue?: number;
+    onSearchChange?: (search: string) => void;
+    onCurrentPageChange?: (page: number) => void;
 }
 
 interface ISortIconProps
@@ -110,34 +117,84 @@ export default function DataTable<T extends Record<string, unknown>>({
     emptyMessage,
     defaultPageSize = 10,
     refreshTrigger = 0,
+    searchValue,
+    currentPageValue,
+    onSearchChange,
+    onCurrentPageChange,
 }: IDataTableProps<T>)
 {
     const [data, setData] = React.useState<T[]>([]);
     const [total, setTotal] = React.useState(0);
     const [totalPages, setTotalPages] = React.useState(0);
+    const [hasNext, setHasNext] = React.useState(false);
+    const [hasPrevious, setHasPrevious] = React.useState(false);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState("");
-    const [search, setSearch] = React.useState("");
-    const [searchInput, setSearchInput] = React.useState("");
+    const [searchState, setSearchState] = React.useState(searchValue ?? "");
+    const [searchInput, setSearchInput] = React.useState(searchValue ?? "");
     const [sortKey, setSortKey] = React.useState<string | null>(null);
     const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
-    const [currentPage, setCurrentPage] = React.useState(1);
+    const [currentPageState, setCurrentPageState] = React.useState(currentPageValue ?? 1);
     const [pageSize, setPageSize] = React.useState(defaultPageSize);
+
+    const search = searchValue ?? searchState;
+    const currentPage = currentPageValue ?? currentPageState;
+
+    const setResolvedCurrentPage = React.useCallback((nextPage: number) =>
+    {
+        const normalizedPage = Math.max(1, nextPage);
+
+        if (normalizedPage === currentPage)
+        {
+            return;
+        }
+
+        if (currentPageValue !== undefined)
+        {
+            onCurrentPageChange?.(normalizedPage);
+            return;
+        }
+
+        setCurrentPageState(normalizedPage);
+    }, [currentPage, currentPageValue, onCurrentPageChange]);
+
+    React.useEffect(() =>
+    {
+        if (searchValue !== undefined && searchValue !== searchInput)
+        {
+            setSearchInput(searchValue);
+        }
+    }, [searchInput, searchValue]);
 
     React.useEffect(() =>
     {
         const timer = setTimeout(() =>
         {
-            setSearch(searchInput);
-            setCurrentPage(1);
+            if (searchInput === search)
+            {
+                return;
+            }
+
+            if (searchValue !== undefined)
+            {
+                onSearchChange?.(searchInput);
+            }
+            else
+            {
+                setSearchState(searchInput);
+            }
+
+            setResolvedCurrentPage(1);
         }, 300);
+
         return () => clearTimeout(timer);
-    }, [searchInput]);
+    }, [onSearchChange, search, searchInput, searchValue, setResolvedCurrentPage]);
 
     const loadData = React.useCallback(async () =>
     {
         setLoading(true);
         setError("");
+
         try
         {
             const params: IFetchParams = { search, page: currentPage, limit: pageSize };
@@ -153,29 +210,39 @@ export default function DataTable<T extends Record<string, unknown>>({
 
             if (nextTotalPages > 0 && currentPage > nextTotalPages)
             {
-                setCurrentPage(nextTotalPages);
+                setResolvedCurrentPage(nextTotalPages);
                 return;
             }
 
             if (nextTotalPages === 0 && currentPage !== 1)
             {
-                setCurrentPage(1);
+                setResolvedCurrentPage(1);
+                return;
+            }
+
+            if (typeof result.currentPage === "number" && result.currentPage > 0 && result.currentPage !== currentPage)
+            {
+                setResolvedCurrentPage(result.currentPage);
             }
 
             setData(result.data || []);
             setTotal(result.total || 0);
             setTotalPages(nextTotalPages);
+            setHasNext(Boolean(result.hasNext));
+            setHasPrevious(Boolean(result.hasPrevious));
         }
         catch (e)
         {
             setError(String((e as Error).message || e));
+            setHasNext(false);
+            setHasPrevious(false);
         }
         finally
         {
             setLoading(false);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [fetchData, search, currentPage, pageSize, sortKey, sortDir, refreshTrigger]);
+    }, [fetchData, search, currentPage, pageSize, sortKey, sortDir, refreshTrigger, setResolvedCurrentPage]);
 
     React.useEffect(() =>
     {
@@ -196,7 +263,7 @@ export default function DataTable<T extends Record<string, unknown>>({
             setSortDir("asc");
         }
 
-        setCurrentPage(1);
+        setResolvedCurrentPage(1);
     };
 
     const getItemKey = (item: T) => (item[itemKey] ?? item.id) as string | number;
@@ -225,7 +292,7 @@ export default function DataTable<T extends Record<string, unknown>>({
             ? `0 ${itemName}`
             : data.length === 0
                 ? `0 ${itemName}`
-                : `${startIndex + 1}???${endIndex} of ${total} ${itemName}`;
+                : `${startIndex + 1}-${endIndex} of ${total} ${itemName}`;
 
     return (
         <div>
@@ -267,7 +334,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                             onValueChange={(val) =>
                             {
                                 setPageSize(Number(val));
-                                setCurrentPage(1);
+                                setResolvedCurrentPage(1);
                             }}
                         >
                             <SelectTrigger size="sm" className="w-[110px]">
@@ -377,12 +444,12 @@ export default function DataTable<T extends Record<string, unknown>>({
                     </Table>
                 </div>
 
-                {totalPages > 1 && (
+                {(totalPages > 1 || hasPrevious || hasNext) && (
                     <div className="mt-4 flex justify-end items-center gap-1">
-                        <Button variant="outline" size="icon-xs" disabled={currentPage === 1} onClick={() => setCurrentPage(1)}>
+                        <Button variant="outline" size="icon-xs" disabled={!hasPrevious} onClick={() => setResolvedCurrentPage(1)}>
                             <FiChevronsLeft size={13} />
                         </Button>
-                        <Button variant="outline" size="icon-xs" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>
+                        <Button variant="outline" size="icon-xs" disabled={!hasPrevious} onClick={() => setResolvedCurrentPage(currentPage - 1)}>
                             <FiChevronLeft size={13} />
                         </Button>
                         {getPageNumbers().map((page) => (
@@ -390,15 +457,15 @@ export default function DataTable<T extends Record<string, unknown>>({
                                 key={page}
                                 variant={currentPage === page ? "default" : "outline"}
                                 size="xs"
-                                onClick={() => setCurrentPage(page)}
+                                onClick={() => setResolvedCurrentPage(page)}
                             >
                                 {page}
                             </Button>
                         ))}
-                        <Button variant="outline" size="icon-xs" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>
+                        <Button variant="outline" size="icon-xs" disabled={!hasNext} onClick={() => setResolvedCurrentPage(currentPage + 1)}>
                             <FiChevronRight size={13} />
                         </Button>
-                        <Button variant="outline" size="icon-xs" disabled={currentPage === totalPages} onClick={() => setCurrentPage(totalPages)}>
+                        <Button variant="outline" size="icon-xs" disabled={!hasNext} onClick={() => setResolvedCurrentPage(totalPages)}>
                             <FiChevronsRight size={13} />
                         </Button>
                     </div>
