@@ -1,4 +1,5 @@
 import { Skeleton } from "~/components/ui/skeleton";
+import { TableCell, TableRow } from "~/components/ui/table";
 
 interface ILoadingProps
 {
@@ -40,14 +41,14 @@ export default function Loading({ message = "Loading...", size = "medium" }: ILo
 export function TableLoading({ colSpan = 1 }: ITableLoadingProps)
 {
     return (
-        <tr>
-            <td colSpan={colSpan} className="p-6">
+        <TableRow>
+            <TableCell colSpan={colSpan} className="p-6">
                 <div className="flex flex-col items-center gap-2 py-4">
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-4/5" />
                     <Skeleton className="h-4 w-3/5" />
                 </div>
-            </td>
-        </tr>
+            </TableCell>
+        </TableRow>
     );
 }

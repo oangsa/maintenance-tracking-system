@@ -8,6 +8,7 @@ import {
     CommandItem,
     CommandList,
 } from "~/components/ui/command";
+import { Button } from "~/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
 import { cn } from "~/lib/utils";
 
@@ -129,13 +130,16 @@ export default function SearchableSelect({
                 </span>
                 {value && !disabled
                     ? (
-                        <button
+                        <Button
                             type="button"
+                            variant="ghost"
+                            size="icon-xs"
                             onClick={handleClear}
                             className="ml-1 shrink-0 text-muted-foreground hover:text-foreground"
+                            aria-label="Clear selection"
                         >
                             <FiX size={13} />
-                        </button>
+                        </Button>
                     )
                     : <FiChevronDown size={13} className="ml-1 shrink-0 text-muted-foreground" />
                 }

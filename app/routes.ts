@@ -4,6 +4,8 @@ export default [
         layout("routes/layout.tsx", [
             index("routes/home.tsx"),
             route("test", "routes/test.tsx"),
+
+            // master routes
             route("master/users", "routes/master.users.tsx"),
             route("master/users/new", "routes/master.users.new.tsx"),
             route("master/users/:id/edit", "routes/master.users.$id.edit.tsx"),

@@ -1,7 +1,18 @@
 import React from "react";
+import { z } from "zod";
 import ListPickerModal from "~/components/Common/ListPickerModal";
 import Loading from "~/components/Common/Loading";
 import type { IDepartment } from "~/api/types";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "~/components/ui/select";
 import { searchDepartments } from "~/services/departments.service";
 import { formatDepartmentLabel, formatRoleLabel, roleOptions } from "./helpers";
 import type { IUserFormValues } from "./helpers";
@@ -29,55 +40,59 @@ interface IUserFormErrors
     avatarUrl?: string;
 }
 
+const UserFormSchema = z.object({
+    name: z.string().trim().max(150, "Name must be 150 characters or fewer."),
+    email: z.string().trim().min(1, "Email is required.").email("Enter a valid email address."),
+    password: z.string(),
+    role: z.string().trim().refine((value) => roleOptions.includes(value as typeof roleOptions[number]), {
+        message: "Role is required.",
+    }),
+    departmentId: z.string().trim().refine((value) => value === "" || /^\d+$/.test(value), {
+        message: "Department selection is invalid.",
+    }),
+    departmentCode: z.string(),
+    departmentName: z.string(),
+    avatarUrl: z.string().trim().refine((value) => value === "" || z.string().url().safeParse(value).success, {
+        message: "Avatar URL must be a valid URL.",
+    }),
+});
+
 function validateForm(values: IUserFormValues, mode: "create" | "edit"): IUserFormErrors
 {
     const nextErrors: IUserFormErrors = {};
-    const trimmedEmail = values.email.trim();
-    const trimmedDepartmentId = values.departmentId.trim();
-
-    if (!trimmedEmail)
+    const validationResult = UserFormSchema.superRefine((currentValues, ctx) =>
     {
-        nextErrors.email = "Email is required.";
-    }
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail))
-    {
-        nextErrors.email = "Enter a valid email address.";
-    }
-
-    if (mode === "create" && values.password.length < 6)
-    {
-        nextErrors.password = "Password must be at least 6 characters.";
-    }
-
-    if (mode === "edit" && values.password && values.password.length < 6)
-    {
-        nextErrors.password = "Password must be at least 6 characters.";
-    }
-
-    if (!values.role)
-    {
-        nextErrors.role = "Role is required.";
-    }
-
-    if (trimmedDepartmentId && !/^\d+$/.test(trimmedDepartmentId))
-    {
-        nextErrors.departmentId = "Department ID must be numeric.";
-    }
-
-    if (values.name.trim().length > 150)
-    {
-        nextErrors.name = "Name must be 150 characters or fewer.";
-    }
-
-    if (values.avatarUrl.trim().length > 0)
-    {
-        try
+        if (mode === "create" && currentValues.password.length < 6)
         {
-            new URL(values.avatarUrl.trim());
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Password must be at least 6 characters.",
+                path: ["password"],
+            });
         }
-        catch
+
+        if (mode === "edit" && currentValues.password.length > 0 && currentValues.password.length < 6)
         {
-            nextErrors.avatarUrl = "Avatar URL must be a valid URL.";
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Password must be at least 6 characters.",
+                path: ["password"],
+            });
+        }
+    }).safeParse(values);
+
+    if (validationResult.success)
+    {
+        return nextErrors;
+    }
+
+    for (const issue of validationResult.error.issues)
+    {
+        const fieldName = issue.path[0];
+
+        if (typeof fieldName === "string" && !nextErrors[fieldName as keyof IUserFormErrors])
+        {
+            nextErrors[fieldName as keyof IUserFormErrors] = issue.message;
         }
     }
 
@@ -115,19 +130,24 @@ export default function UserForm({
         setFormErrors({});
     }, [initialValues]);
 
-    function handleFieldChange(event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>)
+    function handleValueChange<TKey extends keyof IUserFormValues>(fieldName: TKey, value: IUserFormValues[TKey])
     {
-        const { name, value } = event.target;
-
         setValues((currentValues) => ({
             ...currentValues,
-            [name]: value,
+            [fieldName]: value,
         }));
 
         setFormErrors((currentErrors) => ({
             ...currentErrors,
-            [name]: undefined,
+            [fieldName]: undefined,
         }));
+    }
+
+    function handleFieldChange(event: React.ChangeEvent<HTMLInputElement>)
+    {
+        const fieldName = event.target.name as keyof IUserFormValues;
+
+        handleValueChange(fieldName, event.target.value as IUserFormValues[keyof IUserFormValues]);
     }
 
     function handleSubmit(event: React.FormEvent<HTMLFormElement>)
@@ -220,14 +240,14 @@ export default function UserForm({
         <div className="card">
             {error && <div className="alert alert-error">{error}</div>}
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid gap-5 md:grid-cols-2">
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="name">
+                    <div className="space-y-2">
+                        <Label htmlFor="name">
                             Name
-                        </label>
-                        <input
-                            className="form-control"
+                        </Label>
+                        <Input
+                            aria-invalid={Boolean(formErrors.name)}
                             disabled={submitting}
                             id="name"
                             name="name"
@@ -239,13 +259,13 @@ export default function UserForm({
                         {formErrors.name && <span className="form-error">{formErrors.name}</span>}
                     </div>
 
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="email">
+                    <div className="space-y-2">
+                        <Label htmlFor="email">
                             Email
                             <span className="required-marker">*</span>
-                        </label>
-                        <input
-                            className="form-control"
+                        </Label>
+                        <Input
+                            aria-invalid={Boolean(formErrors.email)}
                             disabled={submitting}
                             id="email"
                             name="email"
@@ -257,13 +277,13 @@ export default function UserForm({
                         {formErrors.email && <span className="form-error">{formErrors.email}</span>}
                     </div>
 
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="password">
+                    <div className="space-y-2">
+                        <Label htmlFor="password">
                             Password
                             {mode === "create" && <span className="required-marker">*</span>}
-                        </label>
-                        <input
-                            className="form-control"
+                        </Label>
+                        <Input
+                            aria-invalid={Boolean(formErrors.password)}
                             disabled={submitting}
                             id="password"
                             name="password"
@@ -272,42 +292,43 @@ export default function UserForm({
                             type="password"
                             value={values.password}
                         />
-                        <span className="mt-1 block text-xs text-[var(--text-muted)]">
+                        <span className="mt-1 block text-xs text-muted-foreground">
                             {mode === "create" ? "Set an initial password for the new user." : "Only fill this in when you want to change the current password."}
                         </span>
                         {formErrors.password && <span className="form-error">{formErrors.password}</span>}
                     </div>
 
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="role">
+                    <div className="space-y-2">
+                        <Label htmlFor="role">
                             Role
                             <span className="required-marker">*</span>
-                        </label>
-                        <select
-                            className="form-control"
-                            disabled={submitting}
-                            id="role"
-                            name="role"
-                            onChange={handleFieldChange}
+                        </Label>
+                        <Select
                             value={values.role}
+                            onValueChange={(value) => handleValueChange("role", value as IUserFormValues["role"])}
                         >
-                            {roleOptions.map((roleOption) => (
-                                <option key={roleOption} value={roleOption}>
+                            <SelectTrigger id="role" className="w-full" aria-invalid={Boolean(formErrors.role)} disabled={submitting}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {roleOptions.map((roleOption) => (
+                                    <SelectItem key={roleOption} value={roleOption}>
                                     {formatRoleLabel(roleOption)}
-                                </option>
-                            ))}
-                        </select>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                         {formErrors.role && <span className="form-error">{formErrors.role}</span>}
                     </div>
 
-                    <div className="form-group md:col-span-2">
-                        <label className="form-label" htmlFor="departmentLookupDisplay">
+                    <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="departmentLookupDisplay">
                             Department
-                        </label>
+                        </Label>
                         <div className="flex flex-col gap-3 md:flex-row md:items-start">
                             <div className="flex-1">
-                                <input
-                                    className="form-control"
+                                <Input
+                                    aria-invalid={Boolean(formErrors.departmentId)}
                                     disabled={submitting}
                                     id="departmentLookupDisplay"
                                     placeholder="No department selected"
@@ -315,44 +336,39 @@ export default function UserForm({
                                     type="text"
                                     value={departmentDisplayValue}
                                 />
-                                {values.departmentId && (
-                                    <span className="mt-1 block text-xs text-[var(--text-muted)]">
-                                        Department ID: {values.departmentId}
-                                    </span>
-                                )}
                                 {formErrors.departmentId && <span className="form-error">{formErrors.departmentId}</span>}
                             </div>
 
                             <div className="flex gap-2 md:pt-[2px]">
-                                <button
-                                    className="btn btn-outline"
+                                <Button
+                                    variant="outline"
                                     disabled={submitting}
                                     onClick={() => setIsDepartmentLookupOpen(true)}
                                     type="button"
                                 >
                                     Lookup Department
-                                </button>
-                                <button
-                                    className="btn btn-outline"
+                                </Button>
+                                <Button
+                                    variant="outline"
                                     disabled={submitting || !values.departmentId}
                                     onClick={handleDepartmentClear}
                                     type="button"
                                 >
                                     Clear
-                                </button>
+                                </Button>
                             </div>
                         </div>
-                        <span className="mt-2 block text-xs text-[var(--text-muted)]">
+                        <span className="mt-2 block text-xs text-muted-foreground">
                             Search and select a department from the lookup table.
                         </span>
                     </div>
 
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="avatarUrl">
+                    <div className="space-y-2">
+                        <Label htmlFor="avatarUrl">
                             Avatar URL
-                        </label>
-                        <input
-                            className="form-control"
+                        </Label>
+                        <Input
+                            aria-invalid={Boolean(formErrors.avatarUrl)}
                             disabled={submitting}
                             id="avatarUrl"
                             name="avatarUrl"
@@ -366,20 +382,20 @@ export default function UserForm({
                 </div>
 
                 <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                    <button
-                        className="btn btn-outline"
+                    <Button
+                        variant="outline"
                         disabled={submitting}
                         onClick={onCancel}
                         type="button"
                     >
                         Cancel
-                    </button>
-                    <button className="btn btn-primary" disabled={submitting} type="submit">
+                    </Button>
+                    <Button disabled={submitting} type="submit">
                         {submitting
                             ? (mode === "create" ? "Creating..." : "Saving...")
                             : (mode === "create" ? "Create User" : "Save Changes")
                         }
-                    </button>
+                    </Button>
                 </div>
             </form>
 

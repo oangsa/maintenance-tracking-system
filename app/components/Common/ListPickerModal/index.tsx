@@ -287,7 +287,7 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
 
                 <div className="flex items-center justify-between flex-wrap gap-2 px-5 py-3 border-t">
                     <span className="text-sm text-muted-foreground">
-                        {total} {itemName}{total !== 1 ? "s" : ""} ?? Page {page} of {totalPages || 1}
+                        {total} {itemName}{total !== 1 ? "s" : ""} - Page {page} of {totalPages || 1}
                     </span>
                     <div className="flex items-center gap-1">
                         <Button variant="outline" size="icon-xs" disabled={page <= 1} onClick={() => setPage(1)}>

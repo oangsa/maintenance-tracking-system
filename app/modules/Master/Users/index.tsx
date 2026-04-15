@@ -58,8 +58,6 @@ export default function UsersListPage()
                 : undefined,
         });
 
-        console.log("Fetched users with params:", params, "Response:", response);
-
         return {
             data: response.data as IUserTableRow[],
             total: response.pagination.totalCount,

@@ -2,9 +2,11 @@ import React from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import Loading from "~/components/Common/Loading";
 import { ConfirmModal } from "~/components/Common/Modal";
+import { buttonVariants, Button } from "~/components/ui/button";
 import { deleteUser, getUserById } from "~/services/users.service";
 import { formatDateTime, formatRoleLabel } from "./helpers";
 import type { IUser } from "~/api/types";
+import { cn } from "~/lib/utils";
 
 interface IConfirmState
 {
@@ -89,7 +91,7 @@ export default function UserDetailPage()
         return (
             <div className="card">
                 <div className="alert alert-error">{pageError || "User not found."}</div>
-                <Link className="btn btn-outline" to="/master/users">
+                <Link className={buttonVariants({ variant: "outline" })} to="/master/users">
                     Back to Users
                 </Link>
             </div>
@@ -132,15 +134,15 @@ export default function UserDetailPage()
                 </div>
 
                 <div className="flex gap-2">
-                    <Link className="btn btn-outline" to="/master/users">
+                    <Link className={buttonVariants({ variant: "outline" })} to="/master/users">
                         Back to Users
                     </Link>
-                    <Link className="btn btn-outline" to={`/master/users/${user.id}/edit`}>
+                    <Link className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")} to={`/master/users/${user.id}/edit`}>
                         Edit User
                     </Link>
-                    <button className="btn btn-danger" onClick={() => setConfirmState({ isOpen: true })} type="button">
+                    <Button variant="destructive" onClick={() => setConfirmState({ isOpen: true })} type="button">
                         Delete User
-                    </button>
+                    </Button>
                 </div>
             </div>
 
