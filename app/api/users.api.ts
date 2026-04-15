@@ -27,6 +27,15 @@ export async function searchUsersRequest(body: ISearchRequest): Promise<IPagedRe
 }
 
 /**
+ * GET /api/v1/users/me
+ * Retrieves the currently authenticated user profile.
+ */
+export async function getCurrentUserRequest(): Promise<IUser>
+{
+    return http<IUser>(`${PREFIX}/me`);
+}
+
+/**
  * POST /api/v1/users
  * Creates a new user. Returns the created user with status 201.
  */

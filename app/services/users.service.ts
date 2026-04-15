@@ -28,6 +28,7 @@ import type {
  */
 export async function searchUsers(params: ISearchRequest): Promise<IPagedResult<IUser>>
 {
+    console.log("Searching users with params:", params);
     return searchUsersRequest(params);
 }
 

@@ -1,13 +1,44 @@
 import type { IPaginationMeta, IPagedResult } from "./types";
 
-const BASE_URL: string = (import.meta.env.VITE_BASE_API_URL ?? "").replace(/\/$/, "");
+const CONFIGURED_BASE_URL: string = (import.meta.env.VITE_BASE_API_URL ?? "").replace(/\/$/, "");
 
-console.log("API base URL:", BASE_URL);
+function getBaseUrl(): string
+{
+    if (!import.meta.env.DEV || typeof window === "undefined" || CONFIGURED_BASE_URL === "")
+    {
+        return CONFIGURED_BASE_URL;
+    }
+
+    try
+    {
+        const configuredUrl = new URL(CONFIGURED_BASE_URL);
+        const currentUrl = new URL(window.location.origin);
+        const isLoopbackApi = configuredUrl.hostname === "localhost" || configuredUrl.hostname === "127.0.0.1";
+        const hasNoBasePath = configuredUrl.pathname === "" || configuredUrl.pathname === "/";
+
+        if (isLoopbackApi && hasNoBasePath && configuredUrl.origin !== currentUrl.origin)
+        {
+            return "";
+        }
+    }
+    catch
+    {
+        return CONFIGURED_BASE_URL;
+    }
+
+    return CONFIGURED_BASE_URL;
+}
 
 // ---- Token store ------------------------------------------
 // In-memory primary; sessionStorage as client-side persistence (SSR-safe).
 
 let _accessToken: string | null = null;
+
+export interface IHttpRequestOptions extends RequestInit
+{
+    skipAuth?: boolean;
+    skipRefresh?: boolean;
+}
 
 export function setAccessToken(token: string | null): void
 {
@@ -93,22 +124,100 @@ interface IRawResponse<T>
     status: number;
 }
 
-async function rawFetch<T>(path: string, options: RequestInit, tokenOverride?: string | null): Promise<IRawResponse<T>>
+function createFallbackPagination(itemCount: number): IPaginationMeta
 {
+    return {
+        currentPage: 1,
+        totalPages: 1,
+        pageSize: itemCount,
+        totalCount: itemCount,
+        hasPrevious: false,
+        hasNext: false,
+    };
+}
+
+function normalizeNumber(value: unknown, fallback: number): number
+{
+    if (typeof value === "number" && Number.isFinite(value))
+    {
+        return value;
+    }
+
+    if (typeof value === "string")
+    {
+        const parsed = Number(value);
+
+        if (Number.isFinite(parsed))
+        {
+            return parsed;
+        }
+    }
+
+    return fallback;
+}
+
+function normalizeBoolean(value: unknown, fallback: boolean): boolean
+{
+    if (typeof value === "boolean")
+    {
+        return value;
+    }
+
+    if (typeof value === "string")
+    {
+        if (value.toLowerCase() === "true") return true;
+        if (value.toLowerCase() === "false") return false;
+    }
+
+    return fallback;
+}
+
+function parsePaginationHeader(headers: Headers, itemCount: number): IPaginationMeta
+{
+    const fallback = createFallbackPagination(itemCount);
+    const rawPagination = headers.get("X-Pagination") ?? headers.get("x-pagination");
+
+    if (!rawPagination)
+    {
+        return fallback;
+    }
+
+    try
+    {
+        const parsed = JSON.parse(rawPagination) as Partial<IPaginationMeta>;
+
+        return {
+            currentPage: normalizeNumber(parsed.currentPage, fallback.currentPage),
+            totalPages: normalizeNumber(parsed.totalPages, fallback.totalPages),
+            pageSize: normalizeNumber(parsed.pageSize, fallback.pageSize),
+            totalCount: normalizeNumber(parsed.totalCount, fallback.totalCount),
+            hasPrevious: normalizeBoolean(parsed.hasPrevious, fallback.hasPrevious),
+            hasNext: normalizeBoolean(parsed.hasNext, fallback.hasNext),
+        };
+    }
+    catch
+    {
+        return fallback;
+    }
+}
+
+async function rawFetch<T>(path: string, options: IHttpRequestOptions, tokenOverride?: string | null): Promise<IRawResponse<T>>
+{
+    const { skipAuth = false, skipRefresh: _skipRefresh, ...fetchOptions } = options as IHttpRequestOptions;
     const token = tokenOverride !== undefined ? tokenOverride : getAccessToken();
 
     const baseHeaders: Record<string, string> = {
         "Content-Type": "application/json",
-        ...(options.headers as Record<string, string> ?? {}),
+        ...(fetchOptions.headers as Record<string, string> ?? {}),
     };
 
-    if (token)
+    if (!skipAuth && token)
     {
         baseHeaders["Authorization"] = `Bearer ${token}`;
     }
 
-    const res = await fetch(`${BASE_URL}${path}`, {
-        ...options,
+    const res = await fetch(`${getBaseUrl()}${path}`, {
+        ...fetchOptions,
         headers: baseHeaders,
         credentials: "include",
     });
@@ -133,12 +242,52 @@ async function rawFetch<T>(path: string, options: RequestInit, tokenOverride?: s
     return { body: body as T, headers: res.headers, status: res.status };
 }
 
+function shouldAttemptRefresh(err: unknown, options: IHttpRequestOptions): boolean
+{
+    return !options.skipRefresh && err instanceof ApiError && err.statusCode === 401 && _refreshFn !== null;
+}
+
+async function getRefreshedAccessToken(): Promise<string>
+{
+    if (!_refreshFn)
+    {
+        throw new Error("Refresh function is not registered.");
+    }
+
+    if (_isRefreshing)
+    {
+        return new Promise<string>((resolve, reject) =>
+        {
+            _pendingQueue.push({ resolve, reject });
+        });
+    }
+
+    _isRefreshing = true;
+
+    try
+    {
+        const nextToken = await _refreshFn();
+
+        setAccessToken(nextToken);
+        processQueue(null, nextToken);
+
+        return nextToken;
+    }
+    catch (refreshErr)
+    {
+        clearAccessToken();
+        processQueue(refreshErr);
+
+        throw refreshErr;
+    }
+}
+
 /**
  * Makes an authenticated HTTP request.
  * Automatically injects the Bearer token and retries once after a
  * transparent token refresh when the server responds with 401.
  */
-export async function http<T>(path: string, options: RequestInit = {}): Promise<T>
+export async function http<T>(path: string, options: IHttpRequestOptions = {}): Promise<T>
 {
     try
     {
@@ -147,44 +296,17 @@ export async function http<T>(path: string, options: RequestInit = {}): Promise<
     }
     catch (err)
     {
-        if (!(err instanceof ApiError) || err.statusCode !== 401 || !_refreshFn)
+        const requestOptions = options as IHttpRequestOptions;
+
+        if (!shouldAttemptRefresh(err, requestOptions))
         {
             throw err;
         }
 
-        // If another call is already refreshing, queue this one
-        if (_isRefreshing)
-        {
-            return new Promise<T>((resolve, reject) =>
-            {
-                _pendingQueue.push({
-                    resolve: (newToken) =>
-                    {
-                        rawFetch<T>(path, options, newToken)
-                            .then(({ body }) => resolve(body))
-                            .catch(reject);
-                    },
-                    reject,
-                });
-            });
-        }
+        const newToken = await getRefreshedAccessToken();
+        const { body } = await rawFetch<T>(path, requestOptions, newToken);
 
-        _isRefreshing = true;
-
-        try
-        {
-            const newToken = await _refreshFn();
-            setAccessToken(newToken);
-            processQueue(null, newToken);
-            const { body } = await rawFetch<T>(path, options, newToken);
-            return body;
-        }
-        catch (refreshErr)
-        {
-            processQueue(refreshErr);
-            clearAccessToken();
-            throw refreshErr;
-        }
+        return body;
     }
 }
 
@@ -193,37 +315,28 @@ export async function http<T>(path: string, options: RequestInit = {}): Promise<
  * pagination metadata in the X-Pagination response header.
  * Used by all /search POST endpoints.
  */
-export async function httpPaginated<T>(path: string, options: RequestInit = {}): Promise<IPagedResult<T>>
+export async function httpPaginated<T>(path: string, options: IHttpRequestOptions = {}): Promise<IPagedResult<T>>
 {
     let rawRes: IRawResponse<T[]>;
+    const requestOptions = options as IHttpRequestOptions;
 
     try
     {
-        rawRes = await rawFetch<T[]>(path, options);
+        rawRes = await rawFetch<T[]>(path, requestOptions);
     }
     catch (err)
     {
-        if (!(err instanceof ApiError) || err.statusCode !== 401 || !_refreshFn)
+        if (!shouldAttemptRefresh(err, requestOptions))
         {
             throw err;
         }
 
-        const newToken = await _refreshFn();
-        setAccessToken(newToken);
-        rawRes = await rawFetch<T[]>(path, options, newToken);
+        const newToken = await getRefreshedAccessToken();
+        rawRes = await rawFetch<T[]>(path, requestOptions, newToken);
     }
 
-    const paginationHeader = rawRes.headers.get("X-Pagination");
-    const pagination: IPaginationMeta = paginationHeader
-        ? (JSON.parse(paginationHeader) as IPaginationMeta)
-        : {
-            currentPage: 1,
-            totalPages: 1,
-            pageSize: rawRes.body.length,
-            totalCount: rawRes.body.length,
-            hasPrevious: false,
-            hasNext: false,
-        };
+    const data = Array.isArray(rawRes.body) ? rawRes.body : [];
+    const pagination = parsePaginationHeader(rawRes.headers, data.length);
 
-    return { data: rawRes.body, pagination };
+    return { data, pagination };
 }

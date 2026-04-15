@@ -32,6 +32,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "~/components/ui/select";
+import { cn } from "~/lib/utils";
 
 interface IPickerColumn<T = Record<string, unknown>>
 {
@@ -56,6 +57,10 @@ interface IFetchResult<T>
     data: T[];
     total: number;
     totalPages: number;
+    pageItemCount?: number;
+    currentPage?: number;
+    hasNext?: boolean;
+    hasPrevious?: boolean;
 }
 
 interface IListPickerModalProps<T = Record<string, unknown>>
@@ -91,13 +96,15 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
     const [data, setData] = React.useState<T[]>([]);
     const [total, setTotal] = React.useState(0);
     const [totalPages, setTotalPages] = React.useState(0);
+    const [hasNext, setHasNext] = React.useState(false);
+    const [hasPrevious, setHasPrevious] = React.useState(false);
     const [loading, setLoading] = React.useState(false);
     const [searchInput, setSearchInput] = React.useState("");
     const [search, setSearch] = React.useState("");
     const [page, setPage] = React.useState(1);
     const [sortBy, setSortBy] = React.useState(columns[0]?.key || "id");
     const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
-    const [pageSize, setPageSize] = React.useState(10);
+    const [pageLimit, setPageLimit] = React.useState(10);
 
     React.useEffect(() =>
     {
@@ -139,24 +146,55 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
         if (!isOpen || !fetchData) return;
         let cancelled = false;
         setLoading(true);
-        fetchData({ search, page, limit: pageSize, sortBy, sortDir })
+        fetchData({ search, page, limit: pageLimit, sortBy, sortDir })
             .then((res) =>
             {
                 if (cancelled) return;
+                const nextTotalPages = Number(res.totalPages || 0);
+                const nextCurrentPage = typeof res.currentPage === "number" && res.currentPage > 0
+                    ? res.currentPage
+                    : page;
+
+                if (nextTotalPages > 0 && nextCurrentPage > nextTotalPages)
+                {
+                    setPage(nextTotalPages);
+                    return;
+                }
+
+                if (nextTotalPages === 0 && nextCurrentPage !== 1)
+                {
+                    setPage(1);
+                    return;
+                }
+
+                if (nextCurrentPage !== page)
+                {
+                    setPage(nextCurrentPage);
+                }
+
                 setData(res.data || []);
                 setTotal(res.total || 0);
-                setTotalPages(res.totalPages || 0);
+                setTotalPages(nextTotalPages);
+                setHasNext(Boolean(res.hasNext));
+                setHasPrevious(Boolean(res.hasPrevious));
             })
             .catch(() =>
             {
-                if (!cancelled) setData([]);
+                if (!cancelled)
+                {
+                    setData([]);
+                    setTotal(0);
+                    setTotalPages(0);
+                    setHasNext(false);
+                    setHasPrevious(false);
+                }
             })
             .finally(() =>
             {
                 if (!cancelled) setLoading(false);
             });
         return () => { cancelled = true; };
-    }, [isOpen, fetchData, search, page, pageSize, sortBy, sortDir]);
+    }, [isOpen, fetchData, search, page, pageLimit, sortBy, sortDir]);
 
     const handleSelect = (row: T) =>
     {
@@ -164,11 +202,16 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
         onClose();
     };
 
-    const getPageNumbers = () =>
+    const resolvedTotalPages = Math.max(totalPages, page + (hasNext ? 1 : 0), 1);
+    const canGoPrevious = hasPrevious || page > 1;
+    const canGoNext = hasNext || page < resolvedTotalPages;
+    const shouldShowPagination = total > 0 || page > 1 || hasPrevious || hasNext;
+
+    const getPageNumbers = (pageCount: number) =>
     {
         const size = 5;
         let start = Math.max(1, page - Math.floor(size / 2));
-        let end = Math.min(totalPages, start + size - 1);
+        let end = Math.min(pageCount, start + size - 1);
         if (end - start + 1 < size) start = Math.max(1, end - size + 1);
         const pages: number[] = [];
         for (let i = start; i <= end; i++) pages.push(i);
@@ -198,10 +241,10 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
                             />
                         </div>
                         <Select
-                            value={String(pageSize)}
+                            value={String(pageLimit)}
                             onValueChange={(val) =>
                             {
-                                setPageSize(Number(val));
+                                setPageLimit(Number(val));
                                 setPage(1);
                             }}
                         >
@@ -227,13 +270,24 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
                                         className={col.align === "right" ? "text-right cursor-pointer select-none" : "cursor-pointer select-none"}
                                         onClick={() => handleSort(col.key)}
                                     >
-                                        {col.label}
-                                        <span className="ml-1" style={{ opacity: sortBy === col.key ? 1 : 0.3 }}>
-                                            {sortBy === col.key && sortDir === "desc"
-                                                ? <FiChevronDown size={12} />
-                                                : <FiChevronUp size={12} />
-                                            }
-                                        </span>
+                                        <div
+                                            className={cn(
+                                                "inline-flex items-center gap-1 whitespace-nowrap align-middle",
+                                                col.align === "right"
+                                                    ? "justify-end"
+                                                    : col.align === "center"
+                                                        ? "justify-center"
+                                                        : "justify-start"
+                                            )}
+                                        >
+                                            <span>{col.label}</span>
+                                            <span className="inline-flex shrink-0 items-center" style={{ opacity: sortBy === col.key ? 1 : 0.3 }}>
+                                                {sortBy === col.key && sortDir === "desc"
+                                                    ? <FiChevronDown size={12} />
+                                                    : <FiChevronUp size={12} />
+                                                }
+                                            </span>
+                                        </div>
                                     </TableHead>
                                 ))}
                                 <TableHead className="w-24 text-center">Action</TableHead>
@@ -287,32 +341,34 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
 
                 <div className="flex items-center justify-between flex-wrap gap-2 px-5 py-3 border-t">
                     <span className="text-sm text-muted-foreground">
-                        {total} {itemName}{total !== 1 ? "s" : ""} ?? Page {page} of {totalPages || 1}
+                        {total} {itemName}{total !== 1 ? "s" : ""} - Page {page} of {resolvedTotalPages}
                     </span>
-                    <div className="flex items-center gap-1">
-                        <Button variant="outline" size="icon-xs" disabled={page <= 1} onClick={() => setPage(1)}>
-                            <FiChevronsLeft size={13} />
-                        </Button>
-                        <Button variant="outline" size="icon-xs" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                            <FiChevronLeft size={13} />
-                        </Button>
-                        {totalPages > 0 && getPageNumbers().map((p) => (
-                            <Button
-                                key={p}
-                                variant={page === p ? "default" : "outline"}
-                                size="xs"
-                                onClick={() => setPage(p)}
-                            >
-                                {p}
+                    {shouldShowPagination && (
+                        <div className="flex items-center gap-1">
+                            <Button variant="outline" size="icon-xs" disabled={!canGoPrevious} onClick={() => setPage(1)}>
+                                <FiChevronsLeft size={13} />
                             </Button>
-                        ))}
-                        <Button variant="outline" size="icon-xs" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
-                            <FiChevronRight size={13} />
-                        </Button>
-                        <Button variant="outline" size="icon-xs" disabled={page >= totalPages} onClick={() => setPage(totalPages)}>
-                            <FiChevronsRight size={13} />
-                        </Button>
-                    </div>
+                            <Button variant="outline" size="icon-xs" disabled={!canGoPrevious} onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}>
+                                <FiChevronLeft size={13} />
+                            </Button>
+                            {getPageNumbers(resolvedTotalPages).map((pageNumber) => (
+                                <Button
+                                    key={pageNumber}
+                                    variant={page === pageNumber ? "default" : "outline"}
+                                    size="xs"
+                                    onClick={() => setPage(pageNumber)}
+                                >
+                                    {pageNumber}
+                                </Button>
+                            ))}
+                            <Button variant="outline" size="icon-xs" disabled={!canGoNext} onClick={() => setPage((currentPage) => currentPage + 1)}>
+                                <FiChevronRight size={13} />
+                            </Button>
+                            <Button variant="outline" size="icon-xs" disabled={!canGoNext} onClick={() => setPage(resolvedTotalPages)}>
+                                <FiChevronsRight size={13} />
+                            </Button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex justify-end px-5 py-3 border-t">

@@ -16,6 +16,8 @@ export async function loginRequest(body: ILoginRequest): Promise<ILoginResponse>
     return http<ILoginResponse>(`${PREFIX}/login`, {
         method: "POST",
         body: JSON.stringify(body),
+        skipAuth: true,
+        skipRefresh: true,
     });
 }
 
@@ -28,6 +30,8 @@ export async function refreshTokenRequest(): Promise<IRefreshResponse>
 {
     return http<IRefreshResponse>(`${PREFIX}/refresh`, {
         method: "POST",
+        skipAuth: true,
+        skipRefresh: true,
     });
 }
 

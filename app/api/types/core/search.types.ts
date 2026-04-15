@@ -16,6 +16,7 @@ export interface ISearchTerm
 export interface ISearchRequest
 {
     pageNumber?: number;
+    // Requested maximum number of rows per page.
     pageSize?: number;
     orderBy?: string;
     search?: ISearchCondition[];
@@ -27,6 +28,7 @@ export interface IPaginationMeta
 {
     currentPage: number;
     totalPages: number;
+    // Number of rows returned in the current page.
     pageSize: number;
     totalCount: number;
     hasPrevious: boolean;

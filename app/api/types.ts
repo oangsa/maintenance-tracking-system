@@ -21,6 +21,12 @@ export type {
 } from "./types/auth.types";
 
 export type {
+    IDepartment,
+    IDepartmentForCreate,
+    IDepartmentForUpdate,
+} from "./types/department.types";
+
+export type {
     IDeleteCollectionRequest,
     IUser,
     IUserForCreate,

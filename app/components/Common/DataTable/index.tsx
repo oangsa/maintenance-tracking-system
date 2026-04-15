@@ -3,10 +3,12 @@ import { Link } from "react-router";
 import {
     FiPlus,
     FiSearch,
+    FiFilter,
     FiChevronUp,
     FiChevronDown,
     FiEdit2,
     FiTrash2,
+    FiX,
     FiChevronsLeft,
     FiChevronLeft,
     FiChevronRight,
@@ -23,6 +25,7 @@ import {
 } from "~/components/ui/table";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -30,9 +33,17 @@ import {
     SelectTrigger,
     SelectValue,
 } from "~/components/ui/select";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "~/components/ui/dialog";
 import { cn } from "~/lib/utils";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const ALL_FILTER_OPTION = "__all__";
 
 interface IColumn<T = Record<string, unknown>>
 {
@@ -46,11 +57,27 @@ interface IColumn<T = Record<string, unknown>>
 
 interface IFetchParams
 {
-    search: string;
+    searchTerm: string;
     page: number;
     limit: number;
+    search?: Record<string, string>;
     sortBy?: string;
     sortDir?: "asc" | "desc";
+}
+
+interface IDataTableFilterOption
+{
+    label: string;
+    value: string;
+}
+
+interface IDataTableFilterField
+{
+    key: string;
+    label: string;
+    placeholder?: string;
+    type: "text" | "select";
+    options?: IDataTableFilterOption[];
 }
 
 interface IFetchResult<T>
@@ -58,6 +85,10 @@ interface IFetchResult<T>
     data: T[];
     total: number;
     totalPages: number;
+    pageItemCount?: number;
+    currentPage?: number;
+    hasNext?: boolean;
+    hasPrevious?: boolean;
 }
 
 interface IDataTableProps<T = Record<string, unknown>>
@@ -65,6 +96,8 @@ interface IDataTableProps<T = Record<string, unknown>>
     title: string;
     fetchData: (params: IFetchParams) => Promise<IFetchResult<T>>;
     columns: IColumn<T>[];
+    filterFields?: IDataTableFilterField[];
+    filterValues?: Record<string, string>;
     searchPlaceholder?: string;
     itemName?: string;
     basePath?: string;
@@ -73,6 +106,11 @@ interface IDataTableProps<T = Record<string, unknown>>
     emptyMessage?: string;
     defaultPageSize?: number;
     refreshTrigger?: number;
+    searchValue?: string;
+    currentPageValue?: number;
+    onFilterChange?: (filters: Record<string, string>) => void;
+    onSearchChange?: (search: string) => void;
+    onCurrentPageChange?: (page: number) => void;
 }
 
 interface ISortIconProps
@@ -89,7 +127,7 @@ function SortIcon({ columnKey, sortable, sortKey, sortDir }: ISortIconProps)
     const isActive = sortKey === columnKey;
 
     return (
-        <span className="ml-1" style={{ opacity: isActive ? 1 : 0.3 }}>
+        <span className="inline-flex shrink-0 items-center" style={{ opacity: isActive ? 1 : 0.3 }}>
             {isActive && sortDir === "desc"
                 ? <FiChevronDown size={12} />
                 : <FiChevronUp size={12} />
@@ -98,10 +136,29 @@ function SortIcon({ columnKey, sortable, sortKey, sortDir }: ISortIconProps)
     );
 }
 
+function normalizeFilterValues(filterFields: IDataTableFilterField[], values?: Record<string, string>): Record<string, string>
+{
+    const nextValues: Record<string, string> = {};
+
+    for (const field of filterFields)
+    {
+        nextValues[field.key] = values?.[field.key] ?? "";
+    }
+
+    return nextValues;
+}
+
+function hasActiveFilterValue(value?: string): boolean
+{
+    return Boolean(value?.trim());
+}
+
 export default function DataTable<T extends Record<string, unknown>>({
     title,
     fetchData,
     columns = [],
+    filterFields = [],
+    filterValues,
     searchPlaceholder = "Search...",
     itemName = "items",
     basePath = "",
@@ -110,37 +167,141 @@ export default function DataTable<T extends Record<string, unknown>>({
     emptyMessage,
     defaultPageSize = 10,
     refreshTrigger = 0,
+    searchValue,
+    currentPageValue,
+    onFilterChange,
+    onSearchChange,
+    onCurrentPageChange,
 }: IDataTableProps<T>)
 {
     const [data, setData] = React.useState<T[]>([]);
     const [total, setTotal] = React.useState(0);
     const [totalPages, setTotalPages] = React.useState(0);
+    const [hasNext, setHasNext] = React.useState(false);
+    const [hasPrevious, setHasPrevious] = React.useState(false);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState("");
-    const [search, setSearch] = React.useState("");
-    const [searchInput, setSearchInput] = React.useState("");
+    const [searchState, setSearchState] = React.useState(searchValue ?? "");
+    const [searchInput, setSearchInput] = React.useState(searchValue ?? "");
     const [sortKey, setSortKey] = React.useState<string | null>(null);
     const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
-    const [currentPage, setCurrentPage] = React.useState(1);
-    const [pageSize, setPageSize] = React.useState(defaultPageSize);
+    const [currentPageState, setCurrentPageState] = React.useState(currentPageValue ?? 1);
+    const [pageLimit, setPageLimit] = React.useState(defaultPageSize);
+    const [pageItemCount, setPageItemCount] = React.useState(0);
+    const [filterState, setFilterState] = React.useState<Record<string, string>>(() => normalizeFilterValues(filterFields, filterValues));
+    const [filterDraft, setFilterDraft] = React.useState<Record<string, string>>(() => normalizeFilterValues(filterFields, filterValues));
+    const [isFilterDialogOpen, setIsFilterDialogOpen] = React.useState(false);
+
+    const search = searchValue ?? searchState;
+    const currentPage = currentPageValue ?? currentPageState;
+    const filters = React.useMemo(() =>
+    {
+        if (filterValues !== undefined)
+        {
+            return normalizeFilterValues(filterFields, filterValues);
+        }
+
+        return normalizeFilterValues(filterFields, filterState);
+    }, [filterFields, filterState, filterValues]);
+    const activeFilters = React.useMemo(() => filterFields
+        .filter((field) => hasActiveFilterValue(filters[field.key]))
+        .map((field) =>
+        {
+            const rawValue = filters[field.key];
+            const displayValue = field.type === "select"
+                ? field.options?.find((option) => option.value === rawValue)?.label ?? rawValue
+                : rawValue;
+
+            return {
+                displayValue,
+                field,
+            };
+        }), [filterFields, filters]);
+    const activeFilterCount = activeFilters.length;
+
+    const setResolvedCurrentPage = React.useCallback((nextPage: number) =>
+    {
+        const normalizedPage = Math.max(1, nextPage);
+
+        if (normalizedPage === currentPage)
+        {
+            return;
+        }
+
+        if (currentPageValue !== undefined)
+        {
+            onCurrentPageChange?.(normalizedPage);
+            return;
+        }
+
+        setCurrentPageState(normalizedPage);
+    }, [currentPage, currentPageValue, onCurrentPageChange]);
+
+    const updateFilters = React.useCallback((nextFilters: Record<string, string>) =>
+    {
+        const normalizedFilters = normalizeFilterValues(filterFields, nextFilters);
+
+        if (filterValues !== undefined)
+        {
+            onFilterChange?.(normalizedFilters);
+            return;
+        }
+
+        setFilterState(normalizedFilters);
+        setResolvedCurrentPage(1);
+    }, [filterFields, filterValues, onFilterChange, setResolvedCurrentPage]);
+
+    React.useEffect(() =>
+    {
+        if (searchValue !== undefined)
+        {
+            setSearchInput(searchValue);
+        }
+    }, [searchValue]);
+
+    React.useEffect(() =>
+    {
+        setFilterState((currentValues) => normalizeFilterValues(filterFields, currentValues));
+    }, [filterFields]);
+
+    React.useEffect(() =>
+    {
+        if (filterValues !== undefined && !isFilterDialogOpen)
+        {
+            setFilterDraft(normalizeFilterValues(filterFields, filterValues));
+        }
+    }, [filterFields, filterValues, isFilterDialogOpen]);
 
     React.useEffect(() =>
     {
         const timer = setTimeout(() =>
         {
-            setSearch(searchInput);
-            setCurrentPage(1);
+            if (searchInput === search)
+            {
+                return;
+            }
+
+            if (searchValue !== undefined)
+            {
+                onSearchChange?.(searchInput);
+                return;
+            }
+
+            setSearchState(searchInput);
+            setResolvedCurrentPage(1);
         }, 300);
+
         return () => clearTimeout(timer);
-    }, [searchInput]);
+    }, [onSearchChange, search, searchInput, searchValue, setResolvedCurrentPage]);
 
     const loadData = React.useCallback(async () =>
     {
         setLoading(true);
         setError("");
+
         try
         {
-            const params: IFetchParams = { search, page: currentPage, limit: pageSize };
+            const params: IFetchParams = { searchTerm: search, page: currentPage, limit: pageLimit, search: filters };
 
             if (sortKey)
             {
@@ -150,32 +311,51 @@ export default function DataTable<T extends Record<string, unknown>>({
 
             const result = await fetchData(params);
             const nextTotalPages = Number(result.totalPages || 0);
+            const nextCurrentPage = typeof result.currentPage === "number" && result.currentPage > 0
+                ? result.currentPage
+                : currentPage;
+            const nextData = result.data || [];
+            const nextPageItemCount = typeof result.pageItemCount === "number" && result.pageItemCount >= 0
+                ? result.pageItemCount
+                : nextData.length;
 
-            if (nextTotalPages > 0 && currentPage > nextTotalPages)
+            if (nextTotalPages > 0 && nextCurrentPage > nextTotalPages)
             {
-                setCurrentPage(nextTotalPages);
+                setResolvedCurrentPage(nextTotalPages);
                 return;
             }
 
-            if (nextTotalPages === 0 && currentPage !== 1)
+            if (nextTotalPages === 0 && nextCurrentPage !== 1)
             {
-                setCurrentPage(1);
+                setResolvedCurrentPage(1);
+                return;
             }
 
-            setData(result.data || []);
+            if (nextCurrentPage !== currentPage)
+            {
+                setResolvedCurrentPage(nextCurrentPage);
+            }
+
+            setData(nextData);
             setTotal(result.total || 0);
             setTotalPages(nextTotalPages);
+            setPageItemCount(nextPageItemCount);
+            setHasNext(Boolean(result.hasNext));
+            setHasPrevious(Boolean(result.hasPrevious));
         }
         catch (e)
         {
             setError(String((e as Error).message || e));
+            setPageItemCount(0);
+            setHasNext(false);
+            setHasPrevious(false);
         }
         finally
         {
             setLoading(false);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [fetchData, search, currentPage, pageSize, sortKey, sortDir, refreshTrigger]);
+    }, [fetchData, filters, search, currentPage, pageLimit, sortKey, sortDir, refreshTrigger, setResolvedCurrentPage]);
 
     React.useEffect(() =>
     {
@@ -196,7 +376,7 @@ export default function DataTable<T extends Record<string, unknown>>({
             setSortDir("asc");
         }
 
-        setCurrentPage(1);
+        setResolvedCurrentPage(1);
     };
 
     const getItemKey = (item: T) => (item[itemKey] ?? item.id) as string | number;
@@ -206,26 +386,68 @@ export default function DataTable<T extends Record<string, unknown>>({
         onDelete?.(getItemKey(item));
     };
 
-    const getPageNumbers = () =>
+    const handleFilterDialogOpen = () =>
+    {
+        setFilterDraft(filters);
+        setIsFilterDialogOpen(true);
+    };
+
+    const handleFilterDraftChange = (fieldKey: string, value: string) =>
+    {
+        setFilterDraft((currentValues) => ({
+            ...currentValues,
+            [fieldKey]: value,
+        }));
+    };
+
+    const handleApplyFilters = () =>
+    {
+        updateFilters(filterDraft);
+        setIsFilterDialogOpen(false);
+    };
+
+    const handleResetFilters = () =>
+    {
+        const emptyFilters = normalizeFilterValues(filterFields, {});
+
+        setFilterDraft(emptyFilters);
+        updateFilters(emptyFilters);
+        setIsFilterDialogOpen(false);
+    };
+
+    const handleClearSingleFilter = (fieldKey: string) =>
+    {
+        updateFilters({
+            ...filters,
+            [fieldKey]: "",
+        });
+    };
+
+    const resolvedTotalPages = Math.max(totalPages, currentPage + (hasNext ? 1 : 0), 1);
+    const canGoPrevious = hasPrevious || currentPage > 1;
+    const canGoNext = hasNext || currentPage < resolvedTotalPages;
+    const shouldShowPagination = total > 0 || currentPage > 1 || hasPrevious || hasNext;
+
+    const getPageNumbers = (pageCount: number) =>
     {
         const size = 5;
         let start = Math.max(1, currentPage - Math.floor(size / 2));
-        let end = Math.min(totalPages, start + size - 1);
+        let end = Math.min(pageCount, start + size - 1);
         if (end - start + 1 < size) start = Math.max(1, end - size + 1);
         const pages: number[] = [];
         for (let i = start; i <= end; i++) pages.push(i);
         return pages;
     };
 
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = Math.min(startIndex + data.length, total);
+    const startIndex = (currentPage - 1) * pageLimit;
+    const endIndex = Math.min(startIndex + pageItemCount, total);
     const rangeLabel = loading
         ? "Loading..."
         : total === 0
             ? `0 ${itemName}`
             : data.length === 0
                 ? `0 ${itemName}`
-                : `${startIndex + 1}???${endIndex} of ${total} ${itemName}`;
+                : `${startIndex + 1}-${endIndex} of ${total} ${itemName}`;
 
     return (
         <div>
@@ -233,7 +455,10 @@ export default function DataTable<T extends Record<string, unknown>>({
                 <h3 className="text-xl font-bold">{title}</h3>
                 <Link
                     to={`${basePath}/new`}
-                    className={cn(buttonVariants({ variant: "default" }), "gap-1.5")}
+                    className={cn(
+                        buttonVariants({ variant: "default" }),
+                        "gap-1.5 !text-primary-foreground hover:!text-primary-foreground"
+                    )}
                 >
                     <FiPlus size={15} />
                     Create New
@@ -248,23 +473,36 @@ export default function DataTable<T extends Record<string, unknown>>({
                 )}
 
                 <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
-                    <div className="relative w-64">
-                        <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-4 pointer-events-none" />
-                        <Input
-                            placeholder={searchPlaceholder}
-                            value={searchInput}
-                            onChange={(e) => setSearchInput(e.target.value)}
-                            className="pl-8"
-                        />
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <div className="relative w-64">
+                            <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-4 pointer-events-none" />
+                            <Input
+                                placeholder={searchPlaceholder}
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
+                                className="pl-8"
+                            />
+                        </div>
+                        {filterFields.length > 0 && (
+                            <Button
+                                variant={activeFilterCount > 0 ? "default" : "outline"}
+                                size="sm"
+                                onClick={handleFilterDialogOpen}
+                            >
+                                <FiFilter size={14} />
+                                Filter
+                                {activeFilterCount > 0 && <span>({activeFilterCount})</span>}
+                            </Button>
+                        )}
                     </div>
                     <div className="flex items-center gap-3">
                         <span className="text-sm text-muted-foreground">{rangeLabel}</span>
                         <Select
-                            value={String(pageSize)}
+                            value={String(pageLimit)}
                             onValueChange={(val) =>
                             {
-                                setPageSize(Number(val));
-                                setCurrentPage(1);
+                                setPageLimit(Number(val));
+                                setResolvedCurrentPage(1);
                             }}
                         >
                             <SelectTrigger size="sm" className="w-[110px]">
@@ -281,6 +519,31 @@ export default function DataTable<T extends Record<string, unknown>>({
                     </div>
                 </div>
 
+                {activeFilterCount > 0 && (
+                    <div className="mb-4 flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                            Filters
+                        </span>
+                        {activeFilters.map(({ displayValue, field }) => (
+                            <Button
+                                key={field.key}
+                                variant="outline"
+                                size="xs"
+                                className="max-w-full"
+                                onClick={() => handleClearSingleFilter(field.key)}
+                            >
+                                <span className="truncate">
+                                    {field.label}: {displayValue}
+                                </span>
+                                <FiX size={12} />
+                            </Button>
+                        ))}
+                        <Button variant="ghost" size="xs" onClick={handleResetFilters}>
+                            Clear all
+                        </Button>
+                    </div>
+                )}
+
                 <div className="overflow-x-auto rounded-md border">
                     <Table>
                         <TableHeader>
@@ -292,8 +555,19 @@ export default function DataTable<T extends Record<string, unknown>>({
                                         style={{ cursor: col.sortable !== false ? "pointer" : "default", userSelect: "none" }}
                                         onClick={() => handleSort(col.key, col.sortable)}
                                     >
-                                        {col.label}
-                                        <SortIcon columnKey={col.key} sortable={col.sortable} sortKey={sortKey} sortDir={sortDir} />
+                                        <div
+                                            className={cn(
+                                                "inline-flex items-center gap-1 whitespace-nowrap align-middle",
+                                                col.align === "right"
+                                                    ? "justify-end"
+                                                    : col.align === "center"
+                                                        ? "justify-center"
+                                                        : "justify-start"
+                                            )}
+                                        >
+                                            <span>{col.label}</span>
+                                            <SortIcon columnKey={col.key} sortable={col.sortable} sortKey={sortKey} sortDir={sortDir} />
+                                        </div>
                                     </TableHead>
                                 ))}
                                 <TableHead className="text-right">Actions</TableHead>
@@ -321,7 +595,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                                                                 ? (
                                                                     <Link
                                                                         to={`${basePath}/${pathSegment}`}
-                                                                        className="font-medium text-primary hover:underline"
+                                                                        className="font-medium !text-primary hover:underline"
                                                                     >
                                                                         {col.render ? col.render(item[col.key], item) : String(item[col.key] ?? "")}
                                                                     </Link>
@@ -333,7 +607,10 @@ export default function DataTable<T extends Record<string, unknown>>({
                                                     <TableCell className="text-right">
                                                         <Link
                                                             to={`${basePath}/${pathSegment}/edit`}
-                                                            className={cn(buttonVariants({ variant: "outline", size: "xs" }), "mr-2")}
+                                                            className={cn(
+                                                                buttonVariants({ variant: "outline", size: "xs" }),
+                                                                "mr-2 !text-foreground hover:!text-foreground"
+                                                            )}
                                                         >
                                                             <FiEdit2 size={12} />
                                                             Edit
@@ -371,33 +648,86 @@ export default function DataTable<T extends Record<string, unknown>>({
                     </Table>
                 </div>
 
-                {totalPages > 1 && (
+                {shouldShowPagination && (
                     <div className="mt-4 flex justify-end items-center gap-1">
-                        <Button variant="outline" size="icon-xs" disabled={currentPage === 1} onClick={() => setCurrentPage(1)}>
+                        <Button variant="outline" size="icon-xs" disabled={!canGoPrevious} onClick={() => setResolvedCurrentPage(1)}>
                             <FiChevronsLeft size={13} />
                         </Button>
-                        <Button variant="outline" size="icon-xs" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>
+                        <Button variant="outline" size="icon-xs" disabled={!canGoPrevious} onClick={() => setResolvedCurrentPage(currentPage - 1)}>
                             <FiChevronLeft size={13} />
                         </Button>
-                        {getPageNumbers().map((page) => (
+                        {getPageNumbers(resolvedTotalPages).map((page) => (
                             <Button
                                 key={page}
                                 variant={currentPage === page ? "default" : "outline"}
                                 size="xs"
-                                onClick={() => setCurrentPage(page)}
+                                onClick={() => setResolvedCurrentPage(page)}
                             >
                                 {page}
                             </Button>
                         ))}
-                        <Button variant="outline" size="icon-xs" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>
+                        <Button variant="outline" size="icon-xs" disabled={!canGoNext} onClick={() => setResolvedCurrentPage(currentPage + 1)}>
                             <FiChevronRight size={13} />
                         </Button>
-                        <Button variant="outline" size="icon-xs" disabled={currentPage === totalPages} onClick={() => setCurrentPage(totalPages)}>
+                        <Button variant="outline" size="icon-xs" disabled={!canGoNext} onClick={() => setResolvedCurrentPage(resolvedTotalPages)}>
                             <FiChevronsRight size={13} />
                         </Button>
                     </div>
+                )}
+
+                {filterFields.length > 0 && (
+                    <Dialog open={isFilterDialogOpen} onOpenChange={setIsFilterDialogOpen}>
+                        <DialogContent className="sm:max-w-lg">
+                            <DialogHeader>
+                                <DialogTitle>Filter {title}</DialogTitle>
+                            </DialogHeader>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                {filterFields.map((field) => (
+                                    <div className="grid gap-2" key={field.key}>
+                                        <Label htmlFor={`filter-${field.key}`}>{field.label}</Label>
+                                        {field.type === "select"
+                                            ? (
+                                                <Select
+                                                    value={filterDraft[field.key] || ALL_FILTER_OPTION}
+                                                    onValueChange={(value) => handleFilterDraftChange(field.key, value === ALL_FILTER_OPTION ? "" : (value ?? ""))}
+                                                >
+                                                    <SelectTrigger id={`filter-${field.key}`}>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value={ALL_FILTER_OPTION}>All</SelectItem>
+                                                        {field.options?.map((option) => (
+                                                            <SelectItem key={option.value} value={option.value}>
+                                                                {option.label}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            )
+                                            : (
+                                                <Input
+                                                    id={`filter-${field.key}`}
+                                                    placeholder={field.placeholder}
+                                                    value={filterDraft[field.key] ?? ""}
+                                                    onChange={(e) => handleFilterDraftChange(field.key, e.target.value)}
+                                                />
+                                            )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <DialogFooter>
+                                <Button variant="ghost" onClick={handleResetFilters}>Reset</Button>
+                                <Button variant="outline" onClick={() => setIsFilterDialogOpen(false)}>Cancel</Button>
+                                <Button onClick={handleApplyFilters}>Apply Filters</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 )}
             </div>
         </div>
     );
 }
+
+export type { IDataTableFilterField, IDataTableFilterOption, IFetchParams, IFetchResult };

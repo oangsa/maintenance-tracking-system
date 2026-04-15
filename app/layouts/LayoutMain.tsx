@@ -1,13 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { FiTool } from "react-icons/fi";
 import { Outlet, useLocation, useNavigate } from "react-router";
-import AppSidebar, { defaultNavItems } from "~/components/Common/Sidebar";
+import AppSidebar, { defaultNavSections, flattenNavItems } from "~/components/Common/Sidebar";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "~/components/ui/sidebar";
-import { getCurrentUser, logout } from "~/services/auth.service";
+import {
+    ensureCurrentUser,
+    getCurrentUser,
+    isAuthenticated,
+    logout,
+    subscribeCurrentUser,
+} from "~/services/auth.service";
 
 function getPageTitle(pathname: string): string
 {
-    const activeItem = defaultNavItems.find((item) =>
+    const activeItem = flattenNavItems(defaultNavSections).find((item) =>
     {
         if (item.path === "/")
         {
@@ -24,20 +30,20 @@ export default function LayoutMain()
 {
     const location = useLocation();
     const navigate = useNavigate();
-    const [userName, setUserName] = useState("User");
-    const [userRole, setUserRole] = useState<string | undefined>(undefined);
+    const currentUser = useSyncExternalStore(subscribeCurrentUser, getCurrentUser, getCurrentUser);
     const pageTitle = getPageTitle(location.pathname);
+    const userName = currentUser?.name ?? currentUser?.email ?? "User";
+    const userRole = currentUser?.role ?? undefined;
 
     useEffect(() =>
     {
-        const user = getCurrentUser();
-
-        if (user)
+        if (currentUser !== null || !isAuthenticated())
         {
-            setUserName(user.name ?? user.email);
-            setUserRole(user.role ?? undefined);
+            return;
         }
-    }, []);
+
+        void ensureCurrentUser().catch(() => undefined);
+    }, [currentUser]);
 
     async function handleLogout()
     {
@@ -48,7 +54,7 @@ export default function LayoutMain()
     return (
         <SidebarProvider>
             <AppSidebar
-                navItems={defaultNavItems}
+                navSections={defaultNavSections}
                 profile={{
                     name: userName,
                     role: userRole,
