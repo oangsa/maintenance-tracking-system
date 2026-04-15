@@ -1,0 +1,248 @@
+// Base HTTP client — fetch-based, bearer token injection, auto-refresh on 401.
+// Designed after client/src/api/http.js, extended for this project's needs:
+//   • Bearer token management (in-memory + sessionStorage, SSR-safe)
+//   • HttpOnly refresh cookie sent automatically via credentials: "include"
+//   • Queue-based 401 retry (prevents N concurrent calls each triggering refresh)
+//   • httpPaginated() parses the X-Pagination response header
+
+import type { IPaginationMeta, IPagedResult } from "./types";
+
+// ---- Base URL ---------------------------------------------
+
+const BASE_URL: string = (import.meta.env.BASE_API_URL ?? "").replace(/\/$/, "");
+
+// ---- Token store ------------------------------------------
+// In-memory primary; sessionStorage as client-side persistence (SSR-safe).
+
+let _accessToken: string | null = null;
+
+export function setAccessToken(token: string | null): void
+{
+    _accessToken = token;
+
+    if (typeof window !== "undefined")
+    {
+        if (token)
+        {
+            sessionStorage.setItem("_at", token);
+        }
+        else
+        {
+            sessionStorage.removeItem("_at");
+        }
+    }
+}
+
+export function getAccessToken(): string | null
+{
+    if (_accessToken) return _accessToken;
+
+    if (typeof window !== "undefined")
+    {
+        const stored = sessionStorage.getItem("_at");
+        if (stored)
+        {
+            _accessToken = stored;
+            return stored;
+        }
+    }
+
+    return null;
+}
+
+export function clearAccessToken(): void
+{
+    setAccessToken(null);
+}
+
+// ---- Refresh function injection ---------------------------
+// The auth service registers its refresh function here to avoid a circular
+// module dependency (http → auth.api → http).
+
+let _refreshFn: (() => Promise<string>) | null = null;
+
+export function registerRefreshFn(fn: () => Promise<string>): void
+{
+    _refreshFn = fn;
+}
+
+// ---- 401 retry queue --------------------------------------
+
+let _isRefreshing = false;
+let _pendingQueue: Array<{
+    resolve: (token: string) => void;
+    reject: (err: unknown) => void;
+}> = [];
+
+function processQueue(err: unknown, token: string | null = null): void
+{
+    for (const entry of _pendingQueue)
+    {
+        if (err) entry.reject(err);
+        else entry.resolve(token!);
+    }
+    _isRefreshing = false;
+    _pendingQueue = [];
+}
+
+// ---- Error class ------------------------------------------
+
+export class ApiError extends Error
+{
+    readonly statusCode: number;
+    readonly error: string;
+
+    constructor(statusCode: number, message: string, error: string)
+    {
+        super(message);
+        this.name = "ApiError";
+        this.statusCode = statusCode;
+        this.error = error;
+    }
+}
+
+// ---- Internal fetch helper --------------------------------
+
+interface IRawResponse<T>
+{
+    body: T;
+    headers: Headers;
+    status: number;
+}
+
+async function rawFetch<T>(path: string, options: RequestInit, tokenOverride?: string | null): Promise<IRawResponse<T>>
+{
+    const token = tokenOverride !== undefined ? tokenOverride : getAccessToken();
+
+    const baseHeaders: Record<string, string> = {
+        "Content-Type": "application/json",
+        ...(options.headers as Record<string, string> ?? {}),
+    };
+
+    if (token)
+    {
+        baseHeaders["Authorization"] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(`${BASE_URL}${path}`, {
+        ...options,
+        headers: baseHeaders,
+        credentials: "include",
+    });
+
+    if (res.status === 204)
+    {
+        return { body: undefined as T, headers: res.headers, status: res.status };
+    }
+
+    const ct = res.headers.get("content-type") ?? "";
+    const isJson = ct.includes("application/json");
+    const body = isJson ? await res.json() : await res.text();
+
+    if (!res.ok)
+    {
+        const statusCode = res.status;
+        const message: string = isJson && body?.message ? String(body.message) : `HTTP ${statusCode}`;
+        const errorText: string = isJson && body?.error ? String(body.error) : String(statusCode);
+        throw new ApiError(statusCode, message, errorText);
+    }
+
+    return { body: body as T, headers: res.headers, status: res.status };
+}
+
+// ---- Public API -------------------------------------------
+
+/**
+ * Makes an authenticated HTTP request.
+ * Automatically injects the Bearer token and retries once after a
+ * transparent token refresh when the server responds with 401.
+ */
+export async function http<T>(path: string, options: RequestInit = {}): Promise<T>
+{
+    try
+    {
+        const { body } = await rawFetch<T>(path, options);
+        return body;
+    }
+    catch (err)
+    {
+        if (!(err instanceof ApiError) || err.statusCode !== 401 || !_refreshFn)
+        {
+            throw err;
+        }
+
+        // If another call is already refreshing, queue this one
+        if (_isRefreshing)
+        {
+            return new Promise<T>((resolve, reject) =>
+            {
+                _pendingQueue.push({
+                    resolve: (newToken) =>
+                    {
+                        rawFetch<T>(path, options, newToken)
+                            .then(({ body }) => resolve(body))
+                            .catch(reject);
+                    },
+                    reject,
+                });
+            });
+        }
+
+        _isRefreshing = true;
+
+        try
+        {
+            const newToken = await _refreshFn();
+            setAccessToken(newToken);
+            processQueue(null, newToken);
+            const { body } = await rawFetch<T>(path, options, newToken);
+            return body;
+        }
+        catch (refreshErr)
+        {
+            processQueue(refreshErr);
+            clearAccessToken();
+            throw refreshErr;
+        }
+    }
+}
+
+/**
+ * Like http(), but for endpoints that return a list in the body and
+ * pagination metadata in the X-Pagination response header.
+ * Used by all /search POST endpoints.
+ */
+export async function httpPaginated<T>(path: string, options: RequestInit = {}): Promise<IPagedResult<T>>
+{
+    let rawRes: IRawResponse<T[]>;
+
+    try
+    {
+        rawRes = await rawFetch<T[]>(path, options);
+    }
+    catch (err)
+    {
+        if (!(err instanceof ApiError) || err.statusCode !== 401 || !_refreshFn)
+        {
+            throw err;
+        }
+
+        const newToken = await _refreshFn();
+        setAccessToken(newToken);
+        rawRes = await rawFetch<T[]>(path, options, newToken);
+    }
+
+    const paginationHeader = rawRes.headers.get("X-Pagination");
+    const pagination: IPaginationMeta = paginationHeader
+        ? (JSON.parse(paginationHeader) as IPaginationMeta)
+        : {
+            currentPage: 1,
+            totalPages: 1,
+            pageSize: rawRes.body.length,
+            totalCount: rawRes.body.length,
+            hasPrevious: false,
+            hasNext: false,
+        };
+
+    return { data: rawRes.body, pagination };
+}
