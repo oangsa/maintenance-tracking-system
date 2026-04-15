@@ -177,8 +177,6 @@ function parsePaginationHeader(headers: Headers, itemCount: number): IPagination
     const fallback = createFallbackPagination(itemCount);
     const rawPagination = headers.get("X-Pagination") ?? headers.get("x-pagination");
 
-    console.debug("Raw pagination header:", rawPagination); // Debug log
-
     if (!rawPagination)
     {
         return fallback;
