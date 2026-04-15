@@ -1,15 +1,8 @@
-// Base HTTP client — fetch-based, bearer token injection, auto-refresh on 401.
-// Designed after client/src/api/http.js, extended for this project's needs:
-//   • Bearer token management (in-memory + sessionStorage, SSR-safe)
-//   • HttpOnly refresh cookie sent automatically via credentials: "include"
-//   • Queue-based 401 retry (prevents N concurrent calls each triggering refresh)
-//   • httpPaginated() parses the X-Pagination response header
-
 import type { IPaginationMeta, IPagedResult } from "./types";
 
-// ---- Base URL ---------------------------------------------
+const BASE_URL: string = (import.meta.env.VITE_BASE_API_URL ?? "").replace(/\/$/, "");
 
-const BASE_URL: string = (import.meta.env.BASE_API_URL ?? "").replace(/\/$/, "");
+console.log("API base URL:", BASE_URL);
 
 // ---- Token store ------------------------------------------
 // In-memory primary; sessionStorage as client-side persistence (SSR-safe).
@@ -55,18 +48,12 @@ export function clearAccessToken(): void
     setAccessToken(null);
 }
 
-// ---- Refresh function injection ---------------------------
-// The auth service registers its refresh function here to avoid a circular
-// module dependency (http → auth.api → http).
-
 let _refreshFn: (() => Promise<string>) | null = null;
 
 export function registerRefreshFn(fn: () => Promise<string>): void
 {
     _refreshFn = fn;
 }
-
-// ---- 401 retry queue --------------------------------------
 
 let _isRefreshing = false;
 let _pendingQueue: Array<{
@@ -85,8 +72,6 @@ function processQueue(err: unknown, token: string | null = null): void
     _pendingQueue = [];
 }
 
-// ---- Error class ------------------------------------------
-
 export class ApiError extends Error
 {
     readonly statusCode: number;
@@ -100,8 +85,6 @@ export class ApiError extends Error
         this.error = error;
     }
 }
-
-// ---- Internal fetch helper --------------------------------
 
 interface IRawResponse<T>
 {
@@ -149,8 +132,6 @@ async function rawFetch<T>(path: string, options: RequestInit, tokenOverride?: s
 
     return { body: body as T, headers: res.headers, status: res.status };
 }
-
-// ---- Public API -------------------------------------------
 
 /**
  * Makes an authenticated HTTP request.

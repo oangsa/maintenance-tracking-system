@@ -1,6 +1,14 @@
 import React from "react";
 import { FiChevronUp, FiChevronDown } from "react-icons/fi";
 import { TableLoading } from "../Loading";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "~/components/ui/table";
 
 interface IReportColumn<T = Record<string, unknown>>
 {
@@ -36,8 +44,9 @@ function SortIcon({ columnKey, sortable, sortKey, sortDir }: ISortIconProps)
 {
     if (sortable === false) return null;
     const isActive = sortKey === columnKey;
+
     return (
-        <span style={{ marginLeft: 4, opacity: isActive ? 1 : 0.3 }}>
+        <span className="ml-1" style={{ opacity: isActive ? 1 : 0.3 }}>
             {isActive && sortDir === "desc"
                 ? <FiChevronDown size={12} />
                 : <FiChevronUp size={12} />
@@ -60,6 +69,7 @@ export default function ReportTable<T extends Record<string, unknown>>({
     const handleSort = (key: string, sortable?: boolean) =>
     {
         if (sortable === false || !onSort) return;
+
         if (sortKey === key)
         {
             onSort(key, sortDir === "asc" ? "desc" : "asc");
@@ -71,50 +81,57 @@ export default function ReportTable<T extends Record<string, unknown>>({
     };
 
     return (
-        <table className="modern-table">
-            <thead>
-                <tr>
+        <Table>
+            <TableHeader>
+                <TableRow>
                     {columns.map((col) => (
-                        <th
+                        <TableHead
                             key={col.key}
                             className={col.align === "right" ? "text-right" : ""}
-                            onClick={() => handleSort(col.key, col.sortable)}
                             style={{ cursor: col.sortable !== false ? "pointer" : "default", userSelect: "none" }}
+                            onClick={() => handleSort(col.key, col.sortable)}
                         >
                             {col.label}
                             <SortIcon columnKey={col.key} sortable={col.sortable} sortKey={sortKey} sortDir={sortDir} />
-                        </th>
+                        </TableHead>
                     ))}
-                </tr>
-            </thead>
-            <tbody>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
                 {loading
                     ? <TableLoading colSpan={columns.length} />
                     : (
                         <>
                             {data.map((row, idx) => (
-                                <tr key={idx}>
+                                <TableRow key={idx}>
                                     {columns.map((col) => (
-                                        <td key={col.key} className={col.align === "right" ? "text-right" : ""} style={col.style}>
+                                        <TableCell
+                                            key={col.key}
+                                            className={col.align === "right" ? "text-right" : ""}
+                                            style={col.style}
+                                        >
                                             {col.render
                                                 ? col.render(row[col.key], row, filters)
                                                 : String(row[col.key] ?? "")
                                             }
-                                        </td>
+                                        </TableCell>
                                     ))}
-                                </tr>
+                                </TableRow>
                             ))}
                             {data.length === 0 && (
-                                <tr>
-                                    <td colSpan={columns.length} className="text-center p-4" style={{ color: "var(--text-muted)" }}>
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={columns.length}
+                                        className="py-8 text-center text-muted-foreground"
+                                    >
                                         {emptyMessage}
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             )}
                         </>
                     )
                 }
-            </tbody>
-        </table>
+            </TableBody>
+        </Table>
     );
 }

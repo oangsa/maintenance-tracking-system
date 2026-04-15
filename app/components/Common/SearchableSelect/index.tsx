@@ -1,6 +1,15 @@
-import React, { useState, useRef, useEffect } from "react";
-import { createPortal } from "react-dom";
-import { FiSearch, FiX } from "react-icons/fi";
+import React, { useState, useEffect } from "react";
+import { FiChevronDown, FiX } from "react-icons/fi";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "~/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
+import { cn } from "~/lib/utils";
 
 interface ISelectOption
 {
@@ -25,11 +34,13 @@ interface ISearchableSelectProps
 function useDebounce<T>(value: T, delay: number): T
 {
     const [debouncedValue, setDebouncedValue] = useState(value);
+
     useEffect(() =>
     {
         const handler = setTimeout(() => setDebouncedValue(value), delay);
         return () => clearTimeout(handler);
     }, [value, delay]);
+
     return debouncedValue;
 }
 
@@ -47,17 +58,14 @@ export default function SearchableSelect({
 {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState("");
-    const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
     const [asyncOptions, setAsyncOptions] = useState<ISelectOption[]>([]);
     const [loading, setLoading] = useState(false);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
 
     const debouncedSearch = useDebounce(search, 300);
     const isAsyncMode = typeof onSearch === "function";
-    const options = isAsyncMode ? asyncOptions : staticOptions;
     const selectedOption = staticOptions.find((opt) => String(opt.value) === String(value));
     const displayLabel = selectedLabel || selectedOption?.label || "";
+    const renderedOptions = isAsyncMode ? asyncOptions : staticOptions;
 
     useEffect(() =>
     {
@@ -76,63 +84,6 @@ export default function SearchableSelect({
             });
     }, [debouncedSearch, isOpen, isAsyncMode]);
 
-    const filteredOptions = isAsyncMode
-        ? options
-        : options.filter((opt) => opt.label.toLowerCase().includes(search.toLowerCase()));
-
-    useEffect(() =>
-    {
-        if (isOpen && containerRef.current)
-        {
-            const rect = containerRef.current.getBoundingClientRect();
-            setDropdownPos({
-                top: rect.bottom + window.scrollY + 4,
-                left: rect.left + window.scrollX,
-                width: rect.width,
-            });
-        }
-    }, [isOpen]);
-
-    useEffect(() =>
-    {
-        if (!isOpen) return;
-        const updatePosition = () =>
-        {
-            if (containerRef.current)
-            {
-                const rect = containerRef.current.getBoundingClientRect();
-                setDropdownPos({
-                    top: rect.bottom + window.scrollY + 4,
-                    left: rect.left + window.scrollX,
-                    width: rect.width,
-                });
-            }
-        };
-        window.addEventListener("scroll", updatePosition, true);
-        window.addEventListener("resize", updatePosition);
-        return () =>
-        {
-            window.removeEventListener("scroll", updatePosition, true);
-            window.removeEventListener("resize", updatePosition);
-        };
-    }, [isOpen]);
-
-    useEffect(() =>
-    {
-        const handleClickOutside = (e: MouseEvent) =>
-        {
-            if (containerRef.current && !containerRef.current.contains(e.target as Node))
-            {
-                const dropdown = document.getElementById("searchable-select-dropdown");
-                if (dropdown && dropdown.contains(e.target as Node)) return;
-                setIsOpen(false);
-                setSearch("");
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
     function handleSelect(opt: ISelectOption)
     {
         onChange(opt.value, opt.label, opt);
@@ -140,149 +91,82 @@ export default function SearchableSelect({
         setSearch("");
     }
 
-    function handleFocus()
-    {
-        if (!disabled)
-        {
-            setIsOpen(true);
-            setSearch("");
-        }
-    }
-
-    function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>)
-    {
-        if (e.key === "Escape")
-        {
-            setIsOpen(false);
-            setSearch("");
-            inputRef.current?.blur();
-        }
-        else if (e.key === "Enter" && filteredOptions.length > 0)
-        {
-            e.preventDefault();
-            handleSelect(filteredOptions[0]);
-        }
-    }
-
     function handleClear(e: React.MouseEvent)
     {
         e.stopPropagation();
         onChange("", "", null);
         setSearch("");
-        inputRef.current?.focus();
     }
 
-    const containerStyle: React.CSSProperties = { position: "relative", width: "100%", ...style };
-
-    const inputStyle: React.CSSProperties = {
-        width: "100%",
-        padding: "8px 32px 8px 12px",
-        fontSize: "0.9rem",
-        border: `1px solid ${error ? "#ef4444" : "var(--border)"}`,
-        borderRadius: "var(--radius-sm)",
-        background: disabled ? "var(--bg-body)" : "var(--bg-surface)",
-        cursor: disabled ? "not-allowed" : "text",
-        boxShadow: error ? "0 0 0 1px #ef4444" : undefined,
-        outline: "none",
-    };
-
-    const dropdownStyle: React.CSSProperties = {
-        position: "absolute",
-        top: dropdownPos.top,
-        left: dropdownPos.left,
-        width: dropdownPos.width,
-        background: "#fff",
-        border: "1px solid var(--border)",
-        borderRadius: "var(--radius-sm)",
-        boxShadow: "var(--shadow-lg)",
-        maxHeight: 220,
-        overflowY: "auto",
-        zIndex: 99999,
-    };
-
-    const optionStyle: React.CSSProperties = {
-        padding: "10px 12px",
-        cursor: "pointer",
-        fontSize: "0.9rem",
-        borderBottom: "1px solid var(--border)",
-        background: "#fff",
-    };
-
-    const clearBtnStyle: React.CSSProperties = {
-        position: "absolute",
-        right: 8,
-        top: "50%",
-        transform: "translateY(-50%)",
-        background: "none",
-        border: "none",
-        cursor: "pointer",
-        padding: 4,
-        color: "#999",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-    };
-
-    const dropdownPortal = isOpen
-        ? createPortal(
-            <div id="searchable-select-dropdown" style={dropdownStyle}>
-                {loading
-                    ? (
-                        <div style={{ padding: "12px", color: "#999", textAlign: "center", fontSize: "0.85rem" }}>
-                            Loading...
-                        </div>
-                    )
-                    : filteredOptions.length === 0
-                        ? (
-                            <div style={{ padding: "12px", color: "#999", textAlign: "center", fontSize: "0.85rem" }}>
-                                {search ? "No results found" : "Type to search..."}
-                            </div>
-                        )
-                        : filteredOptions.map((opt) => (
-                            <div
-                                key={opt.value}
-                                onClick={() => handleSelect(opt)}
-                                style={optionStyle}
-                                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-body)")}
-                                onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
-                            >
-                                {opt.label}
-                            </div>
-                        ))
-                }
-            </div>,
-            document.body
-        )
-        : null;
+    function handleOpenChange(open: boolean)
+    {
+        if (!open)
+        {
+            setIsOpen(false);
+            setSearch("");
+        }
+        else
+        {
+            setIsOpen(true);
+        }
+    }
 
     return (
-        <div ref={containerRef} style={containerStyle}>
-            <div style={{ position: "relative" }}>
-                <input
-                    ref={inputRef}
-                    type="text"
-                    value={isOpen ? search : displayLabel}
-                    onChange={(e) => setSearch(e.target.value)}
-                    onFocus={handleFocus}
-                    onKeyDown={handleKeyDown}
-                    placeholder={placeholder}
-                    disabled={disabled}
-                    style={inputStyle}
-                />
+        <Popover open={isOpen} onOpenChange={handleOpenChange}>
+            <PopoverTrigger
+                render={<div />}
+                className={cn(
+                    "relative flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-2.5 py-1 text-sm shadow-xs cursor-pointer transition-[color,box-shadow] outline-none",
+                    "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+                    error && "border-destructive ring-3 ring-destructive/20",
+                    disabled && "pointer-events-none cursor-not-allowed opacity-50",
+                )}
+                style={style}
+                onClick={() => !disabled && setIsOpen(!isOpen)}
+            >
+                <span className={cn("flex-1 truncate text-left", !displayLabel && "text-muted-foreground")}>
+                    {displayLabel || placeholder}
+                </span>
                 {value && !disabled
                     ? (
-                        <button type="button" onClick={handleClear} style={clearBtnStyle} title="Clear">
-                            <FiX size={14} />
+                        <button
+                            type="button"
+                            onClick={handleClear}
+                            className="ml-1 shrink-0 text-muted-foreground hover:text-foreground"
+                        >
+                            <FiX size={13} />
                         </button>
                     )
-                    : (
-                        <span style={{ ...clearBtnStyle, cursor: "default", color: "#bbb" }}>
-                            <FiSearch size={14} />
-                        </span>
-                    )
+                    : <FiChevronDown size={13} className="ml-1 shrink-0 text-muted-foreground" />
                 }
-            </div>
-            {dropdownPortal}
-        </div>
+            </PopoverTrigger>
+            <PopoverContent className="w-[var(--anchor-width)] p-0" align="start" sideOffset={2}>
+                <Command shouldFilter={!isAsyncMode}>
+                    <CommandInput
+                        value={search}
+                        onValueChange={setSearch}
+                        placeholder={placeholder}
+                    />
+                    <CommandList>
+                        <CommandEmpty>
+                            {loading ? "Loading..." : "No options found."}
+                        </CommandEmpty>
+                        {!loading && (
+                            <CommandGroup>
+                                {renderedOptions.map((opt) => (
+                                    <CommandItem
+                                        key={opt.value}
+                                        value={opt.label}
+                                        onSelect={() => handleSelect(opt)}
+                                    >
+                                        {opt.label}
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        )}
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
     );
 }

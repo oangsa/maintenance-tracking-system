@@ -1,7 +1,37 @@
 import React from "react";
-import { createPortal } from "react-dom";
-import { FiSearch, FiChevronUp, FiChevronDown, FiChevronsLeft, FiChevronLeft, FiChevronRight, FiChevronsRight } from "react-icons/fi";
+import {
+    FiSearch,
+    FiChevronUp,
+    FiChevronDown,
+    FiChevronsLeft,
+    FiChevronLeft,
+    FiChevronRight,
+    FiChevronsRight,
+} from "react-icons/fi";
 import { TableLoading } from "../Loading";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "~/components/ui/dialog";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "~/components/ui/table";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "~/components/ui/select";
 
 interface IPickerColumn<T = Record<string, unknown>>
 {
@@ -145,178 +175,150 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
         return pages;
     };
 
-    const btnStyle: React.CSSProperties = { padding: "6px 10px", fontSize: "0.85rem", minWidth: 36 };
-    const btnDisabledStyle: React.CSSProperties = { ...btnStyle, opacity: 0.5, cursor: "not-allowed" };
-    const btnActiveStyle: React.CSSProperties = {
-        ...btnStyle,
-        background: "var(--primary)",
-        color: "white",
-        borderColor: "var(--primary)",
-    };
-
     const colCount = columns.length + 1;
 
-    if (!isOpen) return null;
-
-    return createPortal(
-        <div
-            className="modal-overlay"
-            onClick={onClose}
-            style={{
-                position: "fixed",
-                inset: 0,
-                background: "rgba(0, 0, 0, 0.5)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 10000,
-                padding: 24,
-            }}
-        >
-            <div
-                className="modal-content"
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                    background: "white",
-                    borderRadius: "var(--radius)",
-                    boxShadow: "var(--shadow-lg)",
-                    maxWidth: 720,
-                    width: "100%",
-                    maxHeight: "85vh",
-                    overflow: "hidden",
-                    display: "flex",
-                    flexDirection: "column",
-                }}
+    return (
+        <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+            <DialogContent
+                className="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden"
+                showCloseButton={false}
             >
-                <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-                        <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 600 }}>{title}</h3>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <div style={{ position: "relative", width: 240 }}>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    placeholder={searchPlaceholder}
-                                    value={searchInput}
-                                    onChange={(e) => setSearchInput(e.target.value)}
-                                    style={{ paddingLeft: 36 }}
-                                />
-                                <FiSearch
-                                    size={16}
-                                    style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }}
-                                />
-                            </div>
-                            <select
-                                className="form-control form-control-compact"
-                                value={pageSize}
-                                onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-                            >
-                                {[10, 25, 50].map((n) => (
-                                    <option key={n} value={n}>{n} / page</option>
-                                ))}
-                            </select>
+                <div className="flex items-center justify-between flex-wrap gap-3 px-5 py-4 border-b">
+                    <DialogHeader>
+                        <DialogTitle>{title}</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex items-center gap-2">
+                        <div className="relative w-52">
+                            <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-4 pointer-events-none" />
+                            <Input
+                                placeholder={searchPlaceholder}
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
+                                className="pl-8"
+                            />
                         </div>
+                        <Select
+                            value={String(pageSize)}
+                            onValueChange={(val) =>
+                            {
+                                setPageSize(Number(val));
+                                setPage(1);
+                            }}
+                        >
+                            <SelectTrigger size="sm" className="w-[100px]">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {[10, 25, 50].map((n) => (
+                                    <SelectItem key={n} value={String(n)}>{n} / page</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
 
-                <div style={{ overflow: "auto", flex: 1, minHeight: 0 }}>
-                    <div className="table-container" style={{ border: "none", borderRadius: 0 }}>
-                        <table className="modern-table">
-                            <thead>
-                                <tr>
-                                    {columns.map((col) => (
-                                        <th
-                                            key={col.key}
-                                            className={col.align === "right" ? "text-right" : ""}
-                                            style={{ cursor: "pointer", userSelect: "none" }}
-                                            onClick={() => handleSort(col.key)}
-                                        >
-                                            {col.label}
-                                            <span style={{ marginLeft: 4, opacity: sortBy === col.key ? 1 : 0.3 }}>
-                                                {sortBy === col.key && sortDir === "desc"
-                                                    ? <FiChevronDown size={12} />
-                                                    : <FiChevronUp size={12} />
-                                                }
-                                            </span>
-                                        </th>
-                                    ))}
-                                    <th style={{ width: 100 }} className="text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading
-                                    ? <TableLoading colSpan={colCount} />
-                                    : (
-                                        <>
-                                            {data.map((row, index) => (
-                                                <tr key={String((row.code ?? row.id ?? index) as string | number)}>
-                                                    {columns.map((col) => (
-                                                        <td
-                                                            key={col.key}
-                                                            className={col.align === "right" ? "text-right" : ""}
-                                                            style={col.key === "code" ? { fontWeight: 500 } : col.style}
-                                                        >
-                                                            {col.render
-                                                                ? col.render(row[col.key], row)
-                                                                : String(row[col.key] ?? "")
-                                                            }
-                                                        </td>
-                                                    ))}
-                                                    <td className="text-center">
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-primary"
-                                                            style={{ padding: "6px 12px", fontSize: "0.85rem" }}
-                                                            onClick={() => handleSelect(row)}
-                                                        >
-                                                            Select
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                            {data.length === 0 && (
-                                                <tr>
-                                                    <td colSpan={colCount} style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>
-                                                        {search ? emptySearch : emptyDefault}
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </>
-                                    )
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                <div className="overflow-auto flex-1 min-h-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                {columns.map((col) => (
+                                    <TableHead
+                                        key={col.key}
+                                        className={col.align === "right" ? "text-right cursor-pointer select-none" : "cursor-pointer select-none"}
+                                        onClick={() => handleSort(col.key)}
+                                    >
+                                        {col.label}
+                                        <span className="ml-1" style={{ opacity: sortBy === col.key ? 1 : 0.3 }}>
+                                            {sortBy === col.key && sortDir === "desc"
+                                                ? <FiChevronDown size={12} />
+                                                : <FiChevronUp size={12} />
+                                            }
+                                        </span>
+                                    </TableHead>
+                                ))}
+                                <TableHead className="w-24 text-center">Action</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {loading
+                                ? <TableLoading colSpan={colCount} />
+                                : (
+                                    <>
+                                        {data.map((row, index) => (
+                                            <TableRow key={String((row.code ?? row.id ?? index) as string | number)}>
+                                                {columns.map((col) => (
+                                                    <TableCell
+                                                        key={col.key}
+                                                        className={col.align === "right" ? "text-right" : ""}
+                                                        style={col.key === "code" ? { fontWeight: 500 } : col.style}
+                                                    >
+                                                        {col.render
+                                                            ? col.render(row[col.key], row)
+                                                            : String(row[col.key] ?? "")
+                                                        }
+                                                    </TableCell>
+                                                ))}
+                                                <TableCell className="text-center">
+                                                    <Button
+                                                        size="xs"
+                                                        onClick={() => handleSelect(row)}
+                                                    >
+                                                        Select
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                        {data.length === 0 && (
+                                            <TableRow>
+                                                <TableCell
+                                                    colSpan={colCount}
+                                                    className="py-8 text-center text-muted-foreground"
+                                                >
+                                                    {search ? emptySearch : emptyDefault}
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </>
+                                )
+                            }
+                        </TableBody>
+                    </Table>
                 </div>
 
-                <div style={{ padding: "12px 20px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, flexShrink: 0 }}>
-                    <span style={{ fontSize: "0.9rem", color: "var(--text-muted)" }}>
-                        {total} {itemName}{total !== 1 ? "s" : ""} · Page {page} of {totalPages || 1}
+                <div className="flex items-center justify-between flex-wrap gap-2 px-5 py-3 border-t">
+                    <span className="text-sm text-muted-foreground">
+                        {total} {itemName}{total !== 1 ? "s" : ""} ?? Page {page} of {totalPages || 1}
                     </span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        <button type="button" className="btn btn-outline" style={page <= 1 ? btnDisabledStyle : btnStyle} disabled={page <= 1} onClick={() => setPage(1)}>
-                            <FiChevronsLeft size={14} />
-                        </button>
-                        <button type="button" className="btn btn-outline" style={page <= 1 ? btnDisabledStyle : btnStyle} disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                            <FiChevronLeft size={14} />
-                        </button>
+                    <div className="flex items-center gap-1">
+                        <Button variant="outline" size="icon-xs" disabled={page <= 1} onClick={() => setPage(1)}>
+                            <FiChevronsLeft size={13} />
+                        </Button>
+                        <Button variant="outline" size="icon-xs" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                            <FiChevronLeft size={13} />
+                        </Button>
                         {totalPages > 0 && getPageNumbers().map((p) => (
-                            <button key={p} type="button" className="btn btn-outline" style={page === p ? btnActiveStyle : btnStyle} onClick={() => setPage(p)}>{p}</button>
+                            <Button
+                                key={p}
+                                variant={page === p ? "default" : "outline"}
+                                size="xs"
+                                onClick={() => setPage(p)}
+                            >
+                                {p}
+                            </Button>
                         ))}
-                        <button type="button" className="btn btn-outline" style={page >= totalPages ? btnDisabledStyle : btnStyle} disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
-                            <FiChevronRight size={14} />
-                        </button>
-                        <button type="button" className="btn btn-outline" style={page >= totalPages ? btnDisabledStyle : btnStyle} disabled={page >= totalPages} onClick={() => setPage(totalPages)}>
-                            <FiChevronsRight size={14} />
-                        </button>
+                        <Button variant="outline" size="icon-xs" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+                            <FiChevronRight size={13} />
+                        </Button>
+                        <Button variant="outline" size="icon-xs" disabled={page >= totalPages} onClick={() => setPage(totalPages)}>
+                            <FiChevronsRight size={13} />
+                        </Button>
                     </div>
                 </div>
 
-                <div style={{ padding: "12px 20px", borderTop: "1px solid var(--border)", flexShrink: 0, display: "flex", justifyContent: "flex-end" }}>
-                    <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
+                <div className="flex justify-end px-5 py-3 border-t">
+                    <Button variant="outline" onClick={onClose}>Cancel</Button>
                 </div>
-            </div>
-        </div>,
-        document.body
+            </DialogContent>
+        </Dialog>
     );
 }

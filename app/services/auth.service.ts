@@ -46,6 +46,7 @@ export function initAuthService(): void
  */
 export async function login(credentials: ILoginRequest): Promise<IUser>
 {
+    console.log("Logging in with credentials:", credentials);
     const response = await loginRequest(credentials);
     setAccessToken(response.accessToken);
     _currentUser = response.user;

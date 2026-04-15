@@ -1,4 +1,4 @@
-import React from "react";
+import { Skeleton } from "~/components/ui/skeleton";
 
 interface ILoadingProps
 {
@@ -14,26 +14,25 @@ interface ITableLoadingProps
 export default function Loading({ message = "Loading...", size = "medium" }: ILoadingProps)
 {
     const sizeMap: Record<string, number> = { small: 24, medium: 40, large: 64 };
-    const spinnerSize = sizeMap[size] ?? sizeMap.medium;
+    const spinnerSize = sizeMap[size] ?? 40;
 
     return (
-        <div className="loading-container">
-            <div className="loading-spinner" style={{ width: spinnerSize, height: spinnerSize }}>
-                <svg
-                    width={spinnerSize}
-                    height={spinnerSize}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                >
-                    <circle cx="12" cy="12" r="10" opacity="0.25" />
-                    <path d="M12 2a10 10 0 0 1 10 10" opacity="0.75" />
-                </svg>
-            </div>
-            {message && <div className="loading-message">{message}</div>}
+        <div className="flex flex-col items-center justify-center gap-2 p-4">
+            <svg
+                className="animate-spin text-primary"
+                width={spinnerSize}
+                height={spinnerSize}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            >
+                <circle cx="12" cy="12" r="10" opacity="0.25" />
+                <path d="M12 2a10 10 0 0 1 10 10" opacity="0.75" />
+            </svg>
+            {message && <span className="text-sm text-muted-foreground">{message}</span>}
         </div>
     );
 }
@@ -42,23 +41,11 @@ export function TableLoading({ colSpan = 1 }: ITableLoadingProps)
 {
     return (
         <tr>
-            <td colSpan={colSpan} className="text-center p-4">
-                <div className="loading-container" style={{ padding: "20px" }}>
-                    <div className="loading-spinner" style={{ width: 32, height: 32, margin: "0 auto" }}>
-                        <svg
-                            width="32"
-                            height="32"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        >
-                            <circle cx="12" cy="12" r="10" opacity="0.25" />
-                            <path d="M12 2a10 10 0 0 1 10 10" opacity="0.75" />
-                        </svg>
-                    </div>
+            <td colSpan={colSpan} className="p-6">
+                <div className="flex flex-col items-center gap-2 py-4">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-4/5" />
+                    <Skeleton className="h-4 w-3/5" />
                 </div>
             </td>
         </tr>

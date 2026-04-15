@@ -13,6 +13,24 @@ import {
     FiChevronsRight,
 } from "react-icons/fi";
 import { TableLoading } from "../Loading";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "~/components/ui/table";
+import { Button, buttonVariants } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "~/components/ui/select";
+import { cn } from "~/lib/utils";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
@@ -71,7 +89,7 @@ function SortIcon({ columnKey, sortable, sortKey, sortDir }: ISortIconProps)
     const isActive = sortKey === columnKey;
 
     return (
-        <span style={{ marginLeft: 4, opacity: isActive ? 1 : 0.3 }}>
+        <span className="ml-1" style={{ opacity: isActive ? 1 : 0.3 }}>
             {isActive && sortDir === "desc"
                 ? <FiChevronDown size={12} />
                 : <FiChevronUp size={12} />
@@ -99,7 +117,6 @@ export default function DataTable<T extends Record<string, unknown>>({
     const [totalPages, setTotalPages] = React.useState(0);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState("");
-
     const [search, setSearch] = React.useState("");
     const [searchInput, setSearchInput] = React.useState("");
     const [sortKey, setSortKey] = React.useState<string | null>(null);
@@ -124,11 +141,13 @@ export default function DataTable<T extends Record<string, unknown>>({
         try
         {
             const params: IFetchParams = { search, page: currentPage, limit: pageSize };
+
             if (sortKey)
             {
                 params.sortBy = sortKey;
                 params.sortDir = sortDir;
             }
+
             const result = await fetchData(params);
             const nextTotalPages = Number(result.totalPages || 0);
 
@@ -137,6 +156,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                 setCurrentPage(nextTotalPages);
                 return;
             }
+
             if (nextTotalPages === 0 && currentPage !== 1)
             {
                 setCurrentPage(1);
@@ -165,6 +185,7 @@ export default function DataTable<T extends Record<string, unknown>>({
     const handleSort = (key: string, sortable?: boolean) =>
     {
         if (sortable === false) return;
+
         if (sortKey === key)
         {
             setSortDir(sortDir === "asc" ? "desc" : "asc");
@@ -174,6 +195,7 @@ export default function DataTable<T extends Record<string, unknown>>({
             setSortKey(key);
             setSortDir("asc");
         }
+
         setCurrentPage(1);
     };
 
@@ -195,34 +217,6 @@ export default function DataTable<T extends Record<string, unknown>>({
         return pages;
     };
 
-    const btnStyle: React.CSSProperties = {
-        padding: "6px 10px",
-        border: "1px solid var(--border)",
-        background: "white",
-        borderRadius: 4,
-        cursor: "pointer",
-        fontSize: "0.85rem",
-        outline: "none",
-        color: "var(--text-main)",
-        display: "inline-flex",
-        alignItems: "center",
-    };
-
-    const btnActiveStyle: React.CSSProperties = {
-        ...btnStyle,
-        border: "1px solid var(--primary)",
-        background: "var(--primary)",
-        color: "white",
-    };
-
-    const btnDisabledStyle: React.CSSProperties = { ...btnStyle, opacity: 0.5, cursor: "not-allowed" };
-
-    const handleBtnClick = (callback: () => void) => (e: React.MouseEvent<HTMLButtonElement>) =>
-    {
-        (e.target as HTMLButtonElement).blur();
-        callback();
-    };
-
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = Math.min(startIndex + data.length, total);
     const rangeLabel = loading
@@ -231,71 +225,81 @@ export default function DataTable<T extends Record<string, unknown>>({
             ? `0 ${itemName}`
             : data.length === 0
                 ? `0 ${itemName}`
-                : `${startIndex + 1}-${endIndex} of ${total} ${itemName}`;
+                : `${startIndex + 1}???${endIndex} of ${total} ${itemName}`;
 
     return (
         <div>
-            <div className="page-header">
-                <h3 className="page-title">{title}</h3>
-                <Link to={`${basePath}/new`} className="btn btn-primary">
-                    <FiPlus size={16} />
+            <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+                <h3 className="text-xl font-bold">{title}</h3>
+                <Link
+                    to={`${basePath}/new`}
+                    className={cn(buttonVariants({ variant: "default" }), "gap-1.5")}
+                >
+                    <FiPlus size={15} />
                     Create New
                 </Link>
             </div>
 
-            <div className="card">
-                {error && <div className="alert alert-error">{error}</div>}
+            <div className="rounded-lg border bg-card shadow-xs p-4">
+                {error && (
+                    <div className="mb-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                        {error}
+                    </div>
+                )}
 
-                <div style={{ marginBottom: "1rem", display: "flex", gap: "1rem", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ position: "relative", width: 280 }}>
-                        <FiSearch
-                            size={16}
-                            style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }}
-                        />
-                        <input
-                            type="text"
-                            className="form-control"
+                <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
+                    <div className="relative w-64">
+                        <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-4 pointer-events-none" />
+                        <Input
                             placeholder={searchPlaceholder}
                             value={searchInput}
                             onChange={(e) => setSearchInput(e.target.value)}
-                            style={{ paddingLeft: 36 }}
+                            className="pl-8"
                         />
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                        <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
-                            {rangeLabel}
-                        </span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                            className="form-control form-control-compact"
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm text-muted-foreground">{rangeLabel}</span>
+                        <Select
+                            value={String(pageSize)}
+                            onValueChange={(val) =>
+                            {
+                                setPageSize(Number(val));
+                                setCurrentPage(1);
+                            }}
                         >
-                            {PAGE_SIZE_OPTIONS.map((size) => (
-                                <option key={size} value={size}>{size} / page</option>
-                            ))}
-                        </select>
+                            <SelectTrigger size="sm" className="w-[110px]">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {PAGE_SIZE_OPTIONS.map((s) => (
+                                    <SelectItem key={s} value={String(s)}>
+                                        {s} / page
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
 
-                <div className="table-container">
-                    <table className="modern-table">
-                        <thead>
-                            <tr>
+                <div className="overflow-x-auto rounded-md border">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
                                 {columns.map((col) => (
-                                    <th
+                                    <TableHead
                                         key={col.key}
                                         className={col.align === "right" ? "text-right" : ""}
-                                        onClick={() => handleSort(col.key, col.sortable)}
                                         style={{ cursor: col.sortable !== false ? "pointer" : "default", userSelect: "none" }}
+                                        onClick={() => handleSort(col.key, col.sortable)}
                                     >
                                         {col.label}
                                         <SortIcon columnKey={col.key} sortable={col.sortable} sortKey={sortKey} sortDir={sortDir} />
-                                    </th>
+                                    </TableHead>
                                 ))}
-                                <th className="text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
                             {loading
                                 ? <TableLoading colSpan={columns.length + 1} />
                                 : (
@@ -304,81 +308,93 @@ export default function DataTable<T extends Record<string, unknown>>({
                                         {
                                             const keyVal = getItemKey(item);
                                             const pathSegment = typeof keyVal === "string" ? encodeURIComponent(keyVal) : keyVal;
+
                                             return (
-                                                <tr key={keyVal}>
+                                                <TableRow key={keyVal}>
                                                     {columns.map((col, idx) => (
-                                                        <td
+                                                        <TableCell
                                                             key={col.key}
                                                             className={col.align === "right" ? "text-right" : ""}
                                                             style={col.style}
                                                         >
                                                             {idx === 0
                                                                 ? (
-                                                                    <Link to={`${basePath}/${pathSegment}`} style={{ fontWeight: 500, color: "var(--primary)" }}>
+                                                                    <Link
+                                                                        to={`${basePath}/${pathSegment}`}
+                                                                        className="font-medium text-primary hover:underline"
+                                                                    >
                                                                         {col.render ? col.render(item[col.key], item) : String(item[col.key] ?? "")}
                                                                     </Link>
                                                                 )
                                                                 : (col.render ? col.render(item[col.key], item) : String(item[col.key] ?? ""))
                                                             }
-                                                        </td>
+                                                        </TableCell>
                                                     ))}
-                                                    <td className="text-right">
+                                                    <TableCell className="text-right">
                                                         <Link
                                                             to={`${basePath}/${pathSegment}/edit`}
-                                                            className="btn btn-outline"
-                                                            style={{ fontSize: "0.7rem", padding: "4px 8px", marginRight: 8 }}
+                                                            className={cn(buttonVariants({ variant: "outline", size: "xs" }), "mr-2")}
                                                         >
                                                             <FiEdit2 size={12} />
                                                             Edit
                                                         </Link>
-                                                        <button
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="xs"
+                                                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                                             onClick={() => handleDelete(item)}
-                                                            className="btn btn-outline"
-                                                            style={{ fontSize: "0.7rem", padding: "4px 8px", color: "#ef4444", borderColor: "#ef4444" }}
                                                         >
                                                             <FiTrash2 size={12} />
                                                             Delete
-                                                        </button>
-                                                    </td>
-                                                </tr>
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
                                             );
                                         })}
                                         {data.length === 0 && (
-                                            <tr>
-                                                <td colSpan={columns.length + 1} style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>
+                                            <TableRow>
+                                                <TableCell
+                                                    colSpan={columns.length + 1}
+                                                    className="py-8 text-center text-muted-foreground"
+                                                >
                                                     {search
                                                         ? `No matching ${itemName} found.`
                                                         : (emptyMessage || `No ${itemName} found. Create one to get started.`)
                                                     }
-                                                </td>
-                                            </tr>
+                                                </TableCell>
+                                            </TableRow>
                                         )}
                                     </>
                                 )
                             }
-                        </tbody>
-                    </table>
+                        </TableBody>
+                    </Table>
                 </div>
 
                 {totalPages > 1 && (
-                    <div style={{ marginTop: "1rem", display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "4px" }}>
-                        <button onClick={handleBtnClick(() => setCurrentPage(1))} disabled={currentPage === 1} style={currentPage === 1 ? btnDisabledStyle : btnStyle}>
-                            <FiChevronsLeft size={14} />
-                        </button>
-                        <button onClick={handleBtnClick(() => setCurrentPage((p) => Math.max(1, p - 1)))} disabled={currentPage === 1} style={currentPage === 1 ? btnDisabledStyle : btnStyle}>
-                            <FiChevronLeft size={14} />
-                        </button>
+                    <div className="mt-4 flex justify-end items-center gap-1">
+                        <Button variant="outline" size="icon-xs" disabled={currentPage === 1} onClick={() => setCurrentPage(1)}>
+                            <FiChevronsLeft size={13} />
+                        </Button>
+                        <Button variant="outline" size="icon-xs" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>
+                            <FiChevronLeft size={13} />
+                        </Button>
                         {getPageNumbers().map((page) => (
-                            <button key={page} onClick={handleBtnClick(() => setCurrentPage(page))} style={currentPage === page ? btnActiveStyle : btnStyle}>
+                            <Button
+                                key={page}
+                                variant={currentPage === page ? "default" : "outline"}
+                                size="xs"
+                                onClick={() => setCurrentPage(page)}
+                            >
                                 {page}
-                            </button>
+                            </Button>
                         ))}
-                        <button onClick={handleBtnClick(() => setCurrentPage((p) => Math.min(totalPages, p + 1)))} disabled={currentPage === totalPages} style={currentPage === totalPages ? btnDisabledStyle : btnStyle}>
-                            <FiChevronRight size={14} />
-                        </button>
-                        <button onClick={handleBtnClick(() => setCurrentPage(totalPages))} disabled={currentPage === totalPages} style={currentPage === totalPages ? btnDisabledStyle : btnStyle}>
-                            <FiChevronsRight size={14} />
-                        </button>
+                        <Button variant="outline" size="icon-xs" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>
+                            <FiChevronRight size={13} />
+                        </Button>
+                        <Button variant="outline" size="icon-xs" disabled={currentPage === totalPages} onClick={() => setCurrentPage(totalPages)}>
+                            <FiChevronsRight size={13} />
+                        </Button>
                     </div>
                 )}
             </div>
