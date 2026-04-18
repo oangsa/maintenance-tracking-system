@@ -37,18 +37,48 @@ export default function LayoutMain()
 
     useEffect(() =>
     {
+        let cancelled = false;
+
         if (currentUser !== null || !isAuthenticated())
         {
-            return;
+            return () =>
+            {
+                cancelled = true;
+            };
         }
 
-        void ensureCurrentUser().catch(() => undefined);
-    }, [currentUser]);
+        async function restoreCurrentUser()
+        {
+            try
+            {
+                const restoredUser = await ensureCurrentUser();
+
+                if (!cancelled && restoredUser === null)
+                {
+                    navigate("/auth/login", { replace: true });
+                }
+            }
+            catch
+            {
+                if (!cancelled)
+                {
+                    navigate("/auth/login", { replace: true });
+                }
+            }
+        }
+
+        void restoreCurrentUser();
+
+        return () =>
+        {
+            cancelled = true;
+        };
+    }, [currentUser, navigate]);
 
     async function handleLogout()
     {
         await logout();
-        navigate("/auth/login");
+        navigate("/auth/login", { replace: true });
     }
 
     return (

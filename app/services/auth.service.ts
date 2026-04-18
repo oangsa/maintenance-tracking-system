@@ -86,6 +86,12 @@ function setCurrentUser(user: IUser | null): void
     notifyCurrentUserListeners();
 }
 
+function clearSessionState(): void
+{
+    clearAccessToken();
+    setCurrentUser(null);
+}
+
 // ---- Initialization ---------------------------------------
 
 /**
@@ -143,8 +149,7 @@ export async function refreshAccessToken(): Promise<string>
     }
     catch (error)
     {
-        clearAccessToken();
-        setCurrentUser(null);
+        clearSessionState();
 
         throw error;
     }
@@ -160,10 +165,13 @@ export async function logout(): Promise<void>
     {
         await logoutRequest();
     }
+    catch
+    {
+        // The local session should still be cleared even if the server session is already invalid.
+    }
     finally
     {
-        clearAccessToken();
-        setCurrentUser(null);
+        clearSessionState();
     }
 }
 
@@ -177,10 +185,13 @@ export async function logoutAll(): Promise<void>
     {
         await logoutAllRequest();
     }
+    catch
+    {
+        // The local session should still be cleared even if the server session is already invalid.
+    }
     finally
     {
-        clearAccessToken();
-        setCurrentUser(null);
+        clearSessionState();
     }
 }
 
@@ -244,8 +255,7 @@ export async function ensureCurrentUser(): Promise<IUser | null>
         {
             if (error instanceof ApiError && [401, 403, 404].includes(error.statusCode))
             {
-                clearAccessToken();
-                setCurrentUser(null);
+                clearSessionState();
                 return null;
             }
 
