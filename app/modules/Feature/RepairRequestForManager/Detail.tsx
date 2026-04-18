@@ -73,6 +73,13 @@ export default function RepairRequestManagerDetailPage()
         // TODO: Open the related work order flow when the manager work-order module is available.
     }
 
+    function handleAssignWorkOrder(repairRequestItemId: number)
+    {
+        void repairRequestItemId;
+
+        // TODO: Assign a work order for the selected repair request item when the manager work-order flow is available.
+    }
+
     if (loading)
     {
         return <Loading message="Loading repair request..." />;
@@ -192,6 +199,7 @@ export default function RepairRequestManagerDetailPage()
                                 <TableHead>Description</TableHead>
                                 <TableHead className="text-right">Qty</TableHead>
                                 <TableHead>Repair Status</TableHead>
+                                <TableHead className="text-right">Action</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -202,11 +210,16 @@ export default function RepairRequestManagerDetailPage()
                                     <TableCell className="align-top">{item.description?.trim() || "-"}</TableCell>
                                     <TableCell className="align-top text-right">{item.quantity}</TableCell>
                                     <TableCell className="align-top">{formatRepairStatusLabel(item)}</TableCell>
+                                    <TableCell className="align-top text-right">
+                                        <Button onClick={() => handleAssignWorkOrder(item.id)} type="button" variant="outline">
+                                            Assign Work
+                                        </Button>
+                                    </TableCell>
                                 </TableRow>
                             ))}
                             {repairRequest.repairRequestItems.length === 0 && (
                                 <TableRow>
-                                    <TableCell className="py-8 text-center text-muted-foreground" colSpan={5}>
+                                    <TableCell className="py-8 text-center text-muted-foreground" colSpan={6}>
                                         No repair request items were submitted for this request.
                                     </TableCell>
                                 </TableRow>
