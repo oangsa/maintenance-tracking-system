@@ -46,7 +46,7 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const ALL_FILTER_OPTION = "All";
 const EMPTY_FILTER_FIELDS: IDataTableFilterField[] = [];
 
-interface IColumn<T = Record<string, unknown>>
+export interface IColumn<T = Record<string, unknown>>
 {
     key: string;
     label: string;
@@ -56,7 +56,7 @@ interface IColumn<T = Record<string, unknown>>
     style?: React.CSSProperties;
 }
 
-interface IFetchParams
+export interface IFetchParams
 {
     searchTerm: string;
     page: number;
@@ -66,13 +66,13 @@ interface IFetchParams
     sortDir?: "asc" | "desc";
 }
 
-interface IDataTableFilterOption
+export interface IDataTableFilterOption
 {
     label: string;
     value: string;
 }
 
-interface IDataTableFilterField
+export interface IDataTableFilterField
 {
     key: string;
     label: string;
@@ -81,7 +81,7 @@ interface IDataTableFilterField
     options?: IDataTableFilterOption[];
 }
 
-interface IFetchResult<T>
+export interface IFetchResult<T>
 {
     data: T[];
     total: number;
@@ -92,7 +92,7 @@ interface IFetchResult<T>
     hasPrevious?: boolean;
 }
 
-interface IDataTableProps<T = Record<string, unknown>>
+export interface IDataTableProps<T = Record<string, unknown>>
 {
     title: string;
     fetchData: (params: IFetchParams) => Promise<IFetchResult<T>>;
@@ -783,5 +783,3 @@ export default function DataTable<T extends Record<string, unknown>>({
         </div>
     );
 }
-
-export type { IDataTableFilterField, IDataTableFilterOption, IFetchParams, IFetchResult };

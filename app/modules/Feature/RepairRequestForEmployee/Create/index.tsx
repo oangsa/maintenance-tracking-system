@@ -1,8 +1,8 @@
 import React, { useSyncExternalStore } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import Loading from "~/components/Common/Loading";
-import { buttonVariants } from "~/components/ui/button";
-import { cn } from "~/lib/utils";
+import Create from "~/components/Maintain/Create";
+import ErrorCard from "~/components/Maintain/ErrorCard";
 import type { IRepairStatus, IUser } from "~/api/types";
 import {
     ensureCurrentUser,
@@ -11,12 +11,12 @@ import {
 } from "~/services/auth.service";
 import { createRepairRequest } from "~/services/repairRequests.service";
 import { searchRepairStatuses } from "~/services/repairStatuses.service";
-import RepairRequestForm from "./RepairRequestForm";
+import RepairRequestForm from "../form";
 import {
     buildCreatePayload,
     createEmptyRepairRequestFormValues,
-} from "./helpers";
-import type { IRepairRequestFormValues } from "./helpers";
+} from "../hooks/helpers";
+import type { IRepairRequestFormValues } from "../hooks/helpers";
 
 function resolveInitialStatus(statuses: IRepairStatus[]): IRepairStatus | null
 {
@@ -28,7 +28,7 @@ function resolveInitialStatus(statuses: IRepairStatus[]): IRepairStatus | null
     return statuses.find((status) => !status.isFinal) ?? statuses[0];
 }
 
-export default function ManageRepairRequestPage()
+export default function CreateRepairRequestPage()
 {
     const navigate = useNavigate();
     const currentUser = useSyncExternalStore(subscribeCurrentUser, getCurrentUser, getCurrentUser);
@@ -36,7 +36,6 @@ export default function ManageRepairRequestPage()
     const [statusId, setStatusId] = React.useState<number | null>(null);
     const [loadingUser, setLoadingUser] = React.useState(currentUser === null);
     const [loadingStatus, setLoadingStatus] = React.useState(true);
-    const [submitting, setSubmitting] = React.useState(false);
     const [pageError, setPageError] = React.useState("");
 
     React.useEffect(() =>
@@ -132,39 +131,6 @@ export default function ManageRepairRequestPage()
         };
     }, []);
 
-    async function handleSubmit(values: IRepairRequestFormValues)
-    {
-        if (!currentUser)
-        {
-            setPageError("Unable to load your user profile.");
-            return;
-        }
-
-        if (statusId === null)
-        {
-            setPageError("Unable to resolve the initial repair request status.");
-            return;
-        }
-
-        setSubmitting(true);
-        setPageError("");
-
-        try
-        {
-            const createdRepairRequest = await createRepairRequest(buildCreatePayload(values, statusId, currentUser));
-
-            navigate(`/repair-requests/${createdRepairRequest.id}`, { replace: true });
-        }
-        catch (error)
-        {
-            setPageError((error as Error).message || "Unable to create the repair request.");
-        }
-        finally
-        {
-            setSubmitting(false);
-        }
-    }
-
     if (loadingUser || loadingStatus)
     {
         return <Loading message="Preparing repair request form..." />;
@@ -173,52 +139,60 @@ export default function ManageRepairRequestPage()
     if (!currentUser)
     {
         return (
-            <div className="card">
-                <div className="alert alert-error">{pageError || "Unable to load your user profile."}</div>
-                <Link className={cn(buttonVariants({ variant: "outline" }), "!text-foreground hover:!text-foreground")} to="/repair-requests">
-                    Back to Repair Requests
-                </Link>
-            </div>
+            <ErrorCard
+                backHref="/repair-requests"
+                backLabel="Back to Repair Requests"
+                message={pageError || "Unable to load your user profile."}
+            />
         );
     }
 
     if (currentUser.departmentId === null)
     {
         return (
-            <div className="card">
-                <div className="alert alert-error">
-                    Your user account is not assigned to a department, so a repair request cannot be created.
-                </div>
-                <Link className={cn(buttonVariants({ variant: "outline" }), "!text-foreground hover:!text-foreground")} to="/repair-requests">
-                    Back to Repair Requests
-                </Link>
-            </div>
+            <ErrorCard
+                backHref="/repair-requests"
+                backLabel="Back to Repair Requests"
+                message="Your user account is not assigned to a department, so a repair request cannot be created."
+            />
         );
     }
 
-    return (
-        <>
-            <div className="page-header">
-                <div>
-                    <h1 className="page-title">Create Repair Request</h1>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                        Submit a repair request for your department and attach the required line items.
-                    </p>
-                </div>
-
-                <Link className={cn(buttonVariants({ variant: "outline" }), "!text-foreground hover:!text-foreground")} to="/repair-requests">
-                    Back to Repair Requests
-                </Link>
-            </div>
-
-            <RepairRequestForm
-                currentUser={currentUser as IUser}
-                error={pageError}
-                initialValues={createEmptyRepairRequestFormValues()}
-                onCancel={() => navigate("/repair-requests")}
-                onSubmit={handleSubmit}
-                submitting={submitting}
+    if (statusId === null)
+    {
+        return (
+            <ErrorCard
+                backHref="/repair-requests"
+                backLabel="Back to Repair Requests"
+                message={pageError || "Unable to resolve the initial repair request status."}
             />
-        </>
+        );
+    }
+
+    async function handleSubmit(values: IRepairRequestFormValues)
+    {
+        const createdRepairRequest = await createRepairRequest(buildCreatePayload(values, statusId, currentUser));
+
+        navigate(`/repair-requests/${createdRepairRequest.id}`, { replace: true });
+    }
+
+    async function handleCancel()
+    {
+        navigate("/repair-requests");
+    }
+
+    return (
+        <Create
+            backHref="/repair-requests"
+            backLabel="Back to Repair Requests"
+            description="Submit a repair request for your department and attach the required line items."
+            Form={RepairRequestForm}
+            formProps={{ currentUser: currentUser as IUser }}
+            initialValues={createEmptyRepairRequestFormValues()}
+            onCancel={handleCancel}
+            onSubmit={handleSubmit}
+            submitErrorMessage="Unable to create the repair request."
+            title="Create Repair Request"
+        />
     );
 }

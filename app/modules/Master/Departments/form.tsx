@@ -4,7 +4,8 @@ import Loading from "~/components/Common/Loading";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import type { IDepartmentFormValues } from "./helpers";
+import type { IDepartmentFormValues } from "./hooks/helpers";
+import { DepartmentFormSchema } from "~/schemas/departmentFormSchema";
 
 interface IDepartmentFormProps
 {
@@ -12,7 +13,6 @@ interface IDepartmentFormProps
     initialValues: IDepartmentFormValues;
     loading?: boolean;
     submitting?: boolean;
-    error?: string;
     onCancel: () => void;
     onSubmit: (values: IDepartmentFormValues) => void | Promise<void>;
 }
@@ -22,11 +22,6 @@ interface IDepartmentFormErrors
     code?: string;
     name?: string;
 }
-
-const DepartmentFormSchema = z.object({
-    code: z.string().trim().min(1, "Code is required.").max(150, "Code must be 150 characters or fewer."),
-    name: z.string().trim().min(1, "Name is required.").max(150, "Name must be 150 characters or fewer."),
-});
 
 function validateForm(values: IDepartmentFormValues): IDepartmentFormErrors
 {
@@ -56,7 +51,6 @@ export default function DepartmentForm({
     initialValues,
     loading = false,
     submitting = false,
-    error = "",
     onCancel,
     onSubmit,
 }: IDepartmentFormProps)
@@ -116,8 +110,6 @@ export default function DepartmentForm({
 
     return (
         <div className="card">
-            {error && <div className="alert alert-error">{error}</div>}
-
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid gap-5 md:grid-cols-2">
                     <div className="space-y-2">

@@ -1,37 +1,18 @@
 import React, { useSyncExternalStore } from "react";
 import { useSearchParams } from "react-router";
-import DataTable from "~/components/Common/DataTable";
+import type { IFetchParams, IFetchResult } from "~/components/Common/DataTable";
 import Loading from "~/components/Common/Loading";
-import { buildListSearchParams, buildOrderBy, parsePositiveIntegerParam } from "~/lib/pageUtils";
+import Table from "~/components/Maintain/Table";
+import useTableSearchParams from "~/components/Maintain/Table/useSearchParams";
+import { buildOrderBy } from "~/lib/pageUtils";
 import {
     ensureCurrentUser,
     getCurrentUser,
     subscribeCurrentUser,
 } from "~/services/auth.service";
 import { searchRepairRequests } from "~/services/repairRequests.service";
-import useColumns, { type IRepairRequestTableRow } from "./useColumns";
-import useFieldFilter from "./useFieldFilter";
-
-interface IFetchParams
-{
-    searchTerm: string;
-    page: number;
-    limit: number;
-    search?: Record<string, string>;
-    sortBy?: string;
-    sortDir?: "asc" | "desc";
-}
-
-interface IFetchResult
-{
-    data: IRepairRequestTableRow[];
-    total: number;
-    totalPages: number;
-    pageItemCount: number;
-    currentPage: number;
-    hasNext: boolean;
-    hasPrevious: boolean;
-}
+import useColumns, { type IRepairRequestTableRow } from "./hooks/useColumns";
+import useFieldFilter from "./hooks/useFieldFilter";
 
 export default function RepairRequestEmployeeListPage()
 {
@@ -50,8 +31,19 @@ export default function RepairRequestEmployeeListPage()
         normalizeFilters,
         searchTerm,
     } = useFieldFilter({ searchParams });
-    const currentPage = parsePositiveIntegerParam(searchParams.get("page"));
-    const currentSearch = searchParams.get("search") ?? "";
+    const {
+        currentPage,
+        currentSearch,
+        handleCurrentPageChange,
+        handleFilterChange,
+        handleSearchChange,
+    } = useTableSearchParams({
+        buildFilterParams,
+        currentFilters,
+        normalizeFilters,
+        searchParams,
+        setSearchParams,
+    });
 
     React.useEffect(() =>
     {
@@ -96,50 +88,7 @@ export default function RepairRequestEmployeeListPage()
         };
     }, [currentUser]);
 
-    React.useEffect(() =>
-    {
-        if (searchParams.get("page") === String(currentPage))
-        {
-            return;
-        }
-
-        setSearchParams(buildListSearchParams(searchParams, {
-            extraParams: buildFilterParams(currentFilters),
-            page: currentPage,
-            search: currentSearch,
-        }), { replace: true });
-    }, [buildFilterParams, currentFilters, currentPage, currentSearch, searchParams, setSearchParams]);
-
-    const handleSearchChange = React.useCallback((nextSearch: string) =>
-    {
-        setSearchParams(buildListSearchParams(searchParams, {
-            extraParams: buildFilterParams(currentFilters),
-            page: 1,
-            search: nextSearch,
-        }), { replace: true });
-    }, [buildFilterParams, currentFilters, searchParams, setSearchParams]);
-
-    const handleFilterChange = React.useCallback((nextFilters: Record<string, string>) =>
-    {
-        const normalizedFilters = normalizeFilters(nextFilters);
-
-        setSearchParams(buildListSearchParams(searchParams, {
-            extraParams: buildFilterParams(normalizedFilters),
-            page: 1,
-            search: currentSearch,
-        }), { replace: true });
-    }, [buildFilterParams, currentSearch, normalizeFilters, searchParams, setSearchParams]);
-
-    const handleCurrentPageChange = React.useCallback((nextPage: number) =>
-    {
-        setSearchParams(buildListSearchParams(searchParams, {
-            extraParams: buildFilterParams(currentFilters),
-            page: nextPage,
-            search: currentSearch,
-        }));
-    }, [buildFilterParams, currentFilters, currentSearch, searchParams, setSearchParams]);
-
-    const fetchData = React.useCallback(async (params: IFetchParams): Promise<IFetchResult> =>
+    const fetchData = React.useCallback(async (params: IFetchParams): Promise<IFetchResult<IRepairRequestTableRow>> =>
     {
         if (currentUser === null)
         {
@@ -191,13 +140,12 @@ export default function RepairRequestEmployeeListPage()
 
     return (
         <>
-            {pageError && <div className="alert alert-error">{pageError}</div>}
-
-            <DataTable<IRepairRequestTableRow>
+            <Table<IRepairRequestTableRow>
                 basePath="/repair-requests"
                 columns={columns}
                 currentPageValue={currentPage}
                 emptyMessage="No repair requests found. Create one to get started."
+                error={pageError}
                 fetchData={fetchData}
                 filterFields={fieldFilters}
                 filterValues={currentFiltersRecord}

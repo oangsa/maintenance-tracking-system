@@ -12,7 +12,7 @@ import LineItemsEditor, {
     type ILineItemColumn,
     type ILineItemPickerColumn,
     type ILineItemPickerFetchParams,
-} from "../../../components/Common/LineItemsEditor/index";
+} from "~/components/Common/LineItemsEditor";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -35,11 +35,11 @@ import {
     createEmptyRepairRequestLineItem,
     mapProductToLineItem,
     parsePositiveNumber,
-} from "./helpers";
+} from "./hooks/helpers";
 import type {
     IRepairRequestFormLineItem,
     IRepairRequestFormValues,
-} from "./helpers";
+} from "./hooks/helpers";
 import { RepairRequestFormSchema } from "~/schemas/repairRequestFormSchema";
 import { PRIORITY_OPTIONS as priorityOptions } from "@/constants/priority.constant";
 
@@ -50,7 +50,6 @@ interface IRepairRequestFormProps
     currentUser: IUser;
     initialValues: IRepairRequestFormValues;
     submitting?: boolean;
-    error?: string;
     onCancel: () => void;
     onSubmit: (values: IRepairRequestFormValues) => void | Promise<void>;
 }
@@ -124,7 +123,6 @@ export default function RepairRequestForm({
     currentUser,
     initialValues,
     submitting = false,
-    error = "",
     onCancel,
     onSubmit,
 }: IRepairRequestFormProps)
@@ -532,8 +530,6 @@ export default function RepairRequestForm({
 
     return (
         <>
-            {error && <div className="alert alert-error">{error}</div>}
-
             <form className="space-y-6" onSubmit={handleSubmit}>
                 <div className="card">
                     <div>

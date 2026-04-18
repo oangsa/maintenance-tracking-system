@@ -1,4 +1,4 @@
-import type { ILineItemValue } from "../../../components/Common/LineItemsEditor/index";
+import type { ILineItemValue } from "~/components/Common/LineItemsEditor";
 import { PRIORITY_OPTIONS } from "@/constants/priority.constant";
 import type {
     IProduct,
