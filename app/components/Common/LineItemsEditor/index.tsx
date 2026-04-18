@@ -557,10 +557,10 @@ export default function LineItemsEditor<TItem extends ILineItemValue = ILineItem
     const visibleColumnCount = Math.max(columns.length, 1)
 
     return (
-        <div className="rounded-lg border bg-card shadow-xs">
+        <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] shadow-[var(--shadow)]">
             <div className={cn(
-                "flex flex-wrap items-center justify-between gap-3 px-5 py-4",
-                !isPlainReadOnly && "border-b",
+                "flex flex-wrap items-start justify-between gap-4 px-6 pt-6",
+                !isPlainReadOnly && "border-b border-[var(--border)] pb-4",
                 isPlainReadOnly && "pb-0",
             )}>
                 <div>
@@ -583,69 +583,73 @@ export default function LineItemsEditor<TItem extends ILineItemValue = ILineItem
                 )}
             </div>
 
-            <div className={cn("overflow-x-auto", isPlainReadOnly && "mt-4 rounded-md border")}>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            {columns.map((column) => (
-                                <TableHead className={column.headerClassName} key={column.key}>
-                                    {column.renderHeader ? column.renderHeader() : column.label}
-                                </TableHead>
-                            ))}
-                        </TableRow>
-                    </TableHeader>
+            <div className={cn("px-6 pb-6", isPlainReadOnly ? "pt-4" : "pt-5")}>
+                <div className="overflow-hidden rounded-md border border-[var(--border)] bg-[var(--bg-surface)]">
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    {columns.map((column) => (
+                                        <TableHead className={column.headerClassName} key={column.key}>
+                                            {column.renderHeader ? column.renderHeader() : column.label}
+                                        </TableHead>
+                                    ))}
+                                </TableRow>
+                            </TableHeader>
 
-                    <TableBody>
-                        {value.map((item, index) => (
-                            <LineItemRow<TItem, TPickerRow>
-                                activePicker={activePicker}
-                                columns={columns}
-                                disabled={disabled}
-                                index={index}
-                                isDragOver={dragOverIndex === index && dragIndex !== index}
-                                isDragging={dragIndex === index}
-                                item={item}
-                                itemsLength={value.length}
-                                key={ResolveItemKey(item, index)}
-                                minRows={minRows}
-                                onDragEnd={HandleDragEnd}
-                                onDragLeave={HandleDragLeave}
-                                onDragOver={HandleDragOver}
-                                onDragStart={HandleDragStart}
-                                onDrop={HandleDrop}
-                                onInsertBelow={() => HandleInsertBelow(index)}
-                                onMoveDown={() => HandleMoveRow(index, 1)}
-                                onMoveUp={() => HandleMoveRow(index, -1)}
-                                onOpenPicker={HandleOpenPicker}
-                                onRemove={() => HandleRemoveRow(index)}
-                                onReplaceItem={ReplaceRow}
-                                onUpdateItem={UpdateRow}
-                                readOnly={readOnly}
-                                readOnlyVariant={resolvedReadOnlyVariant}
-                            />
-                        ))}
+                            <TableBody>
+                                {value.map((item, index) => (
+                                    <LineItemRow<TItem, TPickerRow>
+                                        activePicker={activePicker}
+                                        columns={columns}
+                                        disabled={disabled}
+                                        index={index}
+                                        isDragOver={dragOverIndex === index && dragIndex !== index}
+                                        isDragging={dragIndex === index}
+                                        item={item}
+                                        itemsLength={value.length}
+                                        key={ResolveItemKey(item, index)}
+                                        minRows={minRows}
+                                        onDragEnd={HandleDragEnd}
+                                        onDragLeave={HandleDragLeave}
+                                        onDragOver={HandleDragOver}
+                                        onDragStart={HandleDragStart}
+                                        onDrop={HandleDrop}
+                                        onInsertBelow={() => HandleInsertBelow(index)}
+                                        onMoveDown={() => HandleMoveRow(index, 1)}
+                                        onMoveUp={() => HandleMoveRow(index, -1)}
+                                        onOpenPicker={HandleOpenPicker}
+                                        onRemove={() => HandleRemoveRow(index)}
+                                        onReplaceItem={ReplaceRow}
+                                        onUpdateItem={UpdateRow}
+                                        readOnly={readOnly}
+                                        readOnlyVariant={resolvedReadOnlyVariant}
+                                    />
+                                ))}
 
-                        {value.length === 0 && (
-                            <TableRow>
-                                <TableCell className="py-10 text-center text-muted-foreground" colSpan={visibleColumnCount}>
-                                    <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
-                                        {!readOnly && (
-                                            <div className="rounded-full bg-muted p-3 text-muted-foreground">
-                                                <Plus className="size-5" />
+                                {value.length === 0 && (
+                                    <TableRow>
+                                        <TableCell className="py-10 text-center text-muted-foreground" colSpan={visibleColumnCount}>
+                                            <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
+                                                {!readOnly && (
+                                                    <div className="rounded-full bg-muted p-3 text-muted-foreground">
+                                                        <Plus className="size-5" />
+                                                    </div>
+                                                )}
+                                                <p className="font-medium text-foreground">{emptyMessage}</p>
+                                                {!readOnly && (
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Add the first {itemLabel} to start building the list.
+                                                    </p>
+                                                )}
                                             </div>
-                                        )}
-                                        <p className="font-medium text-foreground">{emptyMessage}</p>
-                                        {!readOnly && (
-                                            <p className="text-sm text-muted-foreground">
-                                                Add the first {itemLabel} to start building the list.
-                                            </p>
-                                        )}
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </div>
             </div>
 
             {activePicker && (

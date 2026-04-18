@@ -529,56 +529,72 @@ export default function RepairRequestForm({
     ], [fetchProducts, itemMessages, productColumns, resolvingRows]);
 
     return (
-        <div className="card">
+        <>
             {error && <div className="alert alert-error">{error}</div>}
 
             <form className="space-y-6" onSubmit={handleSubmit}>
-                <div className="grid gap-5 md:grid-cols-2">
-                    <div className="space-y-2">
-                        <Label>Requester</Label>
-                        <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
-                            {requesterLabel}
-                        </div>
-                    </div>
+                <div className="card">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                            Request Information
+                        </p>
 
-                    <div className="space-y-2">
-                        <Label>Department</Label>
-                        <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
-                            {departmentLabel}
-                        </div>
-                    </div>
+                        <div className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                            <div className="rounded-md border border-[var(--border)] bg-[var(--bg-surface)] p-4">
+                                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                                    Requester
+                                </p>
+                                <p className="mt-2 text-sm font-medium text-[var(--text-main)]">
+                                    {requesterLabel}
+                                </p>
+                            </div>
 
-                    <div className="space-y-2 md:max-w-xs">
-                        <Label htmlFor="priority">
-                            Priority
-                            <span className="required-marker">*</span>
-                        </Label>
-                        <Select
-                            value={values.priority}
-                            onValueChange={(value) =>
-                            {
-                                setValues((currentValues) => ({
-                                    ...currentValues,
-                                    priority: value as IPriority,
-                                }));
-                                setFormErrors((currentErrors) => ({
-                                    ...currentErrors,
-                                    priority: undefined,
-                                }));
-                            }}
-                        >
-                            <SelectTrigger aria-invalid={Boolean(formErrors.priority)} className="w-full" id="priority">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {priorityOptions.map((priorityOption) => (
-                                    <SelectItem key={priorityOption} value={priorityOption}>
-                                        {formatTitleCase(priorityOption)}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        {formErrors.priority && <span className="form-error">{formErrors.priority}</span>}
+                            <div className="rounded-md border border-[var(--border)] bg-[var(--bg-surface)] p-4">
+                                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                                    Department
+                                </p>
+                                <p className="mt-2 text-sm font-medium text-[var(--text-main)]">
+                                    {departmentLabel}
+                                </p>
+                            </div>
+
+                            <div className="rounded-md border border-[var(--border)] bg-[var(--bg-surface)] p-4">
+                                <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]" htmlFor="priority">
+                                    Priority
+                                    <span className="required-marker">*</span>
+                                </Label>
+
+                                <div className="mt-2">
+                                    <Select
+                                        value={values.priority}
+                                        onValueChange={(value) =>
+                                        {
+                                            setValues((currentValues) => ({
+                                                ...currentValues,
+                                                priority: value as IPriority,
+                                            }));
+                                            setFormErrors((currentErrors) => ({
+                                                ...currentErrors,
+                                                priority: undefined,
+                                            }));
+                                        }}
+                                    >
+                                        <SelectTrigger aria-invalid={Boolean(formErrors.priority)} className="w-full" id="priority">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {priorityOptions.map((priorityOption) => (
+                                                <SelectItem key={priorityOption} value={priorityOption}>
+                                                    {formatTitleCase(priorityOption)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {formErrors.priority && <span className="mt-2 block form-error">{formErrors.priority}</span>}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -602,7 +618,7 @@ export default function RepairRequestForm({
                     </div>
                 )}
 
-                <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                     <Button disabled={submitting} onClick={onCancel} type="button" variant="outline">
                         Cancel
                     </Button>
@@ -611,6 +627,6 @@ export default function RepairRequestForm({
                     </Button>
                 </div>
             </form>
-        </div>
+        </>
     );
 }
