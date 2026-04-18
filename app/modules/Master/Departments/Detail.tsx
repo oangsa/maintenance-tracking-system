@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useNavigate, useParams } from "react-router";
+import DetailSections, { type IDetailSection } from "~/components/Common/DetailSections";
 import Loading from "~/components/Common/Loading";
 import { ConfirmModal } from "~/components/Common/Modal";
 import { buttonVariants, Button } from "~/components/ui/button";
@@ -11,12 +12,6 @@ import type { IDepartment } from "~/api/types";
 interface IConfirmState
 {
     isOpen: boolean;
-}
-
-interface IDetailField
-{
-    label: string;
-    value: string;
 }
 
 export default function DepartmentDetailPage()
@@ -98,16 +93,23 @@ export default function DepartmentDetailPage()
         );
     }
 
-    const detailFields: IDetailField[] = [
-        { label: "Code", value: department.code ?? "-" },
-        { label: "Name", value: department.name ?? "-" },
-    ];
-
-    const commonFields: IDetailField[] = [
-        { label: "Created At", value: formatDateTime(department.createdAt) },
-        { label: "Updated At", value: formatDateTime(department.updatedAt) },
-        { label: "Created By", value: department.createdBy ?? "-" },
-        { label: "Updated By", value: department.updatedBy ?? "-" },
+    const detailSections: IDetailSection[] = [
+        {
+            title: "Department Information",
+            fields: [
+                { label: "Code", value: department.code ?? "-" },
+                { label: "Name", value: department.name ?? "-" },
+            ],
+        },
+        {
+            title: "Common Information",
+            fields: [
+                { label: "Created At", value: formatDateTime(department.createdAt) },
+                { label: "Updated At", value: formatDateTime(department.updatedAt) },
+                { label: "Created By", value: department.createdBy ?? "-" },
+                { label: "Updated By", value: department.updatedBy ?? "-" },
+            ],
+        },
     ];
 
     return (
@@ -145,47 +147,7 @@ export default function DepartmentDetailPage()
 
             {pageError && <div className="alert alert-error">{pageError}</div>}
 
-            <div className="card">
-                <div>
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                            Department Information
-                        </p>
-                        <div className="mt-4 grid gap-5 md:grid-cols-2">
-                            {detailFields.map((field) => (
-                                <div className="rounded-md border border-[var(--border)] bg-[var(--bg-surface)] p-4" key={field.label}>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-                                        {field.label}
-                                    </p>
-                                    <p className="mt-2 text-sm font-medium text-[var(--text-main)]">
-                                        {field.value}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="my-6 h-px bg-[var(--border)]" />
-
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                            Common Information
-                        </p>
-                        <div className="mt-4 grid gap-5 md:grid-cols-2">
-                            {commonFields.map((field) => (
-                                <div className="rounded-md border border-[var(--border)] bg-[var(--bg-surface)] p-4" key={field.label}>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-                                        {field.label}
-                                    </p>
-                                    <p className="mt-2 text-sm font-medium text-[var(--text-main)]">
-                                        {field.value}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <DetailSections sections={detailSections} />
         </>
     );
 }

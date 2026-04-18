@@ -4,6 +4,7 @@ import DataTable from "~/components/Common/DataTable";
 import { buildListSearchParams, buildOrderBy, parsePositiveIntegerParam } from "~/lib/pageUtils";
 import { searchRepairRequests } from "~/services/repairRequests.service";
 import useColumns, { type IRepairRequestTableRow } from "./useColumns";
+import useFieldFilter from "./useFieldFilter";
 
 interface IFetchParams
 {
@@ -32,6 +33,15 @@ export default function RepairRequestManagerListPage()
     const columns = useColumns();
     const currentPage = parsePositiveIntegerParam(searchParams.get("page"));
     const currentSearch = searchParams.get("search") ?? "";
+        const {
+        buildFilterParams,
+        buildFilterSearch,
+        currentFilters,
+        currentFiltersRecord,
+        fieldFilters,
+        normalizeFilters,
+        searchTerm,
+    } = useFieldFilter({ searchParams });
 
     React.useEffect(() =>
     {
@@ -41,10 +51,11 @@ export default function RepairRequestManagerListPage()
         }
 
         setSearchParams(buildListSearchParams(searchParams, {
+            extraParams: buildFilterParams(currentFilters),
             page: currentPage,
             search: currentSearch,
         }), { replace: true });
-    }, [currentPage, currentSearch, searchParams, setSearchParams]);
+    }, [buildFilterParams, currentFilters, currentPage, currentSearch, searchParams, setSearchParams])
 
     const handleSearchChange = React.useCallback((nextSearch: string) =>
     {
@@ -62,6 +73,17 @@ export default function RepairRequestManagerListPage()
         }));
     }, [currentSearch, searchParams, setSearchParams]);
 
+    const handleFilterChange = React.useCallback((nextFilters: Record<string, string>) =>
+    {
+        const normalizedFilters = normalizeFilters(nextFilters);
+
+        setSearchParams(buildListSearchParams(searchParams, {
+            extraParams: buildFilterParams(normalizedFilters),
+            page: 1,
+            search: currentSearch,
+        }), { replace: true });
+    }, [buildFilterParams, currentSearch, normalizeFilters, searchParams, setSearchParams]);
+
     const fetchData = React.useCallback(async (params: IFetchParams): Promise<IFetchResult> =>
     {
         const response = await searchRepairRequests({
@@ -69,6 +91,7 @@ export default function RepairRequestManagerListPage()
             orderBy: buildOrderBy(params.sortBy, params.sortDir, "requested_at desc"),
             pageNumber: params.page,
             pageSize: params.limit,
+            search: buildFilterSearch(params.search),
             searchTerm: params.searchTerm
                 ? {
                     name: "request_no,requester_name",
@@ -105,6 +128,9 @@ export default function RepairRequestManagerListPage()
             showDeleteAction={false}
             showEditAction={false}
             title="Repair Requests"
+            filterFields={fieldFilters}
+            filterValues={currentFiltersRecord}
+            onFilterChange={handleFilterChange}
         />
     );
 }

@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import Loading from "~/components/Common/Loading";
 import { ConfirmModal } from "~/components/Common/Modal";
+import DetailSections, { type IDetailSection } from "~/components/Common/DetailSections";
 import { buttonVariants, Button } from "~/components/ui/button";
 import { deleteUser, getUserById } from "~/services/users.service";
 import { formatDateTime, formatRoleLabel } from "./helpers";
@@ -11,12 +12,6 @@ import { cn } from "~/lib/utils";
 interface IConfirmState
 {
     isOpen: boolean;
-}
-
-interface IDetailField
-{
-    label: string;
-    value: string;
 }
 
 export default function UserDetailPage()
@@ -98,19 +93,26 @@ export default function UserDetailPage()
         );
     }
 
-    const detailFields: IDetailField[] = [
-        { label: "Name", value: user.name ?? "-" },
-        { label: "Email", value: user.email },
-        { label: "Role", value: formatRoleLabel(user.role) },
-        { label: "Department Code", value: user.departmentCode ?? "-" },
-        { label: "Department Name", value: user.departmentName ?? "-" },
-    ];
-
-    const commonFields: IDetailField[] = [
-        { label: "Created At", value: formatDateTime(user.createdAt) },
-        { label: "Updated At", value: formatDateTime(user.updatedAt) },
-        { label: "Created By", value: user.createdBy ?? "-" },
-        { label: "Updated By", value: user.updatedBy ?? "-" },
+    const detailSections: IDetailSection[] = [
+        {
+            title: "User Information",
+            fields: [
+                { label: "Name", value: user.name ?? "-" },
+                { label: "Email", value: user.email },
+                { label: "Role", value: formatRoleLabel(user.role) },
+                { label: "Department Code", value: user.departmentCode ?? "-" },
+                { label: "Department Name", value: user.departmentName ?? "-" },
+            ],
+        },
+        {
+            title: "Common Information",
+            fields: [
+                { label: "Created At", value: formatDateTime(user.createdAt) },
+                { label: "Updated At", value: formatDateTime(user.updatedAt) },
+                { label: "Created By", value: user.createdBy ?? "-" },
+                { label: "Updated By", value: user.updatedBy ?? "-" },
+            ],
+        },
     ];
 
     return (
@@ -148,47 +150,7 @@ export default function UserDetailPage()
 
             {pageError && <div className="alert alert-error">{pageError}</div>}
 
-            <div className="card">
-                <div>
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                            User Information
-                        </p>
-                        <div className="mt-4 grid gap-5 md:grid-cols-2">
-                            {detailFields.map((field) => (
-                                <div className="rounded-md border border-[var(--border)] bg-[var(--bg-surface)] p-4" key={field.label}>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-                                        {field.label}
-                                    </p>
-                                    <p className="mt-2 text-sm font-medium text-[var(--text-main)]">
-                                        {field.value}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="my-6 h-px bg-[var(--border)]" />
-
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                            Common Information
-                        </p>
-                        <div className="mt-4 grid gap-5 md:grid-cols-2">
-                            {commonFields.map((field) => (
-                                <div className="rounded-md border border-[var(--border)] bg-[var(--bg-surface)] p-4" key={field.label}>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-                                        {field.label}
-                                    </p>
-                                    <p className="mt-2 text-sm font-medium text-[var(--text-main)]">
-                                        {field.value}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <DetailSections sections={detailSections} />
         </>
     );
 }

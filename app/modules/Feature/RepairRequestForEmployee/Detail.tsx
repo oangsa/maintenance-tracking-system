@@ -9,6 +9,9 @@ import {
     createRepairRequestDetailLineItemColumns,
     type IRepairRequestDetailLineItem,
 } from "../RepairRequests/detailLineItemColumns";
+import DetailSections, {
+    type IDetailSection,
+} from "~/components/Common/DetailSections";
 import {
     ensureCurrentUser,
     getCurrentUser,
@@ -22,12 +25,6 @@ import {
     formatRequesterLabel,
     formatTitleCase,
 } from "./helpers";
-
-interface IDetailField
-{
-    label: string;
-    value: string;
-}
 
 export default function RepairRequestDetailPage()
 {
@@ -129,20 +126,27 @@ export default function RepairRequestDetailPage()
         );
     }
 
-    const requestFields: IDetailField[] = [
-        { label: "Request No", value: repairRequest.requestNo },
-        { label: "Requester", value: formatRequesterLabel(repairRequest.requesterName, repairRequest.requesterEmail) },
-        { label: "Requester Email", value: repairRequest.requesterEmail ?? "-" },
-        { label: "Priority", value: formatTitleCase(repairRequest.priority) },
-        { label: "Current Status", value: repairRequest.currentStatusName ?? repairRequest.currentStatusCode ?? "-" },
-        { label: "Requested At", value: formatDateTime(repairRequest.requestedAt) },
-    ];
-
-    const commonFields: IDetailField[] = [
-        { label: "Created At", value: formatDateTime(repairRequest.createdAt) },
-        { label: "Updated At", value: formatDateTime(repairRequest.updatedAt) },
-        { label: "Created By", value: repairRequest.createdBy ?? "-" },
-        { label: "Updated By", value: repairRequest.updatedBy ?? "-" },
+    const detailSections: IDetailSection[] = [
+        {
+            fields: [
+                { label: "Request No", value: repairRequest.requestNo },
+                { label: "Requester", value: formatRequesterLabel(repairRequest.requesterName, repairRequest.requesterEmail) },
+                { label: "Requester Email", value: repairRequest.requesterEmail ?? "-" },
+                { label: "Priority", value: formatTitleCase(repairRequest.priority) },
+                { label: "Current Status", value: repairRequest.currentStatusName ?? repairRequest.currentStatusCode ?? "-" },
+                { label: "Requested At", value: formatDateTime(repairRequest.requestedAt) },
+            ],
+            title: "Request Information",
+        },
+        {
+            fields: [
+                { label: "Created At", value: formatDateTime(repairRequest.createdAt) },
+                { label: "Updated At", value: formatDateTime(repairRequest.updatedAt) },
+                { label: "Created By", value: repairRequest.createdBy ?? "-" },
+                { label: "Updated By", value: repairRequest.updatedBy ?? "-" },
+            ],
+            title: "Common Information",
+        },
     ];
 
     const lineItems: IRepairRequestDetailLineItem[] = repairRequest.repairRequestItems.map((item) => ({
@@ -171,47 +175,7 @@ export default function RepairRequestDetailPage()
 
             {pageError && <div className="alert alert-error">{pageError}</div>}
 
-            <div className="card">
-                <div>
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                            Request Information
-                        </p>
-                        <div className="mt-4 grid gap-5 md:grid-cols-2">
-                            {requestFields.map((field) => (
-                                <div className="rounded-md border border-[var(--border)] bg-[var(--bg-surface)] p-4" key={field.label}>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-                                        {field.label}
-                                    </p>
-                                    <p className="mt-2 text-sm font-medium text-[var(--text-main)]">
-                                        {field.value}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="my-6 h-px bg-[var(--border)]" />
-
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                            Common Information
-                        </p>
-                        <div className="mt-4 grid gap-5 md:grid-cols-2">
-                            {commonFields.map((field) => (
-                                <div className="rounded-md border border-[var(--border)] bg-[var(--bg-surface)] p-4" key={field.label}>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-                                        {field.label}
-                                    </p>
-                                    <p className="mt-2 text-sm font-medium text-[var(--text-main)]">
-                                        {field.value}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <DetailSections sections={detailSections} />
 
             <div className="mt-6">
                 <LineItemsEditor

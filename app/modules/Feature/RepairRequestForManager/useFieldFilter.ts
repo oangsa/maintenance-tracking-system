@@ -34,15 +34,9 @@ function buildFilterParams(filters: IRepairRequestFilterValues): Record<string, 
     };
 }
 
-function buildFilterSearch(filters: Record<string, string> | undefined, requesterId: number): ISearchCondition[]
+function buildFilterSearch(filters: Record<string, string> | undefined): ISearchCondition[]
 {
-    const searchFilters: ISearchCondition[] = [
-        {
-            condition: "EQUAL",
-            name: "requester_id",
-            value: String(requesterId),
-        },
-    ];
+    const searchFilters: ISearchCondition[] = [];
 
     if (filters?.priority?.trim())
     {
