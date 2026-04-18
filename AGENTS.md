@@ -570,7 +570,7 @@ You have to strictly using only dependency I provided for the Icons and UI Compo
 
 ## 6. Rules
 
-These are temporarily rules for this project.
+You have to follow these rules strictly
 
 - 1. Now declare `maintainance-tracking-system` folder as a `main` project folder
 - 2. Use `client/src` as a reference only. Do not change anything.

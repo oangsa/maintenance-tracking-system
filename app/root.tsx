@@ -9,8 +9,8 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
-import { TooltipProvider } from "~/components/ui/tooltip";
-import { initAuthService } from "~/services/auth.service";
+import { TooltipProvider } from "./components/ui/tooltip";
+import { initAuthService } from "./services/auth.service";
 
 initAuthService();
 

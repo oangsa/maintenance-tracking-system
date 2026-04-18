@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router";
 import {
+    FiClipboard,
     FiFileText,
     FiLayers,
     FiHome,
@@ -139,13 +140,20 @@ const defaultNavSections: INavSection[] = [
         items: [
             { label: "Home", path: "/", icon: <FiHome size={18} /> },
             { label: "Test", path: "/test", icon: <FiFileText size={18} /> },
+            { label: "Repair Requests", path: "/repair-requests", icon: <FiClipboard size={18} /> },
+        ],
+    },
+    {
+        label: "Manager",
+        items: [
+            { label: "Repair Requests", path: "/manager/repair-requests", icon: <FiClipboard size={18} /> },
         ],
     },
     {
         label: "Master",
         items: [
-            { label: "Departments", path: "/master/departments", icon: <FiLayers size={18} /> },
             { label: "Users", path: "/master/users", icon: <FiUsers size={18} /> },
+            { label: "Departments", path: "/master/departments", icon: <FiLayers size={18} /> },
         ],
     },
 ];

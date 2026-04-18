@@ -112,6 +112,9 @@ interface IDataTableProps<T = Record<string, unknown>>
     onFilterChange?: (filters: Record<string, string>) => void;
     onSearchChange?: (search: string) => void;
     onCurrentPageChange?: (page: number) => void;
+    showCreateButton?: boolean;
+    showEditAction?: boolean;
+    showDeleteAction?: boolean;
 }
 
 interface ISortIconProps
@@ -186,6 +189,9 @@ export default function DataTable<T extends Record<string, unknown>>({
     onFilterChange,
     onSearchChange,
     onCurrentPageChange,
+    showCreateButton = true,
+    showEditAction = true,
+    showDeleteAction = true,
 }: IDataTableProps<T>)
 {
     const [data, setData] = React.useState<T[]>([]);
@@ -208,6 +214,12 @@ export default function DataTable<T extends Record<string, unknown>>({
 
     const search = searchValue ?? searchState;
     const currentPage = currentPageValue ?? currentPageState;
+    const shouldShowDetailLinks = Boolean(basePath);
+    const shouldShowCreateAction = showCreateButton && shouldShowDetailLinks;
+    const shouldShowEditRowAction = showEditAction && shouldShowDetailLinks;
+    const shouldShowDeleteRowAction = showDeleteAction && onDelete !== undefined;
+    const shouldShowActionsColumn = shouldShowEditRowAction || shouldShowDeleteRowAction;
+    const totalTableColumns = columns.length + (shouldShowActionsColumn ? 1 : 0);
     const filters = React.useMemo(() =>
     {
         if (filterValues !== undefined)
@@ -487,16 +499,18 @@ export default function DataTable<T extends Record<string, unknown>>({
         <div>
             <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
                 <h3 className="text-xl font-bold">{title}</h3>
-                <Link
-                    to={`${basePath}/new`}
-                    className={cn(
-                        buttonVariants({ variant: "default" }),
-                        "gap-1.5 !text-primary-foreground hover:!text-primary-foreground"
-                    )}
-                >
-                    <FiPlus size={15} />
-                    Create New
-                </Link>
+                {shouldShowCreateAction && (
+                    <Link
+                        to={`${basePath}/new`}
+                        className={cn(
+                            buttonVariants({ variant: "default" }),
+                            "gap-1.5 !text-primary-foreground hover:!text-primary-foreground"
+                        )}
+                    >
+                        <FiPlus size={15} />
+                        Create New
+                    </Link>
+                )}
             </div>
 
             <div className="rounded-lg border bg-card shadow-xs p-4">
@@ -604,12 +618,12 @@ export default function DataTable<T extends Record<string, unknown>>({
                                         </div>
                                     </TableHead>
                                 ))}
-                                <TableHead className="text-right">Actions</TableHead>
+                                {shouldShowActionsColumn && <TableHead className="text-right">Actions</TableHead>}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {loading
-                                ? <TableLoading colSpan={columns.length + 1} />
+                                ? <TableLoading colSpan={totalTableColumns} />
                                 : (
                                     <>
                                         {data.map((item) =>
@@ -625,7 +639,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                                                             className={col.align === "right" ? "text-right" : ""}
                                                             style={col.style}
                                                         >
-                                                            {idx === 0
+                                                            {idx === 0 && shouldShowDetailLinks
                                                                 ? (
                                                                     <Link
                                                                         to={`${basePath}/${pathSegment}`}
@@ -638,34 +652,40 @@ export default function DataTable<T extends Record<string, unknown>>({
                                                             }
                                                         </TableCell>
                                                     ))}
-                                                    <TableCell className="text-right">
-                                                        <Link
-                                                            to={`${basePath}/${pathSegment}/edit`}
-                                                            className={cn(
-                                                                buttonVariants({ variant: "outline", size: "xs" }),
-                                                                "mr-2 !text-foreground hover:!text-foreground"
+                                                    {shouldShowActionsColumn && (
+                                                        <TableCell className="text-right">
+                                                            {shouldShowEditRowAction && (
+                                                                <Link
+                                                                    to={`${basePath}/${pathSegment}/edit`}
+                                                                    className={cn(
+                                                                        buttonVariants({ variant: "outline", size: "xs" }),
+                                                                        shouldShowDeleteRowAction ? "mr-2 !text-foreground hover:!text-foreground" : "!text-foreground hover:!text-foreground"
+                                                                    )}
+                                                                >
+                                                                    <FiEdit2 size={12} />
+                                                                    Edit
+                                                                </Link>
                                                             )}
-                                                        >
-                                                            <FiEdit2 size={12} />
-                                                            Edit
-                                                        </Link>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="xs"
-                                                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                            onClick={() => handleDelete(item)}
-                                                        >
-                                                            <FiTrash2 size={12} />
-                                                            Delete
-                                                        </Button>
-                                                    </TableCell>
+                                                            {shouldShowDeleteRowAction && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="xs"
+                                                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                                    onClick={() => handleDelete(item)}
+                                                                >
+                                                                    <FiTrash2 size={12} />
+                                                                    Delete
+                                                                </Button>
+                                                            )}
+                                                        </TableCell>
+                                                    )}
                                                 </TableRow>
                                             );
                                         })}
                                         {data.length === 0 && (
                                             <TableRow>
                                                 <TableCell
-                                                    colSpan={columns.length + 1}
+                                                    colSpan={totalTableColumns}
                                                     className="py-8 text-center text-muted-foreground"
                                                 >
                                                     {search
