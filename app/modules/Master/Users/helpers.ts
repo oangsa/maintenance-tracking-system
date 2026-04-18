@@ -1,6 +1,5 @@
 import type { IUser, IUserForCreate, IUserForUpdate } from "~/api/types";
 import type { IRole } from "~/constants";
-import { roleOptions } from "~/constants/role.constant";
 
 interface IUserFormValues
 {
@@ -176,7 +175,6 @@ export {
     formatDateTime,
     formatRoleLabel,
     mapUserToFormValues,
-    roleOptions,
 };
 
 export type { IUserFormValues };

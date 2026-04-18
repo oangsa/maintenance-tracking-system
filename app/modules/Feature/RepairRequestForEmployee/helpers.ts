@@ -1,4 +1,4 @@
-import type { ILineItemValue } from "~/components/Common/LineItemsEditor";
+import type { ILineItemValue } from "../../../components/Common/LineItemsEditor/index";
 import type {
     IProduct,
     IPriority,
@@ -9,7 +9,11 @@ import type {
 
 interface IRepairRequestFormLineItem extends ILineItemValue
 {
+    code: string;
+    description?: string;
+    name: string;
     productId: string;
+    quantity: number | string;
 }
 
 interface IRepairRequestFormValues
@@ -18,7 +22,6 @@ interface IRepairRequestFormValues
     items: IRepairRequestFormLineItem[];
 }
 
-const priorityOptions: IPriority[] = ["low", "medium", "high", "urgent"];
 
 function formatDateTime(value?: string | null): string
 {
@@ -203,7 +206,6 @@ export {
     formatTitleCase,
     mapProductToLineItem,
     parsePositiveNumber,
-    priorityOptions,
 };
 
 export type { IRepairRequestFormLineItem, IRepairRequestFormValues };

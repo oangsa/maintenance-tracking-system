@@ -2,7 +2,8 @@ import React from "react";
 import type { ISearchCondition } from "~/api/types";
 import type { IDataTableFilterField, IDataTableFilterOption } from "~/components/Common/DataTable";
 import { searchDepartments } from "~/services/departments.service";
-import { formatDepartmentLabel, formatRoleLabel, roleOptions } from "./helpers";
+import { formatDepartmentLabel, formatRoleLabel} from "./helpers";
+import { ROLE_OPTIONS as roleOptions } from "~/constants/role.constant";
 
 interface IUserFilterValues
 {
@@ -113,7 +114,7 @@ export default function useFieldFilter({ searchParams }: IUseFieldFilterProps)
         {
             key: "role",
             label: "Role",
-            options: roleOptions.map((role) => ({
+            options: roleOptions.map((role: string) => ({
                 label: formatRoleLabel(role),
                 value: role,
             })),

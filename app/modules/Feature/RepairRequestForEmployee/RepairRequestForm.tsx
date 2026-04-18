@@ -1,7 +1,19 @@
 import React from "react";
+import {
+    FiSearch,
+    FiX,
+} from "react-icons/fi";
+import {
+    GripVertical,
+    LoaderCircle,
+} from "lucide-react";
+import ListPickerModal from "~/components/Common/ListPickerModal";
 import { z } from "zod";
-import LineItemsEditor, { type ILineItemLookupFetchParams } from "~/components/Common/LineItemsEditor";
+import LineItemsEditor, {
+    type ILineItemColumn,
+} from "../../../components/Common/LineItemsEditor/index";
 import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
     Select,
@@ -10,6 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "~/components/ui/select";
+import { Textarea } from "~/components/ui/textarea";
 import type { IProduct, IPriority, IUser } from "~/api/types";
 import { searchProducts } from "~/services/products.service";
 import {
@@ -19,14 +32,24 @@ import {
     formatTitleCase,
     mapProductToLineItem,
     parsePositiveNumber,
-    priorityOptions,
 } from "./helpers";
 import type {
     IRepairRequestFormLineItem,
     IRepairRequestFormValues,
 } from "./helpers";
+import { RepairRequestFormSchema } from "~/schemas/repairRequestFormSchema";
+import { PRIORITY_OPTIONS as priorityOptions } from "@/constants/priority.constant";
 
 type IProductPickerRow = IProduct & Record<string, unknown>;
+
+interface IProductPickerFetchParams
+{
+    search: string;
+    page: number;
+    limit: number;
+    sortBy?: string;
+    sortDir?: "asc" | "desc";
+}
 
 interface IRepairRequestFormProps
 {
@@ -45,18 +68,7 @@ interface IRepairRequestFormErrors
     priority?: string;
 }
 
-const RepairRequestFormSchema = z.object({
-    items: z.array(z.object({
-        code: z.string().trim().min(1, "Product is required."),
-        description: z.string().trim().min(1, "Description is required."),
-        name: z.string().trim().min(1, "Product name is required."),
-        productId: z.string().trim().regex(/^\d+$/, "Product is required."),
-        quantity: z.union([z.number(), z.string()]),
-    })).min(1, "At least one repair request item is required."),
-    priority: z.string().trim().refine((value) => priorityOptions.includes(value as IPriority), {
-        message: "Priority is required.",
-    }),
-});
+;
 
 function validateForm(values: IRepairRequestFormValues): IRepairRequestFormErrors
 {
@@ -125,6 +137,13 @@ export default function RepairRequestForm({
 {
     const [values, setValues] = React.useState<IRepairRequestFormValues>(initialValues);
     const [formErrors, setFormErrors] = React.useState<IRepairRequestFormErrors>({ itemIssues: [] });
+    const [lookupRowIndex, setLookupRowIndex] = React.useState<number | null>(null);
+    const [itemMessages, setItemMessages] = React.useState<Record<number, string | undefined>>({});
+    const [resolvingRows, setResolvingRows] = React.useState<Record<number, boolean>>({});
+
+    const itemsRef = React.useRef(initialValues.items);
+
+    itemsRef.current = values.items;
 
     const productColumns = React.useMemo(() => [
         {
@@ -145,6 +164,9 @@ export default function RepairRequestForm({
     {
         setValues(initialValues);
         setFormErrors({ itemIssues: [] });
+        setLookupRowIndex(null);
+        setItemMessages({});
+        setResolvingRows({});
     }, [initialValues]);
 
     const requesterLabel = formatRequesterLabel(currentUser.name, currentUser.email);
@@ -165,7 +187,62 @@ export default function RepairRequestForm({
         void onSubmit(values);
     }
 
-    const fetchProducts = React.useCallback(async (params: ILineItemLookupFetchParams) =>
+    function handleItemsChange(nextItems: IRepairRequestFormLineItem[])
+    {
+        setValues((currentValues) => ({
+            ...currentValues,
+            items: nextItems,
+        }));
+        setFormErrors((currentErrors) => ({
+            ...currentErrors,
+            itemIssues: [],
+            items: undefined,
+        }));
+    }
+
+    function updateItem(index: number, patch: Partial<IRepairRequestFormLineItem>)
+    {
+        handleItemsChange(itemsRef.current.map((item, itemIndex) =>
+        {
+            if (itemIndex !== index)
+            {
+                return item;
+            }
+
+            return {
+                ...item,
+                ...patch,
+            };
+        }));
+    }
+
+    function replaceItem(index: number, nextItem: IRepairRequestFormLineItem)
+    {
+        handleItemsChange(itemsRef.current.map((item, itemIndex) =>
+        {
+            if (itemIndex !== index)
+            {
+                return item;
+            }
+
+            return nextItem;
+        }));
+    }
+
+    function clearProductSelection(index: number)
+    {
+        updateItem(index, {
+            code: "",
+            name: "",
+            productId: "",
+        });
+        setItemMessages((currentMessages) => ({
+            ...currentMessages,
+            [index]: undefined,
+        }));
+    }
+
+    const fetchProducts = React.useCallback(async (params: IProductPickerFetchParams) =>
     {
         const response = await searchProducts({
             deleted: false,
@@ -218,6 +295,253 @@ export default function RepairRequestForm({
 
         return mapProductToLineItem(matchedProduct);
     }, []);
+
+    async function handleCodeBlur(index: number)
+    {
+        const currentItem = itemsRef.current[index];
+
+        if (!currentItem)
+        {
+            return;
+        }
+
+        const normalizedCode = String(currentItem.code ?? "").trim().toLowerCase();
+
+        if (!normalizedCode)
+        {
+            clearProductSelection(index);
+            return;
+        }
+
+        setResolvingRows((currentRows) => ({
+            ...currentRows,
+            [index]: true,
+        }));
+        setItemMessages((currentMessages) => ({
+            ...currentMessages,
+            [index]: undefined,
+        }));
+
+        try
+        {
+            const resolvedItem = await resolveProductByCode(String(currentItem.code).trim());
+            const latestItem = itemsRef.current[index];
+
+            if (!latestItem || String(latestItem.code ?? "").trim().toLowerCase() !== normalizedCode)
+            {
+                return;
+            }
+
+            if (!resolvedItem)
+            {
+                setItemMessages((currentMessages) => ({
+                    ...currentMessages,
+                    [index]: "Product code was not found.",
+                }));
+                return;
+            }
+
+            replaceItem(index, {
+                ...latestItem,
+                ...resolvedItem,
+                code: String(resolvedItem.code ?? latestItem.code ?? "").trim(),
+                name: String(resolvedItem.name ?? latestItem.name ?? "").trim(),
+            });
+            setItemMessages((currentMessages) => ({
+                ...currentMessages,
+                [index]: undefined,
+            }));
+        }
+        catch (error)
+        {
+            const latestItem = itemsRef.current[index];
+
+            if (!latestItem || String(latestItem.code ?? "").trim().toLowerCase() !== normalizedCode)
+            {
+                return;
+            }
+
+            setItemMessages((currentMessages) => ({
+                ...currentMessages,
+                [index]: error instanceof Error && error.message
+                    ? error.message
+                    : "Unable to resolve product code.",
+            }));
+        }
+        finally
+        {
+            setResolvingRows((currentRows) => ({
+                ...currentRows,
+                [index]: false,
+            }));
+        }
+    }
+
+    function handleProductSelect(product: IProductPickerRow)
+    {
+        if (lookupRowIndex === null)
+        {
+            return;
+        }
+
+        const currentItem = itemsRef.current[lookupRowIndex];
+
+        if (!currentItem)
+        {
+            setLookupRowIndex(null);
+            return;
+        }
+
+        const mappedItem = mapProductToLineItem(product);
+
+        replaceItem(lookupRowIndex, {
+            ...currentItem,
+            ...mappedItem,
+            code: mappedItem.code,
+            name: mappedItem.name,
+        });
+        setItemMessages((currentMessages) => ({
+            ...currentMessages,
+            [lookupRowIndex]: undefined,
+        }));
+        setLookupRowIndex(null);
+    }
+
+    const lineItemColumns = React.useMemo<ILineItemColumn<IRepairRequestFormLineItem>[]>(() => [
+        {
+            cellClassName: "w-[72px] align-top",
+            headerClassName: "w-[72px] text-center",
+            key: "index",
+            label: "#",
+            renderCell: (context) => (
+                <div className="flex items-center justify-center gap-1.5 pt-2 text-muted-foreground">
+                    {!context.readOnly && <GripVertical className="size-4" />}
+                    <span className="min-w-5 text-center text-xs font-semibold">{context.index + 1}</span>
+                </div>
+            ),
+        },
+        {
+            cellClassName: "min-w-[240px] align-top",
+            headerClassName: "min-w-[240px]",
+            key: "code",
+            label: "Product Code",
+            renderCell: (context) => (
+                <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                        <Input
+                            aria-invalid={Boolean(itemMessages[context.index])}
+                            className="min-w-0"
+                            disabled={context.disabled}
+                            onBlur={() => { void handleCodeBlur(context.index); }}
+                            onChange={(event) =>
+                            {
+                                context.updateItem({ code: event.target.value });
+                                setItemMessages((currentMessages) => ({
+                                    ...currentMessages,
+                                    [context.index]: undefined,
+                                }));
+                            }}
+                            placeholder="Enter product code"
+                            type="text"
+                            value={String(context.item.code ?? "")}
+                        />
+
+                        <Button
+                            disabled={context.disabled}
+                            onClick={() => setLookupRowIndex(context.index)}
+                            size="icon-sm"
+                            title="Lookup product"
+                            type="button"
+                            variant="outline"
+                        >
+                            <FiSearch className="size-4" />
+                        </Button>
+
+                        {String(context.item.code ?? "").trim() !== "" && (
+                            <Button
+                                disabled={context.disabled}
+                                onClick={() => clearProductSelection(context.index)}
+                                size="icon-sm"
+                                title="Clear product"
+                                type="button"
+                                variant="ghost"
+                            >
+                                <FiX className="size-4" />
+                            </Button>
+                        )}
+                    </div>
+
+                    {(itemMessages[context.index] || resolvingRows[context.index]) && (
+                        <div className="flex min-h-5 items-center gap-1.5 text-xs">
+                            {resolvingRows[context.index] && (
+                                <>
+                                    <LoaderCircle className="size-3 animate-spin text-muted-foreground" />
+                                    <span className="text-muted-foreground">Resolving product code...</span>
+                                </>
+                            )}
+
+                            {!resolvingRows[context.index] && itemMessages[context.index] && (
+                                <span className="text-destructive">{itemMessages[context.index]}</span>
+                            )}
+                        </div>
+                    )}
+                </div>
+            ),
+        },
+        {
+            cellClassName: "min-w-[220px] align-top",
+            headerClassName: "min-w-[220px]",
+            key: "name",
+            label: "Product Name",
+            renderCell: (context) => (
+                <Input
+                    disabled
+                    readOnly
+                    type="text"
+                    value={String(context.item.name ?? "")}
+                />
+            ),
+        },
+        {
+            cellClassName: "min-w-[260px] align-top",
+            headerClassName: "min-w-[260px]",
+            key: "description",
+            label: "Issue Description",
+            renderCell: (context) => (
+                <Textarea
+                    className="min-h-20 resize-y"
+                    disabled={context.disabled}
+                    onChange={(event) => context.updateItem({ description: event.target.value })}
+                    placeholder="Describe the issue"
+                    value={String(context.item.description ?? "")}
+                />
+            ),
+        },
+        {
+            cellClassName: "w-[120px] align-top",
+            headerClassName: "w-[120px] text-right",
+            key: "quantity",
+            label: "Quantity",
+            renderCell: (context) => (
+                <Input
+                    className="text-right"
+                    disabled={context.disabled}
+                    min={1}
+                    onChange={(event) => context.updateItem({ quantity: event.target.value })}
+                    step={1}
+                    type="number"
+                    value={String(context.item.quantity ?? "")}
+                />
+            ),
+        },
+        {
+            cellClassName: "w-[168px] align-top",
+            headerClassName: "w-[168px] text-right",
+            key: "actions",
+            label: "Actions",
+            renderCell: (context) => context.renderDefaultActions(),
+        },
+    ], [itemMessages, resolvingRows]);
 
     return (
         <div className="card">
@@ -273,41 +597,29 @@ export default function RepairRequestForm({
                     </div>
                 </div>
 
-                <LineItemsEditor<IProductPickerRow>
+                <LineItemsEditor<IRepairRequestFormLineItem>
                     addButtonLabel="Add Product"
-                    allowDuplicateCodes={true}
+                    columns={lineItemColumns}
                     createEmptyItem={createEmptyRepairRequestLineItem}
-                    descriptionLabel="Issue Description"
                     emptyMessage="No repair request items added yet."
                     itemLabel="product"
-                    lookupConfig={{
-                        columns: productColumns,
-                        emptyDefault: "No products are available.",
-                        emptySearch: "No matching products found.",
-                        fetchData: fetchProducts,
-                        itemName: "products",
-                        mapRowToItem: mapProductToLineItem,
-                        searchPlaceholder: "Search product code or name...",
-                        title: "Select Product",
-                    }}
-                    onChange={(items) =>
-                    {
-                        setValues((currentValues) => ({
-                            ...currentValues,
-                            items: items as IRepairRequestFormLineItem[],
-                        }));
-                        setFormErrors((currentErrors) => ({
-                            ...currentErrors,
-                            itemIssues: [],
-                            items: undefined,
-                        }));
-                    }}
-                    onResolveItemByCode={resolveProductByCode}
-                    quantityLabel="Quantity"
-                    showPricing={false}
-                    showUnit={false}
+                    onChange={handleItemsChange}
                     title="Repair Request Items"
                     value={values.items}
+                />
+
+                <ListPickerModal<IProductPickerRow>
+                    columns={productColumns}
+                    emptyDefault="No products are available."
+                    emptySearch="No matching products found."
+                    fetchData={fetchProducts}
+                    initialSearch={lookupRowIndex !== null ? String(values.items[lookupRowIndex]?.code ?? "") : ""}
+                    isOpen={lookupRowIndex !== null}
+                    itemName="products"
+                    onClose={() => setLookupRowIndex(null)}
+                    onSelect={handleProductSelect}
+                    searchPlaceholder="Search product code or name..."
+                    title="Select Product"
                 />
 
                 {formErrors.items && <div className="form-error">{formErrors.items}</div>}

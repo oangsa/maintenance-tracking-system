@@ -1,22 +1,14 @@
 import React from "react";
 import { FiFileText } from "react-icons/fi";
 import { Link, useParams } from "react-router";
+import LineItemsEditor, { type ILineItemColumn } from "../../../components/Common/LineItemsEditor/index";
 import Loading from "~/components/Common/Loading";
 import { Button, buttonVariants } from "~/components/ui/button";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "~/components/ui/table";
 import type { IRepairRequest } from "~/api/types";
 import { getRepairRequestById } from "~/services/repairRequests.service";
 import { cn } from "~/lib/utils";
 import {
     formatDateTime,
-    formatProductLabel,
     formatRepairStatusLabel,
     formatRequesterLabel,
     formatTitleCase,
@@ -97,6 +89,7 @@ export default function RepairRequestManagerDetailPage()
         );
     }
 
+    // TODO: Refactor the request/common field sections to a separate component when the manager repair request create/edit flow is implemented and they can be reused.
     const requestFields: IDetailField[] = [
         { label: "Request No", value: repairRequest.requestNo },
         { label: "Requester", value: formatRequesterLabel(repairRequest.requesterName, repairRequest.requesterEmail) },
@@ -106,11 +99,86 @@ export default function RepairRequestManagerDetailPage()
         { label: "Requested At", value: formatDateTime(repairRequest.requestedAt) },
     ];
 
+    // The common fields are currently only created/updated info, but more fields can be added here in the future if needed.
     const commonFields: IDetailField[] = [
         { label: "Created At", value: formatDateTime(repairRequest.createdAt) },
         { label: "Updated At", value: formatDateTime(repairRequest.updatedAt) },
         { label: "Created By", value: repairRequest.createdBy ?? "-" },
         { label: "Updated By", value: repairRequest.updatedBy ?? "-" },
+    ];
+
+
+    const lineItems = repairRequest.repairRequestItems.map((item) => ({
+        id: item.id,
+        code: item.productCode,
+        name: item.productName,
+        description: item.description,
+        quantity: item.quantity,
+        status: formatRepairStatusLabel(item),
+    }));
+
+
+    // TODO: Refactor the line item columns to a separate hook when the manager repair request create/edit flow is implemented and they can be reused.
+    const lineItemColumns: ILineItemColumn<(typeof lineItems)[number]>[] = [
+        {
+            cellClassName: "w-[72px] align-top",
+            headerClassName: "w-[72px] text-center",
+            key: "index",
+            label: "#",
+            renderCell: (context) => (
+                <div className="pt-2 text-center text-xs font-semibold text-muted-foreground">
+                    {context.index + 1}
+                </div>
+            ),
+        },
+        {
+            cellClassName: "min-w-[180px] align-top",
+            headerClassName: "min-w-[180px]",
+            key: "code",
+            label: "Product Code",
+            renderCell: (context) => context.renderReadOnlyValue(String(context.item.code ?? "-")),
+        },
+        {
+            cellClassName: "min-w-[220px] align-top",
+            headerClassName: "min-w-[220px]",
+            key: "name",
+            label: "Product Name",
+            renderCell: (context) => context.renderReadOnlyValue(String(context.item.name ?? "-")),
+        },
+        {
+            cellClassName: "min-w-[260px] align-top",
+            headerClassName: "min-w-[260px]",
+            key: "description",
+            label: "Description",
+            renderCell: (context) => context.renderReadOnlyValue(String(context.item.description ?? "-"), "min-h-20 whitespace-pre-wrap"),
+        },
+        {
+            cellClassName: "w-[120px] align-top",
+            headerClassName: "w-[120px] text-right",
+            key: "quantity",
+            label: "Qty",
+            renderCell: (context) => context.renderReadOnlyValue(String(context.item.quantity ?? "-"), "text-right"),
+        },
+        {
+            cellClassName: "w-[160px] align-top",
+            headerClassName: "w-[160px]",
+            key: "status",
+            label: "Repair Status",
+            renderCell: (context) => context.renderReadOnlyValue(String(context.item.status ?? "-")),
+        },
+        {
+            cellClassName: "w-[180px] align-top",
+            headerClassName: "w-[180px] text-right",
+            key: "actions",
+            label: "Action",
+            renderCell: (context) => (
+                <div className="flex justify-end">
+                    <Button onClick={() => handleAssignWorkOrder(Number(context.item.id))} type="button" variant="outline">
+                        Assign Work Order
+                    </Button>
+                </div>
+            ),
+        },
     ];
 
     return (
@@ -178,55 +246,16 @@ export default function RepairRequestManagerDetailPage()
                 </div>
             </div>
 
-            <div className="card mt-6">
-                <div className="flex items-center justify-between gap-2">
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                            Repair Request Items
-                        </p>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            {repairRequest.repairRequestItems.length} submitted line item{repairRequest.repairRequestItems.length === 1 ? "" : "s"}.
-                        </p>
-                    </div>
-                </div>
-
-                <div className="mt-4 overflow-x-auto rounded-md border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-16">No</TableHead>
-                                <TableHead>Product</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead className="text-right">Qty</TableHead>
-                                <TableHead>Repair Status</TableHead>
-                                <TableHead className="text-right">Action</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {repairRequest.repairRequestItems.map((item, index) => (
-                                <TableRow key={item.id}>
-                                    <TableCell className="align-top font-medium">{index + 1}</TableCell>
-                                    <TableCell className="align-top">{formatProductLabel(item)}</TableCell>
-                                    <TableCell className="align-top">{item.description?.trim() || "-"}</TableCell>
-                                    <TableCell className="align-top text-right">{item.quantity}</TableCell>
-                                    <TableCell className="align-top">{formatRepairStatusLabel(item)}</TableCell>
-                                    <TableCell className="align-top text-right">
-                                        <Button onClick={() => handleAssignWorkOrder(item.id)} type="button" variant="outline">
-                                            Assign Work
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {repairRequest.repairRequestItems.length === 0 && (
-                                <TableRow>
-                                    <TableCell className="py-8 text-center text-muted-foreground" colSpan={6}>
-                                        No repair request items were submitted for this request.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+            <div className="mt-6">
+                <LineItemsEditor
+                    columns={lineItemColumns}
+                    emptyMessage="No repair request items were submitted for this request."
+                    itemLabel="line item"
+                    onChange={() => undefined}
+                    readOnly
+                    title="Repair Request Items"
+                    value={lineItems}
+                />
             </div>
         </>
     );
