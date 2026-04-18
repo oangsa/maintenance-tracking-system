@@ -2,16 +2,11 @@ import React from "react"
 import {
     ArrowDown,
     ArrowUp,
-    GripVertical,
-    LoaderCircle,
     Plus,
-    Search,
     Trash2,
-    X,
 } from "lucide-react"
 import ListPickerModal from "../ListPickerModal"
 import { Button } from "~/components/ui/button"
-import { Input } from "~/components/ui/input"
 import {
     Table,
     TableBody,
@@ -20,41 +15,33 @@ import {
     TableHeader,
     TableRow,
 } from "~/components/ui/table"
-import { Textarea } from "~/components/ui/textarea"
 import { cn } from "~/lib/utils"
 
-export interface ILineItemValue
+export type ILineItemReadOnlyVariant = "boxed" | "plain"
+
+export interface ILineItemValue extends Record<string, unknown>
 {
     id?: string | number;
-    code: string;
-    name: string;
-    quantity: number | string;
-    description?: string;
-    unitLabel?: string;
-    unitPrice?: number | string;
-    [key: string]: unknown;
 }
 
-export interface ILineItemLookupRow extends Record<string, unknown>
+export interface ILineItemRowHandlers
 {
-    id?: string | number;
-    code: string;
-    name: string;
-    description?: string | null;
-    unitLabel?: string | null;
-    unitPrice?: number | string | null;
+    moveUp: () => void;
+    moveDown: () => void;
+    insertBelow: () => void;
+    remove: () => void;
 }
 
-export interface ILineItemLookupColumn<TLookupRow = ILineItemLookupRow>
+export interface ILineItemPickerColumn<T = Record<string, unknown>>
 {
     key: string;
     label: string;
     align?: "left" | "right" | "center";
-    render?: (value: unknown, row: TLookupRow) => React.ReactNode;
+    render?: (value: unknown, row: T) => React.ReactNode;
     style?: React.CSSProperties;
 }
 
-export interface ILineItemLookupFetchParams
+export interface ILineItemPickerFetchParams
 {
     search: string;
     page: number;
@@ -63,9 +50,9 @@ export interface ILineItemLookupFetchParams
     sortDir?: "asc" | "desc";
 }
 
-export interface ILineItemLookupFetchResult<TLookupRow = ILineItemLookupRow>
+export interface ILineItemPickerFetchResult<T = Record<string, unknown>>
 {
-    data: TLookupRow[];
+    data: T[];
     total: number;
     totalPages: number;
     pageItemCount?: number;
@@ -74,87 +61,108 @@ export interface ILineItemLookupFetchResult<TLookupRow = ILineItemLookupRow>
     hasPrevious?: boolean;
 }
 
-export interface ILineItemLookupConfig<TLookupRow = ILineItemLookupRow>
+export interface ILineItemColumnRenderContext<TItem extends ILineItemValue = ILineItemValue>
 {
-    columns: ILineItemLookupColumn<TLookupRow>[];
-    fetchData: (params: ILineItemLookupFetchParams) => Promise<ILineItemLookupFetchResult<TLookupRow>>;
+    index: number;
+    item: TItem;
+    itemsLength: number;
+    disabled: boolean;
+    readOnly: boolean;
+    readOnlyVariant: ILineItemReadOnlyVariant;
+    isDragging: boolean;
+    isDragOver: boolean;
+    minRows: number;
+    isPickerOpen: boolean;
+    openPicker?: () => void;
+    updateItem: (patch: Partial<TItem>) => void;
+    replaceItem: (nextItem: TItem) => void;
+    rowHandlers: ILineItemRowHandlers;
+    renderReadOnlyValue: (value: React.ReactNode, className?: string) => React.ReactNode;
+    renderDefaultActions: (extraActions?: React.ReactNode) => React.ReactNode;
+}
+
+export interface ILineItemPickerConfig<TItem extends ILineItemValue = ILineItemValue, TPickerRow extends Record<string, unknown> = Record<string, unknown>>
+{
+    columns: ILineItemPickerColumn<TPickerRow>[];
+    fetchData: (params: ILineItemPickerFetchParams) => Promise<ILineItemPickerFetchResult<TPickerRow>>;
     title?: string;
     searchPlaceholder?: string;
     itemName?: string;
     emptySearch?: string;
     emptyDefault?: string;
-    mapRowToItem?: (row: TLookupRow) => Partial<ILineItemValue> & {
-        code: string;
-        name: string;
-    };
+    getInitialSearch?: (context: ILineItemColumnRenderContext<TItem>) => string;
+    onSelect: (row: TPickerRow, context: ILineItemColumnRenderContext<TItem>) => void;
 }
 
-interface ILineItemsEditorProps<TLookupRow = ILineItemLookupRow>
+export interface ILineItemColumn<TItem extends ILineItemValue = ILineItemValue, TPickerRow extends Record<string, unknown> = Record<string, unknown>>
 {
-    value: ILineItemValue[];
-    onChange: (items: ILineItemValue[]) => void;
+    key: string;
+    label: string;
+    headerClassName?: string;
+    cellClassName?: string;
+    renderCell: (context: ILineItemColumnRenderContext<TItem>) => React.ReactNode;
+    renderPicker?: (context: ILineItemColumnRenderContext<TItem>) => ILineItemPickerConfig<TItem, TPickerRow> | null;
+    renderHeader?: () => React.ReactNode;
+}
+
+interface IBaseLineItemsEditorProps<TItem extends ILineItemValue, TPickerRow extends Record<string, unknown>>
+{
+    value: TItem[];
+    onChange: (items: TItem[]) => void;
+    columns: ILineItemColumn<TItem, TPickerRow>[];
     title?: string;
     addButtonLabel?: string;
     itemLabel?: string;
     emptyMessage?: string;
     minRows?: number;
     disabled?: boolean;
-    showDescription?: boolean;
-    showUnit?: boolean;
-    showPricing?: boolean;
-    allowDuplicateCodes?: boolean;
-    allowManualNameEdit?: boolean;
-    allowUnitPriceEdit?: boolean;
-    quantityStep?: number;
-    codeLabel?: string;
-    nameLabel?: string;
-    descriptionLabel?: string;
-    quantityLabel?: string;
-    unitLabel?: string;
-    unitPriceLabel?: string;
-    totalLabel?: string;
-    createEmptyItem?: () => ILineItemValue;
-    formatCurrency?: (value: number) => string;
-    lookupConfig?: ILineItemLookupConfig<TLookupRow>;
-    onResolveItemByCode?: (
-        code: string,
-        currentItem: ILineItemValue,
-        rowIndex: number,
-    ) => Promise<(Partial<ILineItemValue> & { code?: string; name?: string; }) | null>;
+    hideAddButton?: boolean;
+    readOnlyVariant?: ILineItemReadOnlyVariant;
 }
 
-interface ILineItemRowProps
+interface IEditableLineItemsEditorProps<TItem extends ILineItemValue>
 {
+    readOnly?: false;
+    createEmptyItem: () => TItem;
+}
+
+interface IReadOnlyLineItemsEditorProps
+{
+    readOnly: true;
+    createEmptyItem?: never;
+}
+
+export type ILineItemsEditorProps<TItem extends ILineItemValue = ILineItemValue, TPickerRow extends Record<string, unknown> = Record<string, unknown>> = IBaseLineItemsEditorProps<TItem, TPickerRow>
+    & (IEditableLineItemsEditorProps<TItem> | IReadOnlyLineItemsEditorProps)
+
+interface IActivePickerState<TItem extends ILineItemValue, TPickerRow extends Record<string, unknown>>
+{
+    columnKey: string;
+    config: ILineItemPickerConfig<TItem, TPickerRow>;
+    context: ILineItemColumnRenderContext<TItem>;
+    rowIndex: number;
+}
+
+interface ILineItemRowProps<TItem extends ILineItemValue, TPickerRow extends Record<string, unknown>>
+{
+    columns: ILineItemColumn<TItem, TPickerRow>[];
     index: number;
-    item: ILineItemValue;
+    item: TItem;
     itemsLength: number;
     disabled: boolean;
-    message?: string;
-    isResolving: boolean;
+    readOnly: boolean;
+    readOnlyVariant: ILineItemReadOnlyVariant;
+    minRows: number;
     isDragging: boolean;
     isDragOver: boolean;
-    showDescription: boolean;
-    showUnit: boolean;
-    showPricing: boolean;
-    allowLookup: boolean;
-    allowManualNameEdit: boolean;
-    allowUnitPriceEdit: boolean;
-    quantityStep: number;
-    minRows: number;
-    formatCurrency: (value: number) => string;
-    computeLineTotal: (item: ILineItemValue) => number;
-    onCodeChange: (value: string) => void;
-    onCodeBlur: () => void;
-    onNameChange: (value: string) => void;
-    onDescriptionChange: (value: string) => void;
-    onQuantityChange: (value: string) => void;
-    onUnitPriceChange: (value: string) => void;
-    onOpenLookup: () => void;
-    onClearLookupValues: () => void;
+    onUpdateItem: (index: number, patch: Partial<TItem>) => void;
+    onReplaceItem: (index: number, nextItem: TItem) => void;
     onMoveUp: () => void;
     onMoveDown: () => void;
     onInsertBelow: () => void;
     onRemove: () => void;
+    activePicker: IActivePickerState<TItem, TPickerRow> | null;
+    onOpenPicker: (index: number, column: ILineItemColumn<TItem, TPickerRow>, context: ILineItemColumnRenderContext<TItem>) => void;
     onDragStart: (event: React.DragEvent<HTMLTableRowElement>, index: number) => void;
     onDragOver: (event: React.DragEvent<HTMLTableRowElement>, index: number) => void;
     onDragLeave: () => void;
@@ -162,386 +170,238 @@ interface ILineItemRowProps
     onDragEnd: () => void;
 }
 
-function CreateDefaultItem(): ILineItemValue
-{
-    return {
-        code: "",
-        name: "",
-        quantity: 1,
-        description: "",
-        unitLabel: "",
-        unitPrice: 0,
-    }
-}
-
-function NormalizeCode(value: unknown): string
-{
-    return String(value ?? "").trim().toLowerCase()
-}
-
-function ParseNumericValue(value: unknown, fallback = 0): number
-{
-    if (typeof value === "number" && Number.isFinite(value))
-    {
-        return value
-    }
-
-    if (typeof value === "string")
-    {
-        const trimmedValue = value.trim()
-
-        if (trimmedValue === "")
-        {
-            return fallback
-        }
-
-        const parsedValue = Number(trimmedValue)
-
-        if (Number.isFinite(parsedValue))
-        {
-            return parsedValue
-        }
-    }
-
-    return fallback
-}
-
-function FormatDefaultCurrency(value: number): string
-{
-    return new Intl.NumberFormat("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(value)
-}
-
-function BuildLookupItem(row: ILineItemLookupRow): Partial<ILineItemValue> & { code: string; name: string; }
-{
-    const rawUnitLabel = typeof row["unitLabel"] === "string"
-        ? row["unitLabel"]
-        : typeof row["unitCode"] === "string"
-            ? row["unitCode"]
-            : typeof row["unitsCode"] === "string"
-                ? row["unitsCode"]
-                : ""
-    const rawUnitPrice = typeof row["unitPrice"] === "number" || typeof row["unitPrice"] === "string"
-        ? row["unitPrice"]
-        : typeof row["price"] === "number" || typeof row["price"] === "string"
-            ? row["price"]
-            : 0
-
-    return {
-        code: String(row.code ?? "").trim(),
-        name: String(row.name ?? "").trim(),
-        description: typeof row.description === "string" ? row.description : "",
-        unitLabel: String(rawUnitLabel ?? ""),
-        unitPrice: rawUnitPrice,
-    }
-}
-
 function BuildItemCountLabel(count: number, itemLabel: string): string
 {
     return `${count} ${itemLabel}${count === 1 ? "" : "s"}`
 }
 
-function LineItemRow({
+function BuildSubmittedItemCountLabel(count: number, itemLabel: string): string
+{
+    return `${count} submitted ${itemLabel}${count === 1 ? "" : "s"}.`
+}
+
+function RenderReadOnlyValue(value: React.ReactNode, variant: ILineItemReadOnlyVariant, className?: string): React.ReactNode
+{
+    if (variant === "plain")
+    {
+        return (
+            <div className={cn("text-sm text-foreground", className)}>
+                {value}
+            </div>
+        )
+    }
+
+    return (
+        <div className={cn("rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground", className)}>
+            {value}
+        </div>
+    )
+}
+
+function ResolveItemKey<TItem extends ILineItemValue>(item: TItem, index: number): string
+{
+    return `${String(item.id ?? index)}-${index}`
+}
+
+function LineItemRow<TItem extends ILineItemValue, TPickerRow extends Record<string, unknown>>({
+    columns,
     index,
     item,
     itemsLength,
     disabled,
-    message,
-    isResolving,
+    readOnly,
+    readOnlyVariant,
+    minRows,
     isDragging,
     isDragOver,
-    showDescription,
-    showUnit,
-    showPricing,
-    allowLookup,
-    allowManualNameEdit,
-    allowUnitPriceEdit,
-    quantityStep,
-    minRows,
-    formatCurrency,
-    computeLineTotal,
-    onCodeChange,
-    onCodeBlur,
-    onNameChange,
-    onDescriptionChange,
-    onQuantityChange,
-    onUnitPriceChange,
-    onOpenLookup,
-    onClearLookupValues,
+    onUpdateItem,
+    onReplaceItem,
     onMoveUp,
     onMoveDown,
     onInsertBelow,
     onRemove,
+    activePicker,
+    onOpenPicker,
     onDragStart,
     onDragOver,
     onDragLeave,
     onDrop,
     onDragEnd,
-}: ILineItemRowProps)
+}: ILineItemRowProps<TItem, TPickerRow>)
 {
+    const rowHandlers: ILineItemRowHandlers = {
+        insertBelow: onInsertBelow,
+        moveDown: onMoveDown,
+        moveUp: onMoveUp,
+        remove: onRemove,
+    }
+
+    function renderDefaultActions(extraActions?: React.ReactNode): React.ReactNode
+    {
+        if (readOnly && !extraActions)
+        {
+            return null
+        }
+
+        return (
+            <div className="flex flex-wrap items-center justify-end gap-1">
+                {extraActions}
+
+                {!readOnly && (
+                    <>
+                        <Button
+                            disabled={disabled || index === 0}
+                            onClick={rowHandlers.moveUp}
+                            size="icon-xs"
+                            title="Move item up"
+                            type="button"
+                            variant="ghost"
+                        >
+                            <ArrowUp className="size-3.5" />
+                        </Button>
+                        <Button
+                            disabled={disabled || index >= itemsLength - 1}
+                            onClick={rowHandlers.moveDown}
+                            size="icon-xs"
+                            title="Move item down"
+                            type="button"
+                            variant="ghost"
+                        >
+                            <ArrowDown className="size-3.5" />
+                        </Button>
+                        <Button
+                            disabled={disabled}
+                            onClick={rowHandlers.insertBelow}
+                            size="icon-xs"
+                            title="Insert item below"
+                            type="button"
+                            variant="ghost"
+                        >
+                            <Plus className="size-3.5" />
+                        </Button>
+                        <Button
+                            className="text-destructive hover:text-destructive"
+                            disabled={disabled || itemsLength <= minRows}
+                            onClick={rowHandlers.remove}
+                            size="icon-xs"
+                            title="Remove item"
+                            type="button"
+                            variant="ghost"
+                        >
+                            <Trash2 className="size-3.5" />
+                        </Button>
+                    </>
+                )}
+            </div>
+        )
+    }
+
+    const baseRenderContext: ILineItemColumnRenderContext<TItem> = {
+        disabled,
+        index,
+        isDragOver,
+        isDragging,
+        isPickerOpen: false,
+        item,
+        itemsLength,
+        minRows,
+        openPicker: undefined,
+        readOnly,
+        readOnlyVariant,
+        renderDefaultActions,
+        renderReadOnlyValue: (value, className) => RenderReadOnlyValue(value, readOnlyVariant, className),
+        replaceItem: (nextItem) => onReplaceItem(index, nextItem),
+        rowHandlers,
+        updateItem: (patch) => onUpdateItem(index, patch),
+    }
+
     return (
         <TableRow
             className={cn(
                 isDragging && "opacity-50",
                 isDragOver && "bg-muted/60",
             )}
-            draggable={!disabled}
+            draggable={!disabled && !readOnly}
             onDragEnd={onDragEnd}
             onDragLeave={onDragLeave}
             onDragOver={(event) => onDragOver(event, index)}
             onDragStart={(event) => onDragStart(event, index)}
             onDrop={(event) => onDrop(event, index)}
         >
-            <TableCell className="w-[72px] align-top">
-                <div className="flex items-center justify-center gap-1.5 pt-2 text-muted-foreground">
-                    <span className={cn(!disabled && "cursor-grab")} title="Drag to reorder">
-                        <GripVertical className="size-4" />
-                    </span>
-                    <span className="min-w-5 text-center text-xs font-semibold">{index + 1}</span>
-                </div>
-            </TableCell>
-
-            <TableCell className="min-w-[240px] align-top">
-                <div className="space-y-2">
-                    <div className="flex items-start gap-2">
-                        <Input
-                            aria-invalid={Boolean(message)}
-                            className="min-w-0"
-                            disabled={disabled}
-                            onBlur={onCodeBlur}
-                            onChange={(event) => onCodeChange(event.target.value)}
-                            placeholder="Enter item code"
-                            type="text"
-                            value={item.code ?? ""}
-                        />
-
-                        {allowLookup && (
-                            <Button
-                                disabled={disabled}
-                                onClick={onOpenLookup}
-                                size="icon-sm"
-                                title="Lookup item"
-                                type="button"
-                                variant="outline"
-                            >
-                                <Search className="size-4" />
-                            </Button>
-                        )}
-
-                        {item.code && (
-                            <Button
-                                disabled={disabled}
-                                onClick={onClearLookupValues}
-                                size="icon-sm"
-                                title="Clear item"
-                                type="button"
-                                variant="ghost"
-                            >
-                                <X className="size-4" />
-                            </Button>
-                        )}
-                    </div>
-
-                    {(message || isResolving) && (
-                        <div className="flex min-h-5 items-center gap-1.5 text-xs">
-                            {isResolving && (
-                                <>
-                                    <LoaderCircle className="size-3 animate-spin text-muted-foreground" />
-                                    <span className="text-muted-foreground">Resolving item code...</span>
-                                </>
-                            )}
-
-                            {!isResolving && message && (
-                                <span className="text-destructive">{message}</span>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </TableCell>
-
-            <TableCell className="min-w-[220px] align-top">
-                <Input
-                    disabled={disabled}
-                    onChange={(event) => onNameChange(event.target.value)}
-                    placeholder="Item name"
-                    readOnly={!allowManualNameEdit}
-                    type="text"
-                    value={item.name ?? ""}
-                />
-            </TableCell>
-
-            {showDescription && (
-                <TableCell className="min-w-[260px] align-top">
-                    <Textarea
-                        className="min-h-20 resize-y"
-                        disabled={disabled}
-                        onChange={(event) => onDescriptionChange(event.target.value)}
-                        placeholder="Add item description"
-                        value={String(item.description ?? "")}
-                    />
-                </TableCell>
-            )}
-
-            {showUnit && (
-                <TableCell className="w-[120px] align-top">
-                    <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-                        {item.unitLabel ? String(item.unitLabel) : "-"}
-                    </div>
-                </TableCell>
-            )}
-
-            <TableCell className="w-[120px] align-top">
-                <Input
-                    className="text-right"
-                    disabled={disabled}
-                    min={quantityStep}
-                    onChange={(event) => onQuantityChange(event.target.value)}
-                    step={quantityStep}
-                    type="number"
-                    value={String(item.quantity ?? "")}
-                />
-            </TableCell>
-
-            {showPricing && (
-                <TableCell className="w-[140px] align-top">
-                    {allowUnitPriceEdit
-                        ? (
-                            <Input
-                                className="text-right"
-                                disabled={disabled}
-                                min={0}
-                                onChange={(event) => onUnitPriceChange(event.target.value)}
-                                step="0.01"
-                                type="number"
-                                value={String(item.unitPrice ?? 0)}
-                            />
-                        )
-                        : (
-                            <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-right text-sm font-medium text-muted-foreground">
-                                {formatCurrency(ParseNumericValue(item.unitPrice, 0))}
-                            </div>
-                        )
+            {columns.map((column) => (
+                (() =>
+                {
+                    const isPickerOpen = activePicker?.rowIndex === index && activePicker.columnKey === column.key
+                    const pickerContext: ILineItemColumnRenderContext<TItem> = {
+                        ...baseRenderContext,
+                        isPickerOpen,
                     }
-                </TableCell>
-            )}
+                    const columnContext: ILineItemColumnRenderContext<TItem> = {
+                        ...pickerContext,
+                        openPicker: column.renderPicker
+                            ? () => onOpenPicker(index, column, pickerContext)
+                            : undefined,
+                    }
 
-            {showPricing && (
-                <TableCell className="w-[140px] align-top text-right text-sm font-semibold text-foreground">
-                    <div className="rounded-md border border-border/80 bg-background px-3 py-2">
-                        {formatCurrency(computeLineTotal(item))}
-                    </div>
-                </TableCell>
-            )}
-
-            <TableCell className="w-[168px] align-top">
-                <div className="flex flex-wrap items-center justify-end gap-1">
-                    <Button
-                        disabled={disabled || index === 0}
-                        onClick={onMoveUp}
-                        size="icon-xs"
-                        title="Move item up"
-                        type="button"
-                        variant="ghost"
-                    >
-                        <ArrowUp className="size-3.5" />
-                    </Button>
-                    <Button
-                        disabled={disabled || index >= itemsLength - 1}
-                        onClick={onMoveDown}
-                        size="icon-xs"
-                        title="Move item down"
-                        type="button"
-                        variant="ghost"
-                    >
-                        <ArrowDown className="size-3.5" />
-                    </Button>
-                    <Button
-                        disabled={disabled}
-                        onClick={onInsertBelow}
-                        size="icon-xs"
-                        title="Insert item below"
-                        type="button"
-                        variant="ghost"
-                    >
-                        <Plus className="size-3.5" />
-                    </Button>
-                    <Button
-                        className="text-destructive hover:text-destructive"
-                        disabled={disabled || itemsLength <= minRows}
-                        onClick={onRemove}
-                        size="icon-xs"
-                        title="Remove item"
-                        type="button"
-                        variant="ghost"
-                    >
-                        <Trash2 className="size-3.5" />
-                    </Button>
-                </div>
-            </TableCell>
+                    return (
+                        <TableCell className={cn("align-top", column.cellClassName)} key={column.key}>
+                            {column.renderCell(columnContext)}
+                        </TableCell>
+                    )
+                })()
+            ))}
         </TableRow>
     )
 }
 
-export default function LineItemsEditor<TLookupRow extends ILineItemLookupRow = ILineItemLookupRow>({
-    value,
-    onChange,
-    title = "Line Items",
-    addButtonLabel = "Add Item",
-    itemLabel = "item",
-    emptyMessage = "No items added yet.",
-    minRows = 1,
-    disabled = false,
-    showDescription = true,
-    showUnit = false,
-    showPricing = false,
-    allowDuplicateCodes = false,
-    allowManualNameEdit = false,
-    allowUnitPriceEdit = false,
-    quantityStep = 1,
-    codeLabel = "Code",
-    nameLabel = "Name",
-    descriptionLabel = "Description",
-    quantityLabel = "Quantity",
-    unitLabel = "Unit",
-    unitPriceLabel = "Unit Price",
-    totalLabel = "Total",
-    createEmptyItem,
-    formatCurrency = FormatDefaultCurrency,
-    lookupConfig,
-    onResolveItemByCode,
-}: ILineItemsEditorProps<TLookupRow>)
+export default function LineItemsEditor<TItem extends ILineItemValue = ILineItemValue, TPickerRow extends Record<string, unknown> = Record<string, unknown>>(props: ILineItemsEditorProps<TItem, TPickerRow>)
 {
+    const {
+        value,
+        onChange,
+        columns,
+        title = "Line Items",
+        addButtonLabel = "Add Item",
+        itemLabel = "item",
+        emptyMessage = "No items added yet.",
+        minRows = 1,
+        disabled = false,
+        hideAddButton = false,
+        readOnlyVariant = "boxed",
+    } = props
+
+    const readOnly = props.readOnly === true
+    const createEmptyItem = "createEmptyItem" in props ? props.createEmptyItem : undefined
+    const resolvedReadOnlyVariant = readOnly ? readOnlyVariant : "boxed"
+    const isPlainReadOnly = readOnly && resolvedReadOnlyVariant === "plain"
+
     const [dragIndex, setDragIndex] = React.useState<number | null>(null)
     const [dragOverIndex, setDragOverIndex] = React.useState<number | null>(null)
-    const [lookupRowIndex, setLookupRowIndex] = React.useState<number | null>(null)
-    const [rowMessages, setRowMessages] = React.useState<Record<number, string | undefined>>({})
-    const [resolvingRows, setResolvingRows] = React.useState<Record<number, boolean>>({})
+    const [activePicker, setActivePicker] = React.useState<IActivePickerState<TItem, TPickerRow> | null>(null)
 
     const itemsRef = React.useRef(value)
 
     itemsRef.current = value
 
-    function CreateItem(): ILineItemValue
+    React.useEffect(() =>
     {
-        if (createEmptyItem)
+        if (activePicker && !itemsRef.current[activePicker.rowIndex])
         {
-            return createEmptyItem()
+            setActivePicker(null)
+        }
+    }, [activePicker, value])
+
+    function CreateItem(): TItem
+    {
+        if (!createEmptyItem)
+        {
+            throw new Error("LineItemsEditor requires createEmptyItem when readOnly is false.")
         }
 
-        return CreateDefaultItem()
+        return createEmptyItem()
     }
 
-    function ClearTransientState()
-    {
-        setDragIndex(null)
-        setDragOverIndex(null)
-        setRowMessages({})
-        setResolvingRows({})
-    }
-
-    function UpdateRow(index: number, patch: Partial<ILineItemValue>)
+    function UpdateRow(index: number, patch: Partial<TItem>)
     {
         const nextItems = itemsRef.current.map((currentItem, currentIndex) =>
         {
@@ -559,91 +419,24 @@ export default function LineItemsEditor<TLookupRow extends ILineItemLookupRow = 
         onChange(nextItems)
     }
 
-    function ClearLookupValues(index: number)
+    function ReplaceRow(index: number, nextItem: TItem)
     {
-        UpdateRow(index, {
-            code: "",
-            name: "",
-            unitLabel: "",
-            unitPrice: 0,
+        const nextItems = itemsRef.current.map((currentItem, currentIndex) =>
+        {
+            if (currentIndex !== index)
+            {
+                return currentItem
+            }
+
+            return nextItem
         })
 
-        setRowMessages((currentMessages) => ({
-            ...currentMessages,
-            [index]: undefined,
-        }))
-    }
-
-    function ApplyResolvedItem(index: number, resolvedItem: Partial<ILineItemValue> & { code?: string; name?: string; })
-    {
-        const currentItems = itemsRef.current
-        const currentItem = currentItems[index]
-
-        if (!currentItem)
-        {
-            return
-        }
-
-        const nextItem: ILineItemValue = {
-            ...currentItem,
-            ...resolvedItem,
-            code: String(resolvedItem.code ?? currentItem.code ?? "").trim(),
-            name: String(resolvedItem.name ?? currentItem.name ?? ""),
-        }
-
-        const normalizedCode = NormalizeCode(nextItem.code)
-
-        if (!allowDuplicateCodes && normalizedCode)
-        {
-            const duplicateIndex = currentItems.findIndex((candidate, candidateIndex) =>
-            {
-                return candidateIndex !== index && NormalizeCode(candidate.code) === normalizedCode
-            })
-
-            if (duplicateIndex !== -1)
-            {
-                const duplicateItem = currentItems[duplicateIndex]
-                const mergedItem: ILineItemValue = {
-                    ...duplicateItem,
-                    ...nextItem,
-                    code: nextItem.code,
-                    name: String(duplicateItem.name ?? nextItem.name ?? ""),
-                    description: String(duplicateItem.description ?? "") || String(nextItem.description ?? ""),
-                    unitLabel: String(duplicateItem.unitLabel ?? "") || String(nextItem.unitLabel ?? ""),
-                    unitPrice: ParseNumericValue(duplicateItem.unitPrice, 0) || ParseNumericValue(nextItem.unitPrice, 0),
-                    quantity: ParseNumericValue(duplicateItem.quantity, 0) + Math.max(ParseNumericValue(nextItem.quantity, 0), 1),
-                }
-                const targetIndex = duplicateIndex > index ? duplicateIndex - 1 : duplicateIndex
-                const nextItems = currentItems
-                    .filter((_item, currentIndex) => currentIndex !== index)
-                    .map((currentItemValue, currentIndex) =>
-                    {
-                        if (currentIndex !== targetIndex)
-                        {
-                            return currentItemValue
-                        }
-
-                        return mergedItem
-                    })
-
-                onChange(nextItems)
-                ClearTransientState()
-                return
-            }
-        }
-
-        UpdateRow(index, nextItem)
-
-        setRowMessages((currentMessages) => ({
-            ...currentMessages,
-            [index]: undefined,
-        }))
+        onChange(nextItems)
     }
 
     function HandleAddRow()
     {
         onChange([...itemsRef.current, CreateItem()])
-        ClearTransientState()
     }
 
     function HandleInsertBelow(index: number)
@@ -652,7 +445,6 @@ export default function LineItemsEditor<TLookupRow extends ILineItemLookupRow = 
 
         nextItems.splice(index + 1, 0, CreateItem())
         onChange(nextItems)
-        ClearTransientState()
     }
 
     function HandleRemoveRow(index: number)
@@ -663,7 +455,6 @@ export default function LineItemsEditor<TLookupRow extends ILineItemLookupRow = 
         }
 
         onChange(itemsRef.current.filter((_item, currentIndex) => currentIndex !== index))
-        ClearTransientState()
     }
 
     function HandleMoveRow(index: number, direction: -1 | 1)
@@ -680,104 +471,11 @@ export default function LineItemsEditor<TLookupRow extends ILineItemLookupRow = 
 
         nextItems.splice(targetIndex, 0, movedItem)
         onChange(nextItems)
-        ClearTransientState()
-    }
-
-    async function HandleCodeBlur(index: number)
-    {
-        if (!onResolveItemByCode)
-        {
-            return
-        }
-
-        const currentItem = itemsRef.current[index]
-
-        if (!currentItem)
-        {
-            return
-        }
-
-        const normalizedCode = NormalizeCode(currentItem.code)
-
-        if (!normalizedCode)
-        {
-            ClearLookupValues(index)
-            return
-        }
-
-        setResolvingRows((currentRows) => ({
-            ...currentRows,
-            [index]: true,
-        }))
-        setRowMessages((currentMessages) => ({
-            ...currentMessages,
-            [index]: undefined,
-        }))
-
-        try
-        {
-            const resolvedItem = await onResolveItemByCode(String(currentItem.code).trim(), currentItem, index)
-            const latestItem = itemsRef.current[index]
-
-            if (!latestItem || NormalizeCode(latestItem.code) !== normalizedCode)
-            {
-                return
-            }
-
-            if (!resolvedItem)
-            {
-                setRowMessages((currentMessages) => ({
-                    ...currentMessages,
-                    [index]: "Item code was not found.",
-                }))
-                return
-            }
-
-            ApplyResolvedItem(index, resolvedItem)
-        }
-        catch (error)
-        {
-            const latestItem = itemsRef.current[index]
-
-            if (!latestItem || NormalizeCode(latestItem.code) !== normalizedCode)
-            {
-                return
-            }
-
-            setRowMessages((currentMessages) => ({
-                ...currentMessages,
-                [index]: error instanceof Error && error.message
-                    ? error.message
-                    : "Unable to resolve item code.",
-            }))
-        }
-        finally
-        {
-            setResolvingRows((currentRows) => ({
-                ...currentRows,
-                [index]: false,
-            }))
-        }
-    }
-
-    function HandleLookupSelect(row: TLookupRow)
-    {
-        if (lookupRowIndex === null)
-        {
-            return
-        }
-
-        const resolvedItem = lookupConfig?.mapRowToItem
-            ? lookupConfig.mapRowToItem(row)
-            : BuildLookupItem(row)
-
-        ApplyResolvedItem(lookupRowIndex, resolvedItem)
-        setLookupRowIndex(null)
     }
 
     function HandleDragStart(event: React.DragEvent<HTMLTableRowElement>, index: number)
     {
-        if (disabled)
+        if (disabled || readOnly)
         {
             return
         }
@@ -789,7 +487,7 @@ export default function LineItemsEditor<TLookupRow extends ILineItemLookupRow = 
 
     function HandleDragOver(event: React.DragEvent<HTMLTableRowElement>, index: number)
     {
-        if (disabled)
+        if (disabled || readOnly)
         {
             return
         }
@@ -808,7 +506,7 @@ export default function LineItemsEditor<TLookupRow extends ILineItemLookupRow = 
     {
         event.preventDefault()
 
-        if (disabled || dragIndex === null || dragIndex === dropIndex)
+        if (disabled || readOnly || dragIndex === null || dragIndex === dropIndex)
         {
             setDragIndex(null)
             setDragOverIndex(null)
@@ -820,7 +518,8 @@ export default function LineItemsEditor<TLookupRow extends ILineItemLookupRow = 
 
         nextItems.splice(dropIndex, 0, movedItem)
         onChange(nextItems)
-        ClearTransientState()
+        setDragIndex(null)
+        setDragOverIndex(null)
     }
 
     function HandleDragEnd()
@@ -829,151 +528,149 @@ export default function LineItemsEditor<TLookupRow extends ILineItemLookupRow = 
         setDragOverIndex(null)
     }
 
-    function ComputeLineTotal(item: ILineItemValue): number
+    function HandleOpenPicker(index: number, column: ILineItemColumn<TItem, TPickerRow>, context: ILineItemColumnRenderContext<TItem>)
     {
-        return ParseNumericValue(item.quantity, 0) * ParseNumericValue(item.unitPrice, 0)
+        if (!column.renderPicker)
+        {
+            return
+        }
+
+        const pickerConfig = column.renderPicker(context)
+
+        if (!pickerConfig)
+        {
+            return
+        }
+
+        setActivePicker({
+            columnKey: column.key,
+            config: pickerConfig,
+            context,
+            rowIndex: index,
+        })
     }
 
-    const itemsCountLabel = BuildItemCountLabel(value.length, itemLabel)
-    const totalAmount = value.reduce((sum, currentItem) => sum + ComputeLineTotal(currentItem), 0)
+    const itemsCountLabel = isPlainReadOnly
+        ? BuildSubmittedItemCountLabel(value.length, itemLabel)
+        : BuildItemCountLabel(value.length, itemLabel)
+    const shouldShowAddButton = !readOnly && !hideAddButton
+    const visibleColumnCount = Math.max(columns.length, 1)
 
     return (
-        <div className="rounded-lg border bg-card shadow-xs">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4">
+        <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] shadow-[var(--shadow)]">
+            <div className={cn(
+                "flex flex-wrap items-start justify-between gap-4 px-6 pt-6",
+                !isPlainReadOnly && "border-b border-[var(--border)] pb-4",
+                isPlainReadOnly && "pb-0",
+            )}>
                 <div>
-                    <h3 className="text-base font-semibold text-foreground">{title}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    {isPlainReadOnly ? (
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">{title}</p>
+                    ) : (
+                        <h3 className="text-base font-semibold text-foreground">{title}</h3>
+                    )}
+                    <p className={cn("text-sm text-muted-foreground", isPlainReadOnly ? "mt-2" : "mt-1")}>
                         {itemsCountLabel}
-                        {!disabled && value.length > 0 && " added • Drag rows to reorder"}
+                        {!disabled && !readOnly && value.length > 0 && " added • Drag rows to reorder"}
                     </p>
                 </div>
 
-                <Button disabled={disabled} onClick={HandleAddRow} type="button">
-                    <Plus className="size-4" />
-                    {addButtonLabel}
-                </Button>
+                {shouldShowAddButton && (
+                    <Button disabled={disabled} onClick={HandleAddRow} type="button">
+                        <Plus className="size-4" />
+                        {addButtonLabel}
+                    </Button>
+                )}
             </div>
 
-            <div className="overflow-x-auto">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[72px] text-center">#</TableHead>
-                            <TableHead className="min-w-[240px]">{codeLabel}</TableHead>
-                            <TableHead className="min-w-[220px]">{nameLabel}</TableHead>
-                            {showDescription && <TableHead className="min-w-[260px]">{descriptionLabel}</TableHead>}
-                            {showUnit && <TableHead className="w-[120px]">{unitLabel}</TableHead>}
-                            <TableHead className="w-[120px] text-right">{quantityLabel}</TableHead>
-                            {showPricing && <TableHead className="w-[140px] text-right">{unitPriceLabel}</TableHead>}
-                            {showPricing && <TableHead className="w-[140px] text-right">{totalLabel}</TableHead>}
-                            <TableHead className="w-[168px] text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
+            <div className={cn("px-6 pb-6", isPlainReadOnly ? "pt-4" : "pt-5")}>
+                <div className="overflow-hidden rounded-md border border-[var(--border)] bg-[var(--bg-surface)]">
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    {columns.map((column) => (
+                                        <TableHead className={column.headerClassName} key={column.key}>
+                                            {column.renderHeader ? column.renderHeader() : column.label}
+                                        </TableHead>
+                                    ))}
+                                </TableRow>
+                            </TableHeader>
 
-                    <TableBody>
-                        {value.map((item, index) => (
-                            <LineItemRow
-                                allowLookup={Boolean(lookupConfig)}
-                                allowManualNameEdit={allowManualNameEdit}
-                                allowUnitPriceEdit={allowUnitPriceEdit}
-                                computeLineTotal={ComputeLineTotal}
-                                disabled={disabled}
-                                formatCurrency={formatCurrency}
-                                index={index}
-                                isDragOver={dragOverIndex === index && dragIndex !== index}
-                                isDragging={dragIndex === index}
-                                isResolving={Boolean(resolvingRows[index])}
-                                item={item}
-                                itemsLength={value.length}
-                                key={`${String(item.id ?? item.code ?? index)}-${index}`}
-                                message={rowMessages[index]}
-                                minRows={minRows}
-                                onClearLookupValues={() => ClearLookupValues(index)}
-                                onCodeBlur={() => { void HandleCodeBlur(index) }}
-                                onCodeChange={(nextCode) =>
-                                {
-                                    UpdateRow(index, { code: nextCode })
-                                    setRowMessages((currentMessages) => ({
-                                        ...currentMessages,
-                                        [index]: undefined,
-                                    }))
-                                }}
-                                onDescriptionChange={(nextDescription) => UpdateRow(index, { description: nextDescription })}
-                                onDragEnd={HandleDragEnd}
-                                onDragLeave={HandleDragLeave}
-                                onDragOver={HandleDragOver}
-                                onDragStart={HandleDragStart}
-                                onDrop={HandleDrop}
-                                onInsertBelow={() => HandleInsertBelow(index)}
-                                onMoveDown={() => HandleMoveRow(index, 1)}
-                                onMoveUp={() => HandleMoveRow(index, -1)}
-                                onNameChange={(nextName) => UpdateRow(index, { name: nextName })}
-                                onOpenLookup={() => setLookupRowIndex(index)}
-                                onQuantityChange={(nextQuantity) => UpdateRow(index, { quantity: nextQuantity })}
-                                onRemove={() => HandleRemoveRow(index)}
-                                onUnitPriceChange={(nextUnitPrice) => UpdateRow(index, { unitPrice: nextUnitPrice })}
-                                quantityStep={quantityStep}
-                                showDescription={showDescription}
-                                showPricing={showPricing}
-                                showUnit={showUnit}
-                            />
-                        ))}
+                            <TableBody>
+                                {value.map((item, index) => (
+                                    <LineItemRow<TItem, TPickerRow>
+                                        activePicker={activePicker}
+                                        columns={columns}
+                                        disabled={disabled}
+                                        index={index}
+                                        isDragOver={dragOverIndex === index && dragIndex !== index}
+                                        isDragging={dragIndex === index}
+                                        item={item}
+                                        itemsLength={value.length}
+                                        key={ResolveItemKey(item, index)}
+                                        minRows={minRows}
+                                        onDragEnd={HandleDragEnd}
+                                        onDragLeave={HandleDragLeave}
+                                        onDragOver={HandleDragOver}
+                                        onDragStart={HandleDragStart}
+                                        onDrop={HandleDrop}
+                                        onInsertBelow={() => HandleInsertBelow(index)}
+                                        onMoveDown={() => HandleMoveRow(index, 1)}
+                                        onMoveUp={() => HandleMoveRow(index, -1)}
+                                        onOpenPicker={HandleOpenPicker}
+                                        onRemove={() => HandleRemoveRow(index)}
+                                        onReplaceItem={ReplaceRow}
+                                        onUpdateItem={UpdateRow}
+                                        readOnly={readOnly}
+                                        readOnlyVariant={resolvedReadOnlyVariant}
+                                    />
+                                ))}
 
-                        {value.length === 0 && (
-                            <TableRow>
-                                <TableCell
-                                    className="py-10 text-center text-muted-foreground"
-                                    colSpan={showDescription
-                                        ? showPricing
-                                            ? (showUnit ? 8 : 7)
-                                            : (showUnit ? 6 : 5)
-                                        : showPricing
-                                            ? (showUnit ? 7 : 6)
-                                            : (showUnit ? 5 : 4)
-                                    }
-                                >
-                                    <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
-                                        <div className="rounded-full bg-muted p-3 text-muted-foreground">
-                                            <Plus className="size-5" />
-                                        </div>
-                                        <p className="font-medium text-foreground">{emptyMessage}</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            Add the first {itemLabel} to start building the list.
-                                        </p>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
-
-            {showPricing && value.length > 0 && (
-                <div className="flex justify-end border-t px-5 py-4">
-                    <div className="flex min-w-[240px] items-center justify-between rounded-md border bg-muted/40 px-4 py-3">
-                        <span className="text-sm font-medium text-muted-foreground">Subtotal</span>
-                        <span className="text-base font-semibold text-foreground">{formatCurrency(totalAmount)}</span>
+                                {value.length === 0 && (
+                                    <TableRow>
+                                        <TableCell className="py-10 text-center text-muted-foreground" colSpan={visibleColumnCount}>
+                                            <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
+                                                {!readOnly && (
+                                                    <div className="rounded-full bg-muted p-3 text-muted-foreground">
+                                                        <Plus className="size-5" />
+                                                    </div>
+                                                )}
+                                                <p className="font-medium text-foreground">{emptyMessage}</p>
+                                                {!readOnly && (
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Add the first {itemLabel} to start building the list.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
                     </div>
                 </div>
-            )}
+            </div>
 
-            {lookupConfig && lookupRowIndex !== null && (
-                <ListPickerModal<TLookupRow>
-                    columns={lookupConfig.columns}
-                    emptyDefault={lookupConfig.emptyDefault}
-                    emptySearch={lookupConfig.emptySearch}
-                    fetchData={lookupConfig.fetchData}
-                    initialSearch={String(value[lookupRowIndex]?.code ?? "")}
-                    isOpen={lookupRowIndex !== null}
-                    itemName={lookupConfig.itemName ?? itemLabel}
-                    onClose={() => setLookupRowIndex(null)}
-                    onSelect={HandleLookupSelect}
-                    searchPlaceholder={lookupConfig.searchPlaceholder ?? "Search item code or name..."}
-                    title={lookupConfig.title ?? `Select ${itemLabel}`}
+            {activePicker && (
+                <ListPickerModal<TPickerRow>
+                    columns={activePicker.config.columns}
+                    emptyDefault={activePicker.config.emptyDefault}
+                    emptySearch={activePicker.config.emptySearch}
+                    fetchData={activePicker.config.fetchData}
+                    initialSearch={activePicker.config.getInitialSearch?.(activePicker.context) ?? ""}
+                    isOpen={activePicker !== null}
+                    itemName={activePicker.config.itemName ?? itemLabel}
+                    onClose={() => setActivePicker(null)}
+                    onSelect={(row) =>
+                    {
+                        activePicker.config.onSelect(row, activePicker.context)
+                        setActivePicker(null)
+                    }}
+                    searchPlaceholder={activePicker.config.searchPlaceholder ?? "Search..."}
+                    title={activePicker.config.title ?? `Select ${itemLabel}`}
                 />
             )}
         </div>
     )
 }
-
-export type { ILineItemsEditorProps }

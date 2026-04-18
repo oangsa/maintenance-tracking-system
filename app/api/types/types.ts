@@ -27,6 +27,24 @@ export type {
 } from "../types/department.types";
 
 export type {
+    IProduct,
+    IProductForCreate,
+    IProductForUpdate,
+} from "../types/product.types";
+
+export type { IRepairStatus } from "../types/repairStatus.types";
+
+export type {
+    IRepairRequest,
+    IRepairRequestForCreate,
+    IRepairRequestForUpdate,
+    IRepairRequestItem,
+    IRepairRequestItemForCreate,
+    IRepairRequestStatusLog,
+    IWorkOrder,
+} from "../types/repairRequest.types";
+
+export type {
     IDeleteCollectionRequest,
     IUser,
     IUserForCreate,

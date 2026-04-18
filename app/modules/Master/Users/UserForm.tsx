@@ -14,8 +14,10 @@ import {
     SelectValue,
 } from "~/components/ui/select";
 import { searchDepartments } from "~/services/departments.service";
-import { formatDepartmentLabel, formatRoleLabel, roleOptions } from "./helpers";
+import { formatDepartmentLabel, formatRoleLabel } from "./helpers";
 import type { IUserFormValues } from "./helpers";
+import { UserFormSchema } from "~/schemas/userFormSchema";
+import { ROLE_OPTIONS as roleOptions } from "~/constants/role.constant";
 
 type IDepartmentPickerRow = IDepartment & Record<string, unknown>;
 
@@ -39,23 +41,6 @@ interface IUserFormErrors
     departmentId?: string;
     avatarUrl?: string;
 }
-
-const UserFormSchema = z.object({
-    name: z.string().trim().max(150, "Name must be 150 characters or fewer."),
-    email: z.string().trim().min(1, "Email is required.").email("Enter a valid email address."),
-    password: z.string(),
-    role: z.string().trim().refine((value) => roleOptions.includes(value as typeof roleOptions[number]), {
-        message: "Role is required.",
-    }),
-    departmentId: z.string().trim().refine((value) => value === "" || /^\d+$/.test(value), {
-        message: "Department selection is invalid.",
-    }),
-    departmentCode: z.string(),
-    departmentName: z.string(),
-    avatarUrl: z.string().trim().refine((value) => value === "" || z.string().url().safeParse(value).success, {
-        message: "Avatar URL must be a valid URL.",
-    }),
-});
 
 function validateForm(values: IUserFormValues, mode: "create" | "edit"): IUserFormErrors
 {
