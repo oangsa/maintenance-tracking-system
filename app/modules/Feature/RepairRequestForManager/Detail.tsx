@@ -16,11 +16,13 @@ import DetailSections, {
 } from "~/components/Common/DetailSections";
 import {
     formatDateTime,
-    formatProductLabel,
-    formatRepairStatusLabel,
     formatRequesterLabel,
     formatTitleCase,
-} from "./helpers";
+} from "~/lib/formatters";
+import {
+    formatProductLabel,
+    formatRepairStatusLabel,
+} from "~/lib/repairRequestUtils";
 
 export default function RepairRequestManagerDetailPage()
 {

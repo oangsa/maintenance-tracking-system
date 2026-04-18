@@ -1,6 +1,7 @@
 import React from "react";
 import type { IUser } from "~/api/types";
-import { formatDateTime, formatRoleLabel } from "./helpers";
+import { formatDateTime } from "~/lib/formatters";
+import { formatRoleLabel } from "./helpers";
 
 type IUserTableRow = IUser & Record<string, unknown>;
 

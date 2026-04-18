@@ -1,8 +1,8 @@
 import React from "react";
 import type { ISearchCondition } from "~/api/types";
 import type { IDataTableFilterField } from "~/components/Common/DataTable";
-import { formatTitleCase } from "./helpers";
 import { PRIORITY_OPTIONS as priorityOptions } from "@/constants";
+import { formatTitleCase } from "~/lib/formatters";
 
 interface IRepairRequestFilterValues
 {

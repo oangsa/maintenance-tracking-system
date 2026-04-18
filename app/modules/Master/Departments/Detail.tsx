@@ -4,9 +4,9 @@ import DetailSections, { type IDetailSection } from "~/components/Common/DetailS
 import Loading from "~/components/Common/Loading";
 import { ConfirmModal } from "~/components/Common/Modal";
 import { buttonVariants, Button } from "~/components/ui/button";
+import { formatDateTime } from "~/lib/formatters";
 import { cn } from "~/lib/utils";
 import { deleteDepartment, getDepartmentById } from "~/services/departments.service";
-import { formatDateTime } from "./helpers";
 import type { IDepartment } from "~/api/types";
 
 interface IConfirmState

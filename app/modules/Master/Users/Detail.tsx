@@ -4,8 +4,9 @@ import Loading from "~/components/Common/Loading";
 import { ConfirmModal } from "~/components/Common/Modal";
 import DetailSections, { type IDetailSection } from "~/components/Common/DetailSections";
 import { buttonVariants, Button } from "~/components/ui/button";
+import { formatDateTime } from "~/lib/formatters";
 import { deleteUser, getUserById } from "~/services/users.service";
-import { formatDateTime, formatRoleLabel } from "./helpers";
+import { formatRoleLabel } from "./helpers";
 import type { IUser } from "~/api/types";
 import { cn } from "~/lib/utils";
 

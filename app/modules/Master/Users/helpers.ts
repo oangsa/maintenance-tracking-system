@@ -1,5 +1,6 @@
 import type { IUser, IUserForCreate, IUserForUpdate } from "~/api/types";
 import type { IRole } from "~/constants";
+import { formatDepartmentLabel as formatDepartmentLabelBase } from "~/lib/formatters";
 
 interface IUserFormValues
 {
@@ -21,29 +22,6 @@ function formatRoleLabel(role?: string | null): string
     }
 
     return role.charAt(0).toUpperCase() + role.slice(1);
-}
-
-function formatDateTime(value?: string | null): string
-{
-    if (!value)
-    {
-        return "-";
-    }
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime()))
-    {
-        return value;
-    }
-
-    return new Intl.DateTimeFormat("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    }).format(date);
 }
 
 function createEmptyUserFormValues(): IUserFormValues
@@ -95,16 +73,7 @@ function parseDepartmentId(departmentId: string): number | undefined
 
 function formatDepartmentLabel(departmentCode?: string | null, departmentName?: string | null): string
 {
-    const parts = [departmentCode, departmentName]
-        .map((value) => value?.trim() ?? "")
-        .filter(Boolean);
-
-    if (parts.length === 0)
-    {
-        return "";
-    }
-
-    return parts.join(" - ");
+    return formatDepartmentLabelBase(departmentCode, departmentName, "");
 }
 
 function buildCreatePayload(values: IUserFormValues): IUserForCreate
@@ -172,7 +141,6 @@ export {
     buildUpdatePayload,
     createEmptyUserFormValues,
     formatDepartmentLabel,
-    formatDateTime,
     formatRoleLabel,
     mapUserToFormValues,
 };

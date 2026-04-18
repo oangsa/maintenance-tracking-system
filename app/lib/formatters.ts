@@ -1,4 +1,27 @@
-import type { IRepairRequestItem } from "~/api/types";
+interface IFormatJoinedLabelOptions
+{
+    fallback?: string;
+    separator?: string;
+}
+
+function formatJoinedLabel(values: Array<string | null | undefined>, options: IFormatJoinedLabelOptions = {}): string
+{
+    const {
+        fallback = "-",
+        separator = " - ",
+    } = options;
+
+    const parts = values
+        .map((value) => value?.trim() ?? "")
+        .filter(Boolean);
+
+    if (parts.length === 0)
+    {
+        return fallback;
+    }
+
+    return parts.join(separator);
+}
 
 function formatDateTime(value?: string | null): string
 {
@@ -52,39 +75,15 @@ function formatRequesterLabel(name?: string | null, email?: string | null): stri
     return "-";
 }
 
-function formatRepairStatusLabel(item: IRepairRequestItem): string
+function formatDepartmentLabel(code?: string | null, name?: string | null, fallback = "-"): string
 {
-    if (item.repairStatusName?.trim())
-    {
-        return item.repairStatusName.trim();
-    }
-
-    if (item.repairStatusCode?.trim())
-    {
-        return formatTitleCase(item.repairStatusCode);
-    }
-
-    return "-";
-}
-
-function formatProductLabel(item: IRepairRequestItem): string
-{
-    const parts = [item.productCode, item.productName]
-        .map((value) => value?.trim() ?? "")
-        .filter(Boolean);
-
-    if (parts.length === 0)
-    {
-        return "-";
-    }
-
-    return parts.join(" - ");
+    return formatJoinedLabel([code, name], { fallback });
 }
 
 export {
     formatDateTime,
-    formatProductLabel,
-    formatRepairStatusLabel,
+    formatDepartmentLabel,
+    formatJoinedLabel,
     formatRequesterLabel,
     formatTitleCase,
 };

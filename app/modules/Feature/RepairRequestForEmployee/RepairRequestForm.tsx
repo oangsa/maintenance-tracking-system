@@ -25,12 +25,14 @@ import {
 } from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
 import type { IProduct, IPriority, IUser } from "~/api/types";
-import { searchProducts } from "~/services/products.service";
 import {
-    createEmptyRepairRequestLineItem,
     formatDepartmentLabel,
     formatRequesterLabel,
     formatTitleCase,
+} from "~/lib/formatters";
+import { searchProducts } from "~/services/products.service";
+import {
+    createEmptyRepairRequestLineItem,
     mapProductToLineItem,
     parsePositiveNumber,
 } from "./helpers";
