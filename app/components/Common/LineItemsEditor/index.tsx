@@ -17,6 +17,8 @@ import {
 } from "~/components/ui/table"
 import { cn } from "~/lib/utils"
 
+export type ILineItemReadOnlyVariant = "boxed" | "plain"
+
 export interface ILineItemValue extends Record<string, unknown>
 {
     id?: string | number;
@@ -66,6 +68,7 @@ export interface ILineItemColumnRenderContext<TItem extends ILineItemValue = ILi
     itemsLength: number;
     disabled: boolean;
     readOnly: boolean;
+    readOnlyVariant: ILineItemReadOnlyVariant;
     isDragging: boolean;
     isDragOver: boolean;
     minRows: number;
@@ -114,6 +117,7 @@ interface IBaseLineItemsEditorProps<TItem extends ILineItemValue, TPickerRow ext
     minRows?: number;
     disabled?: boolean;
     hideAddButton?: boolean;
+    readOnlyVariant?: ILineItemReadOnlyVariant;
 }
 
 interface IEditableLineItemsEditorProps<TItem extends ILineItemValue>
@@ -147,6 +151,7 @@ interface ILineItemRowProps<TItem extends ILineItemValue, TPickerRow extends Rec
     itemsLength: number;
     disabled: boolean;
     readOnly: boolean;
+    readOnlyVariant: ILineItemReadOnlyVariant;
     minRows: number;
     isDragging: boolean;
     isDragOver: boolean;
@@ -170,8 +175,22 @@ function BuildItemCountLabel(count: number, itemLabel: string): string
     return `${count} ${itemLabel}${count === 1 ? "" : "s"}`
 }
 
-function RenderReadOnlyValue(value: React.ReactNode, className?: string): React.ReactNode
+function BuildSubmittedItemCountLabel(count: number, itemLabel: string): string
 {
+    return `${count} submitted ${itemLabel}${count === 1 ? "" : "s"}.`
+}
+
+function RenderReadOnlyValue(value: React.ReactNode, variant: ILineItemReadOnlyVariant, className?: string): React.ReactNode
+{
+    if (variant === "plain")
+    {
+        return (
+            <div className={cn("text-sm text-foreground", className)}>
+                {value}
+            </div>
+        )
+    }
+
     return (
         <div className={cn("rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground", className)}>
             {value}
@@ -191,6 +210,7 @@ function LineItemRow<TItem extends ILineItemValue, TPickerRow extends Record<str
     itemsLength,
     disabled,
     readOnly,
+    readOnlyVariant,
     minRows,
     isDragging,
     isDragOver,
@@ -287,8 +307,9 @@ function LineItemRow<TItem extends ILineItemValue, TPickerRow extends Record<str
         minRows,
         openPicker: undefined,
         readOnly,
+        readOnlyVariant,
         renderDefaultActions,
-        renderReadOnlyValue: RenderReadOnlyValue,
+        renderReadOnlyValue: (value, className) => RenderReadOnlyValue(value, readOnlyVariant, className),
         replaceItem: (nextItem) => onReplaceItem(index, nextItem),
         rowHandlers,
         updateItem: (patch) => onUpdateItem(index, patch),
@@ -346,10 +367,13 @@ export default function LineItemsEditor<TItem extends ILineItemValue = ILineItem
         minRows = 1,
         disabled = false,
         hideAddButton = false,
+        readOnlyVariant = "boxed",
     } = props
 
     const readOnly = props.readOnly === true
     const createEmptyItem = "createEmptyItem" in props ? props.createEmptyItem : undefined
+    const resolvedReadOnlyVariant = readOnly ? readOnlyVariant : "boxed"
+    const isPlainReadOnly = readOnly && resolvedReadOnlyVariant === "plain"
 
     const [dragIndex, setDragIndex] = React.useState<number | null>(null)
     const [dragOverIndex, setDragOverIndex] = React.useState<number | null>(null)
@@ -526,16 +550,26 @@ export default function LineItemsEditor<TItem extends ILineItemValue = ILineItem
         })
     }
 
-    const itemsCountLabel = BuildItemCountLabel(value.length, itemLabel)
+    const itemsCountLabel = isPlainReadOnly
+        ? BuildSubmittedItemCountLabel(value.length, itemLabel)
+        : BuildItemCountLabel(value.length, itemLabel)
     const shouldShowAddButton = !readOnly && !hideAddButton
     const visibleColumnCount = Math.max(columns.length, 1)
 
     return (
         <div className="rounded-lg border bg-card shadow-xs">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4">
+            <div className={cn(
+                "flex flex-wrap items-center justify-between gap-3 px-5 py-4",
+                !isPlainReadOnly && "border-b",
+                isPlainReadOnly && "pb-0",
+            )}>
                 <div>
-                    <h3 className="text-base font-semibold text-foreground">{title}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    {isPlainReadOnly ? (
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">{title}</p>
+                    ) : (
+                        <h3 className="text-base font-semibold text-foreground">{title}</h3>
+                    )}
+                    <p className={cn("text-sm text-muted-foreground", isPlainReadOnly ? "mt-2" : "mt-1")}>
                         {itemsCountLabel}
                         {!disabled && !readOnly && value.length > 0 && " added • Drag rows to reorder"}
                     </p>
@@ -549,7 +583,7 @@ export default function LineItemsEditor<TItem extends ILineItemValue = ILineItem
                 )}
             </div>
 
-            <div className="overflow-x-auto">
+            <div className={cn("overflow-x-auto", isPlainReadOnly && "mt-4 rounded-md border")}>
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -587,6 +621,7 @@ export default function LineItemsEditor<TItem extends ILineItemValue = ILineItem
                                 onReplaceItem={ReplaceRow}
                                 onUpdateItem={UpdateRow}
                                 readOnly={readOnly}
+                                readOnlyVariant={resolvedReadOnlyVariant}
                             />
                         ))}
 

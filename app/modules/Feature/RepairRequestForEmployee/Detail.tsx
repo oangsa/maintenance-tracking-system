@@ -1,17 +1,14 @@
 import React, { useSyncExternalStore } from "react";
 import { Link, useParams } from "react-router";
+import LineItemsEditor from "~/components/Common/LineItemsEditor";
 import Loading from "~/components/Common/Loading";
 import { buttonVariants } from "~/components/ui/button";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "~/components/ui/table";
 import type { IRepairRequest } from "~/api/types";
 import { cn } from "~/lib/utils";
+import {
+    createRepairRequestDetailLineItemColumns,
+    type IRepairRequestDetailLineItem,
+} from "../RepairRequests/detailLineItemColumns";
 import {
     ensureCurrentUser,
     getCurrentUser,
@@ -148,6 +145,15 @@ export default function RepairRequestDetailPage()
         { label: "Updated By", value: repairRequest.updatedBy ?? "-" },
     ];
 
+    const lineItems: IRepairRequestDetailLineItem[] = repairRequest.repairRequestItems.map((item) => ({
+        description: item.description,
+        id: item.id,
+        productLabel: formatProductLabel(item),
+        quantity: item.quantity,
+        repairStatus: formatRepairStatusLabel(item),
+    }));
+    const lineItemColumns = createRepairRequestDetailLineItemColumns();
+
     return (
         <>
             <div className="page-header">
@@ -207,47 +213,17 @@ export default function RepairRequestDetailPage()
                 </div>
             </div>
 
-            <div className="card mt-6">
-                <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                        Repair Request Items
-                    </p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                        {repairRequest.repairRequestItems.length} submitted line item{repairRequest.repairRequestItems.length === 1 ? "" : "s"}.
-                    </p>
-                </div>
-
-                <div className="mt-4 overflow-x-auto rounded-md border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-16">No</TableHead>
-                                <TableHead>Product</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead className="text-right">Qty</TableHead>
-                                <TableHead>Repair Status</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {repairRequest.repairRequestItems.map((item, index) => (
-                                <TableRow key={item.id}>
-                                    <TableCell className="align-top font-medium">{index + 1}</TableCell>
-                                    <TableCell className="align-top">{formatProductLabel(item)}</TableCell>
-                                    <TableCell className="align-top">{item.description?.trim() || "-"}</TableCell>
-                                    <TableCell className="align-top text-right">{item.quantity}</TableCell>
-                                    <TableCell className="align-top">{formatRepairStatusLabel(item)}</TableCell>
-                                </TableRow>
-                            ))}
-                            {repairRequest.repairRequestItems.length === 0 && (
-                                <TableRow>
-                                    <TableCell className="py-8 text-center text-muted-foreground" colSpan={5}>
-                                        No repair request items were submitted for this request.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+            <div className="mt-6">
+                <LineItemsEditor
+                    columns={lineItemColumns}
+                    emptyMessage="No repair request items were submitted for this request."
+                    itemLabel="line item"
+                    onChange={() => undefined}
+                    readOnly
+                    readOnlyVariant="plain"
+                    title="Repair Request Items"
+                    value={lineItems}
+                />
             </div>
         </>
     );

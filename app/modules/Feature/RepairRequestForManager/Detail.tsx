@@ -1,14 +1,19 @@
 import React from "react";
 import { FiFileText } from "react-icons/fi";
 import { Link, useParams } from "react-router";
-import LineItemsEditor, { type ILineItemColumn } from "../../../components/Common/LineItemsEditor/index";
+import LineItemsEditor from "../../../components/Common/LineItemsEditor/index";
 import Loading from "~/components/Common/Loading";
 import { Button, buttonVariants } from "~/components/ui/button";
 import type { IRepairRequest } from "~/api/types";
 import { getRepairRequestById } from "~/services/repairRequests.service";
 import { cn } from "~/lib/utils";
 import {
+    createRepairRequestDetailLineItemColumns,
+    type IRepairRequestDetailLineItem,
+} from "../RepairRequests/detailLineItemColumns";
+import {
     formatDateTime,
+    formatProductLabel,
     formatRepairStatusLabel,
     formatRequesterLabel,
     formatTitleCase,
@@ -108,78 +113,21 @@ export default function RepairRequestManagerDetailPage()
     ];
 
 
-    const lineItems = repairRequest.repairRequestItems.map((item) => ({
-        id: item.id,
-        code: item.productCode,
-        name: item.productName,
+    const lineItems: IRepairRequestDetailLineItem[] = repairRequest.repairRequestItems.map((item) => ({
         description: item.description,
+        id: item.id,
+        productLabel: formatProductLabel(item),
         quantity: item.quantity,
-        status: formatRepairStatusLabel(item),
+        repairStatus: formatRepairStatusLabel(item),
     }));
 
-
-    // TODO: Refactor the line item columns to a separate hook when the manager repair request create/edit flow is implemented and they can be reused.
-    const lineItemColumns: ILineItemColumn<(typeof lineItems)[number]>[] = [
-        {
-            cellClassName: "w-[72px] align-top",
-            headerClassName: "w-[72px] text-center",
-            key: "index",
-            label: "#",
-            renderCell: (context) => (
-                <div className="pt-2 text-center text-xs font-semibold text-muted-foreground">
-                    {context.index + 1}
-                </div>
-            ),
-        },
-        {
-            cellClassName: "min-w-[180px] align-top",
-            headerClassName: "min-w-[180px]",
-            key: "code",
-            label: "Product Code",
-            renderCell: (context) => context.renderReadOnlyValue(String(context.item.code ?? "-")),
-        },
-        {
-            cellClassName: "min-w-[220px] align-top",
-            headerClassName: "min-w-[220px]",
-            key: "name",
-            label: "Product Name",
-            renderCell: (context) => context.renderReadOnlyValue(String(context.item.name ?? "-")),
-        },
-        {
-            cellClassName: "min-w-[260px] align-top",
-            headerClassName: "min-w-[260px]",
-            key: "description",
-            label: "Description",
-            renderCell: (context) => context.renderReadOnlyValue(String(context.item.description ?? "-"), "min-h-20 whitespace-pre-wrap"),
-        },
-        {
-            cellClassName: "w-[120px] align-top",
-            headerClassName: "w-[120px] text-right",
-            key: "quantity",
-            label: "Qty",
-            renderCell: (context) => context.renderReadOnlyValue(String(context.item.quantity ?? "-"), "text-right"),
-        },
-        {
-            cellClassName: "w-[160px] align-top",
-            headerClassName: "w-[160px]",
-            key: "status",
-            label: "Repair Status",
-            renderCell: (context) => context.renderReadOnlyValue(String(context.item.status ?? "-")),
-        },
-        {
-            cellClassName: "w-[180px] align-top",
-            headerClassName: "w-[180px] text-right",
-            key: "actions",
-            label: "Action",
-            renderCell: (context) => (
-                <div className="flex justify-end">
-                    <Button onClick={() => handleAssignWorkOrder(Number(context.item.id))} type="button" variant="outline">
-                        Assign Work Order
-                    </Button>
-                </div>
-            ),
-        },
-    ];
+    const lineItemColumns = createRepairRequestDetailLineItemColumns({
+        renderAction: (item) => (
+            <Button onClick={() => handleAssignWorkOrder(Number(item.id))} type="button" variant="outline">
+                Assign Work Order
+            </Button>
+        ),
+    });
 
     return (
         <>
@@ -253,6 +201,7 @@ export default function RepairRequestManagerDetailPage()
                     itemLabel="line item"
                     onChange={() => undefined}
                     readOnly
+                    readOnlyVariant="plain"
                     title="Repair Request Items"
                     value={lineItems}
                 />
