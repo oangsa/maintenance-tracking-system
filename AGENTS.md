@@ -1,10 +1,26 @@
 ## 1. Main Project Overview
 
-This document describes the main frontend project in `maintainance-tracking-system`, its current folder structure, and how the application is organized.
+This document describes the current frontend structure in `maintainance-tracking-system` and the conventions the project uses today.
 
 ### Purpose
 
-The main project is the TypeScript frontend for the Maintainance Tracking System. It uses React Router for route composition, a shared API layer for backend communication, shadcn-based UI primitives, and module folders to keep each CRUD area self-contained.
+The project is a TypeScript React Router frontend for the Maintenance Tracking System. It uses a layered structure:
+
+- route wrappers for URL composition
+- feature modules for page logic
+- shared Maintain components for common CRUD page shells
+- shared Common components for tables, detail sections, pickers, and line-item editing
+- `app/api/` plus `app/services/` for backend communication
+
+### Current Application Surface
+
+The current application is split into these route groups:
+
+- `auth/login`: login screen
+- `repair-requests/*`: employee repair request list, create, and detail
+- `manager/repair-requests/*`: manager repair request list and detail
+- `master/users/*`: user CRUD
+- `master/departments/*`: department CRUD
 
 ### Current Project Structure
 
@@ -12,30 +28,65 @@ The main project is the TypeScript frontend for the Maintainance Tracking System
 maintainance-tracking-system/
 |-- app/
 |   |-- api/
-|   |   |-- http.ts
 |   |   |-- auth.api.ts
 |   |   |-- departments.api.ts
+|   |   |-- http.ts
+|   |   |-- products.api.ts
+|   |   |-- repairRequests.api.ts
+|   |   |-- repairStatuses.api.ts
 |   |   |-- users.api.ts
+|   |   |-- types.ts
 |   |   `-- types/
 |   |-- components/
 |   |   |-- Common/
+|   |   |   |-- DataTable/
+|   |   |   |-- DetailSections/
+|   |   |   |-- LineItemsEditor/
+|   |   |   |-- ListPickerModal/
+|   |   |   |-- Loading/
+|   |   |   `-- Modal/
+|   |   |-- Maintain/
+|   |   |   |-- Create/
+|   |   |   |-- Detail/
+|   |   |   |-- DetailPage/
+|   |   |   |-- Edit/
+|   |   |   |-- ErrorCard/
+|   |   |   |-- ManagePage/
+|   |   |   |-- PageHeader/
+|   |   |   |-- Table/
+|   |   |   `-- types.ts
 |   |   `-- ui/
 |   |-- constants/
-|   |-- hooks/
 |   |-- layouts/
 |   |   `-- LayoutMain.tsx
 |   |-- lib/
-|   |   `-- pageUtils.ts
+|   |   |-- formatters.ts
+|   |   |-- pageUtils.ts
+|   |   `-- repairRequestUtils.ts
 |   |-- modules/
-|   |   |-- Master/
-|   |   |   `-- Users/
-|   |   `-- auth/
-|   |-- routes/
+|   |   |-- auth/
+|   |   |   `-- login/
+|   |   |-- Feature/
+|   |   |   |-- RepairRequestForEmployee/
+|   |   |   |-- RepairRequestForManager/
+|   |   |   `-- RepairRequests/
 |   |   `-- Master/
+|   |       |-- Departments/
+|   |       `-- Users/
+|   |-- routes/
+|   |   |-- Main/
+|   |   |   `-- RepairRequests/
+|   |   |-- Manager/
+|   |   |   `-- RepairRequests/
+|   |   `-- Master/
+|   |       |-- Departments/
 |   |       `-- Users/
 |   |-- services/
 |   |   |-- auth.service.ts
 |   |   |-- departments.service.ts
+|   |   |-- products.service.ts
+|   |   |-- repairRequests.service.ts
+|   |   |-- repairStatuses.service.ts
 |   |   `-- users.service.ts
 |   |-- app.css
 |   |-- root.tsx
@@ -46,148 +97,212 @@ maintainance-tracking-system/
 |   |-- project-overview.md
 |   `-- search-guide.md
 |-- public/
-|-- components.json
-|-- package.json
-|-- react-router.config.ts
-|-- tsconfig.json
-`-- vite.config.ts
+|-- README.md
+`-- package.json
 ```
 
 ### Layer Responsibilities
 
 #### `app/root.tsx`
 
-- Application root.
-- Loads global styles.
-- Starts shared providers.
-- Initializes auth service.
+- loads global styles
+- starts shared providers
+- initializes auth state
 
 #### `app/routes.ts`
 
-- Central route definition file.
-- Maps URL paths to route wrapper files.
-- Keeps route registration separate from module implementation.
+- central route registration file
+- maps URL paths to route wrapper files under `app/routes/`
+- keeps routing separate from module implementation
 
 #### `app/routes/`
 
-- Thin route wrappers only.
-- Each route file should import a module page and return it.
-- Do not place business logic here.
+- thin wrappers only
+- each file imports a module page and returns it
+- no business logic should live here
 
 #### `app/layouts/`
 
-- Shared application shells.
-- `LayoutMain.tsx` handles authenticated layout, sidebar, header, and current-user display.
+- shared application shells
+- `LayoutMain.tsx` handles the authenticated layout, sidebar, top bar, and current user display
 
-#### `app/modules/`
+#### `app/components/Maintain/`
 
-- Feature folders.
-- Each CRUD area should live in its own module folder.
-- The current reference implementation is `app/modules/Master/Users`.
-
-Recommended module shape:
-
-```text
-app/modules/Master/Entity/
-|-- index.tsx
-|-- Create.tsx
-|-- Edit.tsx
-|-- Detail.tsx
-|-- Manage.tsx
-|-- EntityForm.tsx
-|-- useColumns.tsx
-|-- useFieldFilter.ts
-`-- helpers.ts
-```
+- shared CRUD page layer
+- `Create`, `Edit`, `Detail`, and `Table` are the high-level entry components used by module pages
+- `ManagePage`, `DetailPage`, `PageHeader`, and `ErrorCard` are lower-level layout primitives behind those entry components
+- Maintain components are intentionally generic and UI-focused
+- Maintain components do not call the API directly; module entry pages own loaders and mutations and pass them in through props
 
 #### `app/components/Common/`
 
-- Reusable application-level components.
-- Important shared pieces already in use:
-  - `DataTable` for paginated list pages.
-  - `ListPickerModal` for lookup relationships.
-  - `Modal` and `ConfirmModal` for confirmations.
-  - `Loading` for loading states.
+- reusable application-level components
+- important shared pieces already in use:
+    - `DataTable` for paginated list pages
+    - `DetailSections` for section-based read-only pages
+    - `LineItemsEditor` for editable or read-only line-item collections
+    - `ListPickerModal` for lookup selection dialogs
+    - `Modal` and `ConfirmModal` for confirmation flows
+    - `Loading` for loading states
 
 #### `app/components/ui/`
 
-- Raw shadcn UI primitives.
-- Treat these as base components.
-- Do not rewrite them for feature-specific behavior.
+- raw shadcn UI primitives
+- treat these as base components only
+- do not place feature-specific business logic here
+
+#### `app/modules/`
+
+- feature code lives here
+- the best current full-CRUD reference is `app/modules/Master/Users`
+- modules follow a nested page-entry layout instead of the older flat `Create.tsx` or `Manage.tsx` pattern
+
+Current full CRUD shape:
+
+```text
+app/modules/Master/Entity/
+|-- Create/
+|   `-- index.tsx
+|-- Detail/
+|   `-- index.tsx
+|-- Edit/
+|   `-- index.tsx
+|-- form.tsx
+|-- hooks/
+|   |-- helpers.ts
+|   |-- useColumns.tsx
+|   `-- useFieldFilter.ts
+`-- index.tsx
+```
+
+Notes:
+
+- `useFieldFilter.ts` is optional for simple list pages
+- read-only modules can omit `Create/`, `Edit/`, and `form.tsx`
+- shared cross-module helpers can live beside the feature folders, for example `app/modules/Feature/RepairRequests/detailLineItemColumns.tsx`
 
 #### `app/api/`
 
-- Raw backend request layer.
-- One file per backend resource.
-- Uses shared `http()` and `httpPaginated()` helpers.
-- Should stay close to backend endpoints and request/response contracts.
+- raw backend request layer
+- one file per backend resource
+- uses shared `http()` and `httpPaginated()` helpers
+- keeps endpoint paths and request contracts close to the backend
 
 #### `app/services/`
 
-- Thin orchestration layer on top of `app/api/`.
-- Modules should import services, not raw HTTP helpers.
-- Good place for request composition and UI-facing helper functions.
+- thin orchestration layer on top of `app/api/`
+- modules should import services, not raw HTTP helpers
+- good place for UI-facing request composition and naming
 
 #### `app/api/types/` and `app/api/types.ts`
 
-- Shared API types and barrel exports.
-- Add new entity contracts here before wiring new CRUD pages.
+- shared API contracts and barrel exports
+- add or update entity types here before wiring pages
 
 #### `app/lib/`
 
-- Shared frontend helpers.
-- `pageUtils.ts` currently contains shared list URL and sorting utilities.
+- shared frontend utilities
+- current important helpers:
+    - `pageUtils.ts` for list URL state and sort mapping
+    - `formatters.ts` for generic formatting helpers
+    - `repairRequestUtils.ts` for repair-request-specific display helpers
 
-#### `docs/`
+### Current Reference Modules
 
-- Main project reference material.
-- Use this folder for internal implementation guides and API interaction notes.
+#### `app/modules/Master/Users`
 
-### Current Implemented Feature Flow
+- full CRUD reference module
+- uses advanced filters through `hooks/useFieldFilter.ts`
+- uses a related-entity picker in `form.tsx`
+- best example for new CRUD work
 
-The `Users` module is the best reference for new CRUD work.
+#### `app/modules/Master/Departments`
 
-#### List flow
+- full CRUD module with a simpler list page
+- no advanced filter hook today
+- good reference when the entity only needs quick search plus create, edit, detail, and delete
 
-- Route file renders `UsersListPage`.
-- `index.tsx` reads URL params and passes them into `DataTable`.
-- `useFieldFilter.ts` owns filter config and API filter mapping.
-- `useColumns.tsx` owns table column definitions.
-- `users.service.ts` calls `users.api.ts`.
-- `users.api.ts` calls `httpPaginated()` for `/api/v1/users/search`.
+#### `app/modules/Feature/RepairRequestForEmployee`
 
-#### Create and edit flow
+- list, create, and detail only
+- create page loads current user and initial repair status before rendering the form
+- uses `LineItemsEditor` for repair request items
+- list pages always scope results to the current requester
 
-- `Create.tsx` and `Edit.tsx` are thin wrappers.
-- Both render `Manage.tsx` with a mode flag.
-- `Manage.tsx` loads data for edit mode and submits create or update requests.
-- `UserForm.tsx` owns form state, zod validation, and lookup UI.
+#### `app/modules/Feature/RepairRequestForManager`
 
-#### Detail flow
+- read-only list and detail module
+- disables create, edit, and delete actions in the table
+- detail page uses `LineItemsEditor` in read-only mode and can inject manager-only row actions
 
-- `Detail.tsx` loads a single record.
-- Provides read-only display and delete action.
+### Current Page Flow Patterns
+
+#### List pages
+
+1. A route wrapper renders the module `index.tsx`.
+2. The module reads URL state with `useSearchParams()`.
+3. `useColumns()` returns the table column definitions.
+4. Optional `useFieldFilter()` owns filter metadata plus mapping from UI filters to backend `search[]` conditions.
+5. `useTableSearchParams()` centralizes the `page`, `search`, and filter URL updates.
+6. The module defines a local `fetchData()` function that calls the correct service.
+7. The page renders `app/components/Maintain/Table` with the local fetch and delete props.
+
+#### Create pages
+
+1. `Create/index.tsx` stays thin.
+2. The file keeps API-related work local, such as prerequisite loading and `create<Entity>()` submission.
+3. The page renders `app/components/Maintain/Create`.
+4. The shared component renders `form.tsx` and handles submit state and page-level error display.
+
+#### Edit pages
+
+1. `Edit/index.tsx` owns the record loader and update mutation.
+2. The page renders `app/components/Maintain/Edit`.
+3. The shared component handles invalid id checks, loading, not-found states, and submit state.
+4. `form.tsx` is reused between create and edit.
+
+#### Detail pages
+
+1. `Detail/index.tsx` owns the record loader and any delete confirmation flow.
+2. The page renders `app/components/Maintain/Detail`.
+3. The shared component handles invalid id checks, loading, not-found states, and section layout.
+4. Module code still owns `actions`, `buildSections`, and any extra content below the detail sections.
 
 ### Important Conventions
 
-- Build the main project in TypeScript even if references are in JavaScript.
-- Use interfaces for component props.
-- Prefer shared components before creating a new abstraction.
-- Use `search` for structured filters and `searchTerm` for free-text search.
-- Keep backend field mapping near the module, not inside shared table code.
-- Prefer the `useFieldFilter` pattern for advanced list filters.
-- Show meaningful business fields like code and name rather than internal ids where possible.
+- build the main project in TypeScript even if references are in JavaScript
+- use interfaces for component props
+- keep route wrappers thin
+- keep API calls in module pages, services, and api files; do not move domain-specific fetching into shared Maintain components
+- prefer the current nested module layout with `Create/index.tsx`, `Edit/index.tsx`, `Detail/index.tsx`, `form.tsx`, and `hooks/`
+- use `search` for structured filters and `searchTerm` for free-text search
+- keep backend field mapping near the module, not inside shared table code
+- show meaningful business values such as code and name instead of internal ids where possible
+- use zod for form validation
+- use shared Common components before creating a new abstraction
 
 ### Where To Look First
 
-- Start with `app/modules/Master/Users` when adding a new CRUD feature.
-- Use `docs/search-guide.md` when building list filters or quick search.
-- Use `docs/openapi.yaml` when matching backend payloads and endpoints.
+- start with `app/modules/Master/Users` for the full current pattern
+- use `app/modules/Master/Departments` for the simpler CRUD pattern without advanced filters
+- use `app/modules/Feature/RepairRequestForEmployee` for `LineItemsEditor` and preloaded create-page dependencies
+- use `app/modules/Feature/RepairRequestForManager` for read-only list and detail patterns
+- use `docs/crud-guide.md` when creating or refactoring a module
+- use `docs/search-guide.md` when wiring list filters or quick search
+- use `docs/openapi.yaml` when checking backend contracts
 
 
 ## 2. How To Add A New CRUD Interaction
 
-This guide explains how to add a new CRUD module in the main project by following the existing Users implementation.
+This guide explains how to add or refactor a module so it matches the current project standard.
+
+The main reference is `app/modules/Master/Users`. That module reflects the current architecture:
+
+- nested page-entry folders such as `Create/index.tsx`
+- a shared `form.tsx`
+- module-local `hooks/`
+- shared CRUD shells from `app/components/Maintain`
+- API logic kept in module entry pages and passed into shared components through props
 
 ### Recommended Order
 
@@ -197,13 +312,15 @@ This guide explains how to add a new CRUD module in the main project by followin
 4. Create the module folder.
 5. Add route wrapper files.
 6. Register routes in `app/routes.ts`.
-7. Build list, form, manage, and detail pages.
-8. Add filters and lookup interactions if needed.
-9. Validate with typecheck.
+7. Build the list page.
+8. Build the shared form.
+9. Build the create, edit, and detail entry pages.
+10. Add lookup or line-item interactions if needed.
+11. Validate with typecheck.
 
 ### Step 1: Define The Entity Contract
 
-Add the entity types under `app/api/types/`.
+Add entity types under `app/api/types/`.
 
 Typical additions:
 
@@ -216,18 +333,23 @@ Then re-export them from:
 - `app/api/types/types.ts`
 - `app/api/types.ts`
 
-This keeps feature code importing from a stable barrel instead of deep paths.
+This keeps feature code importing from the shared barrel instead of deep paths.
 
 ### Step 2: Add Raw API Calls
 
-Create `app/api/assets.api.ts` for a new `Asset` entity.
+Create `app/api/assets.api.ts` for the new entity.
 
 Typical functions:
 
 ```ts
+import { http, httpPaginated } from "./http";
+import type { IAsset, IAssetForCreate, IAssetForUpdate, IPagedResult, ISearchRequest } from "./types";
+
+const PREFIX = "/api/v1/assets";
+
 export async function searchAssetsRequest(body: ISearchRequest): Promise<IPagedResult<IAsset>>
 {
-    return httpPaginated<IAsset>("/api/v1/assets/search", {
+    return httpPaginated<IAsset>(`${PREFIX}/search`, {
         method: "POST",
         body: JSON.stringify(body),
     });
@@ -235,24 +357,44 @@ export async function searchAssetsRequest(body: ISearchRequest): Promise<IPagedR
 
 export async function createAssetRequest(body: IAssetForCreate): Promise<IAsset>
 {
-    return http<IAsset>("/api/v1/assets", {
+    return http<IAsset>(PREFIX, {
         method: "POST",
         body: JSON.stringify(body),
+    });
+}
+
+export async function getAssetByIdRequest(id: number): Promise<IAsset>
+{
+    return http<IAsset>(`${PREFIX}/${id}`);
+}
+
+export async function updateAssetRequest(id: number, body: IAssetForUpdate): Promise<IAsset>
+{
+    return http<IAsset>(`${PREFIX}/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+    });
+}
+
+export async function deleteAssetRequest(id: number): Promise<void>
+{
+    return http<void>(`${PREFIX}/${id}`, {
+        method: "DELETE",
     });
 }
 ```
 
 Rules:
 
-- Use `httpPaginated()` for search endpoints.
-- Use `http()` for detail, create, update, and delete.
-- Keep each function close to the backend endpoint contract.
+- use `httpPaginated()` for search endpoints
+- use `http()` for detail, create, update, and delete
+- keep each function close to the backend endpoint contract
 
 ### Step 3: Add Service Functions
 
 Create `app/services/assets.service.ts`.
 
-This file should wrap the API calls with UI-facing names:
+This file should wrap the API calls with UI-facing names such as:
 
 - `searchAssets()`
 - `getAssetById()`
@@ -260,42 +402,50 @@ This file should wrap the API calls with UI-facing names:
 - `updateAsset()`
 - `deleteAsset()`
 
-The page layer should import services, not raw API files.
+Modules should import services, not raw API files.
 
 ### Step 4: Create The Module Folder
 
-Create a new module folder using the Users shape as the baseline.
+Create a module folder using the current Users shape.
 
-Example:
+Full CRUD example:
 
 ```text
 app/modules/Master/Assets/
-|-- index.tsx
-|-- Create.tsx
-|-- Edit.tsx
-|-- Detail.tsx
-|-- Manage.tsx
-|-- AssetForm.tsx
-|-- useColumns.tsx
-|-- useFieldFilter.ts
-`-- helpers.ts
+|-- Create/
+|   `-- index.tsx
+|-- Detail/
+|   `-- index.tsx
+|-- Edit/
+|   `-- index.tsx
+|-- form.tsx
+|-- hooks/
+|   |-- helpers.ts
+|   |-- useColumns.tsx
+|   `-- useFieldFilter.ts
+`-- index.tsx
 ```
 
 Purpose of each file:
 
-- `index.tsx`: list page and DataTable integration.
-- `Create.tsx`: wrapper that renders `Manage.tsx` in create mode.
-- `Edit.tsx`: wrapper that renders `Manage.tsx` in edit mode.
-- `Detail.tsx`: read-only record page and delete action.
-- `Manage.tsx`: create and edit orchestration.
-- `AssetForm.tsx`: form fields, zod validation, lookup dialogs.
-- `useColumns.tsx`: table columns for the list page.
-- `useFieldFilter.ts`: filter definitions, URL param mapping, API `search[]` translation.
-- `helpers.ts`: payload mappers, labels, empty form state, formatting helpers.
+- `index.tsx`: list page and `Table` integration
+- `Create/index.tsx`: thin create entry page
+- `Edit/index.tsx`: thin edit entry page
+- `Detail/index.tsx`: thin detail entry page
+- `form.tsx`: reusable form used by create and edit
+- `hooks/helpers.ts`: payload mappers, labels, and form-value helpers
+- `hooks/useColumns.tsx`: list table columns
+- `hooks/useFieldFilter.ts`: optional advanced list filters
+
+Variations:
+
+- omit `hooks/useFieldFilter.ts` when the entity only needs quick search
+- omit `Create/`, `Edit/`, and `form.tsx` for a read-only module
+- keep shared cross-feature helpers outside the module when more than one feature reuses them
 
 ### Step 5: Add Route Wrapper Files
 
-Create route wrapper files under `app/routes/Master/Assets/`.
+Create thin route wrappers under `app/routes/`.
 
 Example:
 
@@ -307,9 +457,7 @@ app/routes/Master/Assets/
 `-- master.assets.$id.edit.tsx
 ```
 
-These files should stay thin.
-
-Example:
+Example route wrapper:
 
 ```tsx
 import AssetsListPage from "~/modules/Master/Assets";
@@ -320,9 +468,15 @@ export default function MasterAssetsRoute()
 }
 ```
 
+Use the nested page folder paths for create, edit, and detail wrappers:
+
+```tsx
+import CreateAssetPage from "~/modules/Master/Assets/Create";
+```
+
 ### Step 6: Register Routes
 
-Add the new route entries to `app/routes.ts`.
+Add the route entries to `app/routes.ts`.
 
 Example:
 
@@ -337,84 +491,75 @@ If the feature should appear in navigation, add the nav item only after the rout
 
 ### Step 7: Build The List Page
 
-The list page should follow the Users pattern.
-
-Checklist:
-
-- Read `page` and `search` from `useSearchParams()`.
-- Use `buildListSearchParams()` and `parsePositiveIntegerParam()` from `app/lib/pageUtils.ts`.
-- Use `DataTable` for pagination, sorting, quick search, and delete actions.
-- Put filter ownership in `useFieldFilter.ts`.
-- Convert module filter values into backend `search[]` conditions in the module layer.
-- Keep free-text search in `searchTerm`.
-
-Current pattern:
-
-- `params.searchTerm` is the quick text input.
-- `params.search` is the advanced filter record.
-- `buildOrderBy()` translates table sorting to API `orderBy`.
-
-### Step 8: Build The Form And Manage Pages
-
-`Manage.tsx` should own mode-based orchestration.
+The list page lives in `index.tsx` and should follow the current `Users` or `Departments` pattern.
 
 Responsibilities:
 
-- In create mode, submit `create<Entity>()`.
-- In edit mode, load the selected entity and submit `update<Entity>()`.
-- Redirect back to the list after success.
-- Show loading and page-level errors.
+- read URL state with `useSearchParams()`
+- define columns in `hooks/useColumns.tsx`
+- optionally define filters in `hooks/useFieldFilter.ts`
+- use `app/components/Maintain/Table`
+- use `app/components/Maintain/Table/useSearchParams`
+- keep the local `fetchData()` function inside the module file
+- pass delete behavior through `deleteConfig` when delete is allowed
 
-`<Entity>Form.tsx` should own:
+### Step 8: Build The Shared Form
 
-- form state
+The shared form lives in `form.tsx` and should be reusable for create and edit.
+
+Typical responsibilities:
+
+- local form state
 - zod validation
 - field rendering
-- lookup modal interactions
+- lookup or line-item UI when needed
 - inline field errors
 
-Keep the form reusable for both create and edit.
+Keep page-level API work out of `form.tsx` unless the field itself needs a lookup service or a local helper query.
 
-### Step 9: Add Related Lookup Interactions
+### Step 9: Build Create And Edit Entry Pages
 
-If the entity depends on another entity, follow the department lookup pattern used by `UserForm.tsx`.
+Create and edit entry pages should stay thin.
 
-Use:
+Important rule:
 
-- `ListPickerModal` for selecting related records.
-- a search service for the related entity.
-- label helpers to display `code` and `name` instead of only ids.
+- API-related functions must stay in the module entry file and be passed into the shared Maintain component through props
 
-This keeps relation picking consistent across modules.
+Use `app/components/Maintain/Create` and `app/components/Maintain/Edit` instead of reintroducing a custom `Manage.tsx` layer.
 
-### Step 10: Add Advanced Filters
+### Step 10: Build The Detail Page
 
-If the list page needs structured filters, create a `useFieldFilter.ts` hook.
+The detail page should use `app/components/Maintain/Detail`.
 
-The hook should own:
+Responsibilities that stay in the module file:
 
-- filter field definitions for `DataTable`
-- URL param names like `filterStatus` or `filterDepartment`
-- normalization for filter values
-- translation into backend `search[]`
-- module-specific quick search field list like `"code,name"`
+- record loader passed through `loadData`
+- delete confirmation flow
+- `actions` rendering
+- `buildSections` mapping
+- extra content such as `LineItemsEditor` below the detail sections
 
-Keep shared table behavior generic and keep field mapping inside the module.
+### Step 11: Add Lookup Or Line-Item Interactions When Needed
 
-### Step 11: Add Delete Interaction
+Use the existing shared components instead of building custom solutions first.
 
-Use `ConfirmModal` in both list and detail pages.
+Lookup guidance:
 
-List page:
+- use `ListPickerModal` for related-record selection
+- keep the picker request function close to the form that needs it
+- show business labels such as `code` and `name`, not only ids
 
-- store selected id in local state
-- confirm before delete
-- refresh the table after success
+Line-item guidance:
 
-Detail page:
+- use `LineItemsEditor` for editable row collections
+- provide the line-item columns from the feature module
+- use the read-only mode for detail pages when the collection should not be edited
 
-- confirm before delete
-- navigate back to the list after success
+Reference modules:
+
+- `app/modules/Master/Users/form.tsx` for relation lookup
+- `app/modules/Feature/RepairRequestForEmployee/form.tsx` for editable `LineItemsEditor`
+- `app/modules/Feature/RepairRequestForManager/Detail/index.tsx` for read-only line-item display with injected actions
 
 ### Step 12: Validate
 
@@ -424,38 +569,45 @@ Run:
 bun run typecheck
 ```
 
-Then verify these flows manually:
+Then manually verify the flows that apply to the module:
 
 1. Open list page.
 2. Search by quick text.
-3. Apply and clear filters.
+3. Apply and clear filters when filters exist.
 4. Open detail page.
-5. Create a new record.
-6. Edit an existing record.
-7. Delete a record.
+5. Create a new record when create exists.
+6. Edit an existing record when edit exists.
+7. Delete a record when delete exists.
 8. Check pagination and sorting.
 
 ### Copy-From References In This Repo
 
-Use these files as the baseline when adding a new CRUD module:
+Use these files as the baseline:
 
 - `app/modules/Master/Users/index.tsx`
-- `app/modules/Master/Users/Manage.tsx`
-- `app/modules/Master/Users/UserForm.tsx`
-- `app/modules/Master/Users/useColumns.tsx`
-- `app/modules/Master/Users/useFieldFilter.ts`
+- `app/modules/Master/Users/Create/index.tsx`
+- `app/modules/Master/Users/Edit/index.tsx`
+- `app/modules/Master/Users/Detail/index.tsx`
+- `app/modules/Master/Users/form.tsx`
+- `app/modules/Master/Users/hooks/helpers.ts`
+- `app/modules/Master/Users/hooks/useColumns.tsx`
+- `app/modules/Master/Users/hooks/useFieldFilter.ts`
+- `app/modules/Master/Departments/index.tsx`
+- `app/modules/Feature/RepairRequestForEmployee/form.tsx`
+- `app/modules/Feature/RepairRequestForManager/Detail/index.tsx`
 - `app/api/users.api.ts`
 - `app/services/users.service.ts`
-- `app/routes/Master/Users/`
 
 ### Common Mistakes To Avoid
 
-- Do not call raw `fetch()` from modules when `app/api/` already exists.
-- Do not duplicate search parameter parsing in multiple pages.
-- Do not move backend field-name mapping into `DataTable`.
-- Do not use plain ids as the main visible identifier when code and name are available.
-- Do not add feature-specific changes inside raw shadcn UI primitives.
-- Do not copy reference-app JavaScript files directly into the main project without converting them to the current TypeScript pattern.
+- do not call raw `fetch()` from modules when `app/api/` already exists
+- do not reintroduce the older flat `Create.tsx`, `Edit.tsx`, `Detail.tsx`, or `Manage.tsx` structure for new work
+- do not move API loaders or mutations into shared Maintain components
+- do not duplicate search parameter parsing in multiple pages when `useTableSearchParams()` already covers it
+- do not move backend field-name mapping into `DataTable`
+- do not show plain ids when code and name are available
+- do not put feature-specific logic inside raw shadcn UI primitives
+- do not copy reference-app JavaScript files directly without converting them to the current TypeScript pattern
 
 ## 3. Runtimes
 - Bun

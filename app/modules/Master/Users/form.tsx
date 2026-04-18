@@ -6,16 +6,10 @@ import type { IDepartment } from "~/api/types";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "~/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { searchDepartments } from "~/services/departments.service";
-import { formatDepartmentLabel, formatRoleLabel } from "./helpers";
-import type { IUserFormValues } from "./helpers";
+import { formatDepartmentLabel, formatRoleLabel } from "./hooks/helpers";
+import type { IUserFormValues } from "./hooks//helpers";
 import { UserFormSchema } from "~/schemas/userFormSchema";
 import { ROLE_OPTIONS as roleOptions } from "~/constants/role.constant";
 
@@ -27,7 +21,6 @@ interface IUserFormProps
     initialValues: IUserFormValues;
     loading?: boolean;
     submitting?: boolean;
-    error?: string;
     onCancel: () => void;
     onSubmit: (values: IUserFormValues) => void | Promise<void>;
 }
@@ -89,7 +82,6 @@ export default function UserForm({
     initialValues,
     loading = false,
     submitting = false,
-    error = "",
     onCancel,
     onSubmit,
 }: IUserFormProps)
@@ -227,8 +219,6 @@ export default function UserForm({
 
     return (
         <div className="card">
-            {error && <div className="alert alert-error">{error}</div>}
-
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid gap-5 md:grid-cols-2">
                     <div className="space-y-2">
