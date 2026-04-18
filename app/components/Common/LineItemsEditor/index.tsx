@@ -5,6 +5,7 @@ import {
     Plus,
     Trash2,
 } from "lucide-react"
+import ListPickerModal from "../ListPickerModal"
 import { Button } from "~/components/ui/button"
 import {
     Table,
@@ -29,6 +30,35 @@ export interface ILineItemRowHandlers
     remove: () => void;
 }
 
+export interface ILineItemPickerColumn<T = Record<string, unknown>>
+{
+    key: string;
+    label: string;
+    align?: "left" | "right" | "center";
+    render?: (value: unknown, row: T) => React.ReactNode;
+    style?: React.CSSProperties;
+}
+
+export interface ILineItemPickerFetchParams
+{
+    search: string;
+    page: number;
+    limit: number;
+    sortBy?: string;
+    sortDir?: "asc" | "desc";
+}
+
+export interface ILineItemPickerFetchResult<T = Record<string, unknown>>
+{
+    data: T[];
+    total: number;
+    totalPages: number;
+    pageItemCount?: number;
+    currentPage?: number;
+    hasNext?: boolean;
+    hasPrevious?: boolean;
+}
+
 export interface ILineItemColumnRenderContext<TItem extends ILineItemValue = ILineItemValue>
 {
     index: number;
@@ -39,6 +69,8 @@ export interface ILineItemColumnRenderContext<TItem extends ILineItemValue = ILi
     isDragging: boolean;
     isDragOver: boolean;
     minRows: number;
+    isPickerOpen: boolean;
+    openPicker?: () => void;
     updateItem: (patch: Partial<TItem>) => void;
     replaceItem: (nextItem: TItem) => void;
     rowHandlers: ILineItemRowHandlers;
@@ -46,21 +78,35 @@ export interface ILineItemColumnRenderContext<TItem extends ILineItemValue = ILi
     renderDefaultActions: (extraActions?: React.ReactNode) => React.ReactNode;
 }
 
-export interface ILineItemColumn<TItem extends ILineItemValue = ILineItemValue>
+export interface ILineItemPickerConfig<TItem extends ILineItemValue = ILineItemValue, TPickerRow extends Record<string, unknown> = Record<string, unknown>>
+{
+    columns: ILineItemPickerColumn<TPickerRow>[];
+    fetchData: (params: ILineItemPickerFetchParams) => Promise<ILineItemPickerFetchResult<TPickerRow>>;
+    title?: string;
+    searchPlaceholder?: string;
+    itemName?: string;
+    emptySearch?: string;
+    emptyDefault?: string;
+    getInitialSearch?: (context: ILineItemColumnRenderContext<TItem>) => string;
+    onSelect: (row: TPickerRow, context: ILineItemColumnRenderContext<TItem>) => void;
+}
+
+export interface ILineItemColumn<TItem extends ILineItemValue = ILineItemValue, TPickerRow extends Record<string, unknown> = Record<string, unknown>>
 {
     key: string;
     label: string;
     headerClassName?: string;
     cellClassName?: string;
     renderCell: (context: ILineItemColumnRenderContext<TItem>) => React.ReactNode;
+    renderPicker?: (context: ILineItemColumnRenderContext<TItem>) => ILineItemPickerConfig<TItem, TPickerRow> | null;
     renderHeader?: () => React.ReactNode;
 }
 
-interface IBaseLineItemsEditorProps<TItem extends ILineItemValue>
+interface IBaseLineItemsEditorProps<TItem extends ILineItemValue, TPickerRow extends Record<string, unknown>>
 {
     value: TItem[];
     onChange: (items: TItem[]) => void;
-    columns: ILineItemColumn<TItem>[];
+    columns: ILineItemColumn<TItem, TPickerRow>[];
     title?: string;
     addButtonLabel?: string;
     itemLabel?: string;
@@ -82,12 +128,20 @@ interface IReadOnlyLineItemsEditorProps
     createEmptyItem?: never;
 }
 
-export type ILineItemsEditorProps<TItem extends ILineItemValue = ILineItemValue> = IBaseLineItemsEditorProps<TItem>
+export type ILineItemsEditorProps<TItem extends ILineItemValue = ILineItemValue, TPickerRow extends Record<string, unknown> = Record<string, unknown>> = IBaseLineItemsEditorProps<TItem, TPickerRow>
     & (IEditableLineItemsEditorProps<TItem> | IReadOnlyLineItemsEditorProps)
 
-interface ILineItemRowProps<TItem extends ILineItemValue>
+interface IActivePickerState<TItem extends ILineItemValue, TPickerRow extends Record<string, unknown>>
 {
-    columns: ILineItemColumn<TItem>[];
+    columnKey: string;
+    config: ILineItemPickerConfig<TItem, TPickerRow>;
+    context: ILineItemColumnRenderContext<TItem>;
+    rowIndex: number;
+}
+
+interface ILineItemRowProps<TItem extends ILineItemValue, TPickerRow extends Record<string, unknown>>
+{
+    columns: ILineItemColumn<TItem, TPickerRow>[];
     index: number;
     item: TItem;
     itemsLength: number;
@@ -102,6 +156,8 @@ interface ILineItemRowProps<TItem extends ILineItemValue>
     onMoveDown: () => void;
     onInsertBelow: () => void;
     onRemove: () => void;
+    activePicker: IActivePickerState<TItem, TPickerRow> | null;
+    onOpenPicker: (index: number, column: ILineItemColumn<TItem, TPickerRow>, context: ILineItemColumnRenderContext<TItem>) => void;
     onDragStart: (event: React.DragEvent<HTMLTableRowElement>, index: number) => void;
     onDragOver: (event: React.DragEvent<HTMLTableRowElement>, index: number) => void;
     onDragLeave: () => void;
@@ -128,7 +184,7 @@ function ResolveItemKey<TItem extends ILineItemValue>(item: TItem, index: number
     return `${String(item.id ?? index)}-${index}`
 }
 
-function LineItemRow<TItem extends ILineItemValue>({
+function LineItemRow<TItem extends ILineItemValue, TPickerRow extends Record<string, unknown>>({
     columns,
     index,
     item,
@@ -144,12 +200,14 @@ function LineItemRow<TItem extends ILineItemValue>({
     onMoveDown,
     onInsertBelow,
     onRemove,
+    activePicker,
+    onOpenPicker,
     onDragStart,
     onDragOver,
     onDragLeave,
     onDrop,
     onDragEnd,
-}: ILineItemRowProps<TItem>)
+}: ILineItemRowProps<TItem, TPickerRow>)
 {
     const rowHandlers: ILineItemRowHandlers = {
         insertBelow: onInsertBelow,
@@ -218,14 +276,16 @@ function LineItemRow<TItem extends ILineItemValue>({
         )
     }
 
-    const renderContext: ILineItemColumnRenderContext<TItem> = {
+    const baseRenderContext: ILineItemColumnRenderContext<TItem> = {
         disabled,
         index,
         isDragOver,
         isDragging,
+        isPickerOpen: false,
         item,
         itemsLength,
         minRows,
+        openPicker: undefined,
         readOnly,
         renderDefaultActions,
         renderReadOnlyValue: RenderReadOnlyValue,
@@ -248,15 +308,32 @@ function LineItemRow<TItem extends ILineItemValue>({
             onDrop={(event) => onDrop(event, index)}
         >
             {columns.map((column) => (
-                <TableCell className={cn("align-top", column.cellClassName)} key={column.key}>
-                    {column.renderCell(renderContext)}
-                </TableCell>
+                (() =>
+                {
+                    const isPickerOpen = activePicker?.rowIndex === index && activePicker.columnKey === column.key
+                    const pickerContext: ILineItemColumnRenderContext<TItem> = {
+                        ...baseRenderContext,
+                        isPickerOpen,
+                    }
+                    const columnContext: ILineItemColumnRenderContext<TItem> = {
+                        ...pickerContext,
+                        openPicker: column.renderPicker
+                            ? () => onOpenPicker(index, column, pickerContext)
+                            : undefined,
+                    }
+
+                    return (
+                        <TableCell className={cn("align-top", column.cellClassName)} key={column.key}>
+                            {column.renderCell(columnContext)}
+                        </TableCell>
+                    )
+                })()
             ))}
         </TableRow>
     )
 }
 
-export default function LineItemsEditor<TItem extends ILineItemValue = ILineItemValue>(props: ILineItemsEditorProps<TItem>)
+export default function LineItemsEditor<TItem extends ILineItemValue = ILineItemValue, TPickerRow extends Record<string, unknown> = Record<string, unknown>>(props: ILineItemsEditorProps<TItem, TPickerRow>)
 {
     const {
         value,
@@ -276,10 +353,19 @@ export default function LineItemsEditor<TItem extends ILineItemValue = ILineItem
 
     const [dragIndex, setDragIndex] = React.useState<number | null>(null)
     const [dragOverIndex, setDragOverIndex] = React.useState<number | null>(null)
+    const [activePicker, setActivePicker] = React.useState<IActivePickerState<TItem, TPickerRow> | null>(null)
 
     const itemsRef = React.useRef(value)
 
     itemsRef.current = value
+
+    React.useEffect(() =>
+    {
+        if (activePicker && !itemsRef.current[activePicker.rowIndex])
+        {
+            setActivePicker(null)
+        }
+    }, [activePicker, value])
 
     function CreateItem(): TItem
     {
@@ -418,6 +504,28 @@ export default function LineItemsEditor<TItem extends ILineItemValue = ILineItem
         setDragOverIndex(null)
     }
 
+    function HandleOpenPicker(index: number, column: ILineItemColumn<TItem, TPickerRow>, context: ILineItemColumnRenderContext<TItem>)
+    {
+        if (!column.renderPicker)
+        {
+            return
+        }
+
+        const pickerConfig = column.renderPicker(context)
+
+        if (!pickerConfig)
+        {
+            return
+        }
+
+        setActivePicker({
+            columnKey: column.key,
+            config: pickerConfig,
+            context,
+            rowIndex: index,
+        })
+    }
+
     const itemsCountLabel = BuildItemCountLabel(value.length, itemLabel)
     const shouldShowAddButton = !readOnly && !hideAddButton
     const visibleColumnCount = Math.max(columns.length, 1)
@@ -455,7 +563,8 @@ export default function LineItemsEditor<TItem extends ILineItemValue = ILineItem
 
                     <TableBody>
                         {value.map((item, index) => (
-                            <LineItemRow
+                            <LineItemRow<TItem, TPickerRow>
+                                activePicker={activePicker}
                                 columns={columns}
                                 disabled={disabled}
                                 index={index}
@@ -473,6 +582,7 @@ export default function LineItemsEditor<TItem extends ILineItemValue = ILineItem
                                 onInsertBelow={() => HandleInsertBelow(index)}
                                 onMoveDown={() => HandleMoveRow(index, 1)}
                                 onMoveUp={() => HandleMoveRow(index, -1)}
+                                onOpenPicker={HandleOpenPicker}
                                 onRemove={() => HandleRemoveRow(index)}
                                 onReplaceItem={ReplaceRow}
                                 onUpdateItem={UpdateRow}
@@ -502,6 +612,26 @@ export default function LineItemsEditor<TItem extends ILineItemValue = ILineItem
                     </TableBody>
                 </Table>
             </div>
+
+            {activePicker && (
+                <ListPickerModal<TPickerRow>
+                    columns={activePicker.config.columns}
+                    emptyDefault={activePicker.config.emptyDefault}
+                    emptySearch={activePicker.config.emptySearch}
+                    fetchData={activePicker.config.fetchData}
+                    initialSearch={activePicker.config.getInitialSearch?.(activePicker.context) ?? ""}
+                    isOpen={activePicker !== null}
+                    itemName={activePicker.config.itemName ?? itemLabel}
+                    onClose={() => setActivePicker(null)}
+                    onSelect={(row) =>
+                    {
+                        activePicker.config.onSelect(row, activePicker.context)
+                        setActivePicker(null)
+                    }}
+                    searchPlaceholder={activePicker.config.searchPlaceholder ?? "Search..."}
+                    title={activePicker.config.title ?? `Select ${itemLabel}`}
+                />
+            )}
         </div>
     )
 }

@@ -1,4 +1,5 @@
 import type { ILineItemValue } from "../../../components/Common/LineItemsEditor/index";
+import { PRIORITY_OPTIONS } from "@/constants/priority.constant";
 import type {
     IProduct,
     IPriority,
@@ -21,6 +22,8 @@ interface IRepairRequestFormValues
     priority: IPriority;
     items: IRepairRequestFormLineItem[];
 }
+
+const priorityOptions: IPriority[] = [...PRIORITY_OPTIONS];
 
 
 function formatDateTime(value?: string | null): string
@@ -206,6 +209,7 @@ export {
     formatTitleCase,
     mapProductToLineItem,
     parsePositiveNumber,
+    priorityOptions,
 };
 
 export type { IRepairRequestFormLineItem, IRepairRequestFormValues };

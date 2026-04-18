@@ -7,10 +7,11 @@ import {
     GripVertical,
     LoaderCircle,
 } from "lucide-react";
-import ListPickerModal from "~/components/Common/ListPickerModal";
 import { z } from "zod";
 import LineItemsEditor, {
     type ILineItemColumn,
+    type ILineItemPickerColumn,
+    type ILineItemPickerFetchParams,
 } from "../../../components/Common/LineItemsEditor/index";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -41,15 +42,6 @@ import { RepairRequestFormSchema } from "~/schemas/repairRequestFormSchema";
 import { PRIORITY_OPTIONS as priorityOptions } from "@/constants/priority.constant";
 
 type IProductPickerRow = IProduct & Record<string, unknown>;
-
-interface IProductPickerFetchParams
-{
-    search: string;
-    page: number;
-    limit: number;
-    sortBy?: string;
-    sortDir?: "asc" | "desc";
-}
 
 interface IRepairRequestFormProps
 {
@@ -137,7 +129,6 @@ export default function RepairRequestForm({
 {
     const [values, setValues] = React.useState<IRepairRequestFormValues>(initialValues);
     const [formErrors, setFormErrors] = React.useState<IRepairRequestFormErrors>({ itemIssues: [] });
-    const [lookupRowIndex, setLookupRowIndex] = React.useState<number | null>(null);
     const [itemMessages, setItemMessages] = React.useState<Record<number, string | undefined>>({});
     const [resolvingRows, setResolvingRows] = React.useState<Record<number, boolean>>({});
 
@@ -145,7 +136,7 @@ export default function RepairRequestForm({
 
     itemsRef.current = values.items;
 
-    const productColumns = React.useMemo(() => [
+    const productColumns = React.useMemo<ILineItemPickerColumn<IProductPickerRow>[]>(() => [
         {
             key: "code",
             label: "Code",
@@ -164,7 +155,6 @@ export default function RepairRequestForm({
     {
         setValues(initialValues);
         setFormErrors({ itemIssues: [] });
-        setLookupRowIndex(null);
         setItemMessages({});
         setResolvingRows({});
     }, [initialValues]);
@@ -242,7 +232,7 @@ export default function RepairRequestForm({
         }));
     }
 
-    const fetchProducts = React.useCallback(async (params: IProductPickerFetchParams) =>
+    const fetchProducts = React.useCallback(async (params: ILineItemPickerFetchParams) =>
     {
         const response = await searchProducts({
             deleted: false,
@@ -377,37 +367,7 @@ export default function RepairRequestForm({
         }
     }
 
-    function handleProductSelect(product: IProductPickerRow)
-    {
-        if (lookupRowIndex === null)
-        {
-            return;
-        }
-
-        const currentItem = itemsRef.current[lookupRowIndex];
-
-        if (!currentItem)
-        {
-            setLookupRowIndex(null);
-            return;
-        }
-
-        const mappedItem = mapProductToLineItem(product);
-
-        replaceItem(lookupRowIndex, {
-            ...currentItem,
-            ...mappedItem,
-            code: mappedItem.code,
-            name: mappedItem.name,
-        });
-        setItemMessages((currentMessages) => ({
-            ...currentMessages,
-            [lookupRowIndex]: undefined,
-        }));
-        setLookupRowIndex(null);
-    }
-
-    const lineItemColumns = React.useMemo<ILineItemColumn<IRepairRequestFormLineItem>[]>(() => [
+    const lineItemColumns = React.useMemo<ILineItemColumn<IRepairRequestFormLineItem, IProductPickerRow>[]>(() => [
         {
             cellClassName: "w-[72px] align-top",
             headerClassName: "w-[72px] text-center",
@@ -447,8 +407,8 @@ export default function RepairRequestForm({
                         />
 
                         <Button
-                            disabled={context.disabled}
-                            onClick={() => setLookupRowIndex(context.index)}
+                            disabled={context.disabled || !context.openPicker}
+                            onClick={() => context.openPicker?.()}
                             size="icon-sm"
                             title="Lookup product"
                             type="button"
@@ -487,6 +447,31 @@ export default function RepairRequestForm({
                     )}
                 </div>
             ),
+            renderPicker: (context) => ({
+                columns: productColumns,
+                emptyDefault: "No products are available.",
+                emptySearch: "No matching products found.",
+                fetchData: fetchProducts,
+                getInitialSearch: (pickerContext) => String(pickerContext.item.code ?? ""),
+                itemName: "products",
+                onSelect: (product, pickerContext) =>
+                {
+                    const mappedItem = mapProductToLineItem(product);
+
+                    pickerContext.replaceItem({
+                        ...pickerContext.item,
+                        ...mappedItem,
+                        code: mappedItem.code,
+                        name: mappedItem.name,
+                    });
+                    setItemMessages((currentMessages) => ({
+                        ...currentMessages,
+                        [pickerContext.index]: undefined,
+                    }));
+                },
+                searchPlaceholder: "Search product code or name...",
+                title: "Select Product",
+            }),
         },
         {
             cellClassName: "min-w-[220px] align-top",
@@ -541,7 +526,7 @@ export default function RepairRequestForm({
             label: "Actions",
             renderCell: (context) => context.renderDefaultActions(),
         },
-    ], [itemMessages, resolvingRows]);
+    ], [fetchProducts, itemMessages, productColumns, resolvingRows]);
 
     return (
         <div className="card">
@@ -597,7 +582,7 @@ export default function RepairRequestForm({
                     </div>
                 </div>
 
-                <LineItemsEditor<IRepairRequestFormLineItem>
+                <LineItemsEditor<IRepairRequestFormLineItem, IProductPickerRow>
                     addButtonLabel="Add Product"
                     columns={lineItemColumns}
                     createEmptyItem={createEmptyRepairRequestLineItem}
@@ -606,20 +591,6 @@ export default function RepairRequestForm({
                     onChange={handleItemsChange}
                     title="Repair Request Items"
                     value={values.items}
-                />
-
-                <ListPickerModal<IProductPickerRow>
-                    columns={productColumns}
-                    emptyDefault="No products are available."
-                    emptySearch="No matching products found."
-                    fetchData={fetchProducts}
-                    initialSearch={lookupRowIndex !== null ? String(values.items[lookupRowIndex]?.code ?? "") : ""}
-                    isOpen={lookupRowIndex !== null}
-                    itemName="products"
-                    onClose={() => setLookupRowIndex(null)}
-                    onSelect={handleProductSelect}
-                    searchPlaceholder="Search product code or name..."
-                    title="Select Product"
                 />
 
                 {formErrors.items && <div className="form-error">{formErrors.items}</div>}
