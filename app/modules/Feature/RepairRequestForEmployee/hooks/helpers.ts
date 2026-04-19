@@ -1,11 +1,6 @@
 import type { ILineItemValue } from "~/components/Common/LineItemsEditor";
 import { PRIORITY_OPTIONS } from "@/constants/priority.constant";
-import type {
-    IProduct,
-    IPriority,
-    IRepairRequestForCreate,
-    IUser,
-} from "~/api/types";
+import type { IProduct, IPriority, IRepairRequestForCreate, IUser } from "~/api/types";
 
 interface IRepairRequestFormLineItem extends ILineItemValue
 {

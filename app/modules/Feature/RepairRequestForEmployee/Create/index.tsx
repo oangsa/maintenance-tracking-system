@@ -4,18 +4,11 @@ import Loading from "~/components/Common/Loading";
 import Create from "~/components/Maintain/Create";
 import ErrorCard from "~/components/Maintain/ErrorCard";
 import type { IRepairStatus, IUser } from "~/api/types";
-import {
-    ensureCurrentUser,
-    getCurrentUser,
-    subscribeCurrentUser,
-} from "~/services/auth.service";
+import { ensureCurrentUser, getCurrentUser, subscribeCurrentUser } from "~/services/auth.service";
 import { createRepairRequest } from "~/services/repairRequests.service";
 import { searchRepairStatuses } from "~/services/repairStatuses.service";
 import RepairRequestForm from "../form";
-import {
-    buildCreatePayload,
-    createEmptyRepairRequestFormValues,
-} from "../hooks/helpers";
+import { buildCreatePayload, createEmptyRepairRequestFormValues } from "../hooks/helpers";
 import type { IRepairRequestFormValues } from "../hooks/helpers";
 
 function resolveInitialStatus(statuses: IRepairStatus[]): IRepairStatus | null
@@ -169,9 +162,12 @@ export default function CreateRepairRequestPage()
         );
     }
 
+    const resolvedCurrentUser = currentUser;
+    const resolvedStatusId = statusId;
+
     async function handleSubmit(values: IRepairRequestFormValues)
     {
-        const createdRepairRequest = await createRepairRequest(buildCreatePayload(values, statusId, currentUser));
+        const createdRepairRequest = await createRepairRequest(buildCreatePayload(values, resolvedStatusId, resolvedCurrentUser));
 
         navigate(`/repair-requests/${createdRepairRequest.id}`, { replace: true });
     }
@@ -187,7 +183,7 @@ export default function CreateRepairRequestPage()
             backLabel="Back to Repair Requests"
             description="Submit a repair request for your department and attach the required line items."
             Form={RepairRequestForm}
-            formProps={{ currentUser: currentUser as IUser }}
+            formProps={{ currentUser: resolvedCurrentUser as IUser }}
             initialValues={createEmptyRepairRequestFormValues()}
             onCancel={handleCancel}
             onSubmit={handleSubmit}

@@ -6,20 +6,16 @@ import type { IDetailSection } from "~/components/Common/DetailSections";
 import Detail from "~/components/Maintain/Detail";
 import { Button } from "~/components/ui/button";
 import { getRepairRequestById } from "~/services/repairRequests.service";
-import {
-    createRepairRequestDetailLineItemColumns,
-    type IRepairRequestDetailLineItem,
-} from "../../RepairRequests/detailLineItemColumns";
-import {
-    formatDateTime,
-    formatRequesterLabel,
-    formatTitleCase,
-} from "~/lib/formatters";
-import {
-    formatProductLabel,
-    formatRepairStatusLabel,
-} from "~/lib/repairRequestUtils";
+import { createRepairRequestDetailLineItemColumns, type IRepairRequestDetailLineItem } from "../../RepairRequests/detailLineItemColumns";
+import { formatDateTime, formatRequesterLabel, formatTitleCase } from "~/lib/formatters";
+import { formatProductLabel, formatRepairStatusLabel } from "~/lib/repairRequestUtils";
 
+function handleAssignWorkOrder(repairRequestItemId: number)
+{
+    void repairRequestItemId;
+
+    // TODO: Assign a work order for the selected repair request item when the manager work-order flow is available.
+}
 
 function DetailContent(repairRequest: Awaited<ReturnType<typeof getRepairRequestById>>)
 {
@@ -61,13 +57,6 @@ export default function RepairRequestManagerDetailPage()
     function handleViewWorkOrder()
     {
         // TODO: Open the related work order flow when the manager work-order module is available.
-    }
-
-    function handleAssignWorkOrder(repairRequestItemId: number)
-    {
-        void repairRequestItemId;
-
-        // TODO: Assign a work order for the selected repair request item when the manager work-order flow is available.
     }
 
     function sectionBuilder(repairRequest: Awaited<ReturnType<typeof getRepairRequestById>>): IDetailSection[]

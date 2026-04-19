@@ -5,11 +5,7 @@ import Loading from "~/components/Common/Loading";
 import Table from "~/components/Maintain/Table";
 import useTableSearchParams from "~/components/Maintain/Table/useSearchParams";
 import { buildOrderBy } from "~/lib/pageUtils";
-import {
-    ensureCurrentUser,
-    getCurrentUser,
-    subscribeCurrentUser,
-} from "~/services/auth.service";
+import { ensureCurrentUser, getCurrentUser, subscribeCurrentUser } from "~/services/auth.service";
 import { searchRepairRequests } from "~/services/repairRequests.service";
 import useColumns, { type IRepairRequestTableRow } from "./hooks/useColumns";
 import useFieldFilter from "./hooks/useFieldFilter";

@@ -1,47 +1,19 @@
 import React from "react";
-import {
-    FiSearch,
-    FiX,
-} from "react-icons/fi";
-import {
-    GripVertical,
-    LoaderCircle,
-} from "lucide-react";
+import { FiSearch, FiX } from "react-icons/fi";
+import { GripVertical, LoaderCircle } from "lucide-react";
 import { z } from "zod";
-import LineItemsEditor, {
-    type ILineItemColumn,
-    type ILineItemPickerColumn,
-    type ILineItemPickerFetchParams,
-} from "~/components/Common/LineItemsEditor";
+import CommonForm, { FormActions } from "~/components/Common/Form";
+import LineItemsEditor, { type ILineItemColumn, type ILineItemPickerColumn, type ILineItemPickerFetchParams } from "~/components/Common/LineItemsEditor";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
-import type { IProduct, IPriority, IUser } from "~/api/types";
-import {
-    formatDepartmentLabel,
-    formatRequesterLabel,
-    formatTitleCase,
-} from "~/lib/formatters";
+import type { IProduct, IUser } from "~/api/types";
+import { formatDepartmentLabel, formatRequesterLabel } from "~/lib/formatters";
 import { searchProducts } from "~/services/products.service";
-import {
-    createEmptyRepairRequestLineItem,
-    mapProductToLineItem,
-    parsePositiveNumber,
-} from "./hooks/helpers";
-import type {
-    IRepairRequestFormLineItem,
-    IRepairRequestFormValues,
-} from "./hooks/helpers";
+import { createEmptyRepairRequestLineItem, mapProductToLineItem, parsePositiveNumber } from "./hooks/helpers";
+import { useFormItem } from "./hooks/useFormItem";
+import type { IRepairRequestFormLineItem, IRepairRequestFormValues } from "./hooks/helpers";
 import { RepairRequestFormSchema } from "~/schemas/repairRequestFormSchema";
-import { PRIORITY_OPTIONS as priorityOptions } from "@/constants/priority.constant";
 
 type IProductPickerRow = IProduct & Record<string, unknown>;
 
@@ -60,8 +32,6 @@ interface IRepairRequestFormErrors
     itemIssues: string[];
     priority?: string;
 }
-
-;
 
 function validateForm(values: IRepairRequestFormValues): IRepairRequestFormErrors
 {
@@ -132,6 +102,11 @@ export default function RepairRequestForm({
     const [itemMessages, setItemMessages] = React.useState<Record<number, string | undefined>>({});
     const [resolvingRows, setResolvingRows] = React.useState<Record<number, boolean>>({});
 
+    const fieldErrors = React.useMemo<Partial<Record<keyof IRepairRequestFormValues, string>>>(() => ({
+        items: formErrors.items,
+        priority: formErrors.priority,
+    }), [formErrors.items, formErrors.priority]);
+
     const itemsRef = React.useRef(initialValues.items);
 
     itemsRef.current = values.items;
@@ -175,6 +150,26 @@ export default function RepairRequestForm({
         }
 
         void onSubmit(values);
+    }
+
+    function handleValueChange<TKey extends keyof IRepairRequestFormValues>(fieldName: TKey, value: IRepairRequestFormValues[TKey])
+    {
+        setValues((currentValues) => ({
+            ...currentValues,
+            [fieldName]: value,
+        }));
+        setFormErrors((currentErrors) => ({
+            ...currentErrors,
+            [fieldName]: undefined,
+        }));
+    }
+
+    function clearFieldError(fieldName: string)
+    {
+        setFormErrors((currentErrors) => ({
+            ...currentErrors,
+            [fieldName]: undefined,
+        }));
     }
 
     function handleItemsChange(nextItems: IRepairRequestFormLineItem[])
@@ -367,6 +362,7 @@ export default function RepairRequestForm({
         }
     }
 
+    // TODO: Extract line items editor into a separate component to avoid passing so many props and callbacks
     const lineItemColumns = React.useMemo<ILineItemColumn<IRepairRequestFormLineItem, IProductPickerRow>[]>(() => [
         {
             cellClassName: "w-[72px] align-top",
@@ -528,103 +524,35 @@ export default function RepairRequestForm({
         },
     ], [fetchProducts, itemMessages, productColumns, resolvingRows]);
 
+    const { formItems } = useFormItem<IProductPickerRow>({
+        departmentLabel,
+        itemIssues: formErrors.itemIssues,
+        items: values.items,
+        itemsError: formErrors.items,
+        lineItemColumns,
+        onItemsChange: handleItemsChange,
+        requesterLabel,
+    });
+
     return (
-        <>
-            <form className="space-y-6" onSubmit={handleSubmit}>
-                <div className="card">
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                            Request Information
-                        </p>
-
-                        <div className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                            <div className="rounded-md border border-[var(--border)] bg-[var(--bg-surface)] p-4">
-                                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-                                    Requester
-                                </p>
-                                <p className="mt-2 text-sm font-medium text-[var(--text-main)]">
-                                    {requesterLabel}
-                                </p>
-                            </div>
-
-                            <div className="rounded-md border border-[var(--border)] bg-[var(--bg-surface)] p-4">
-                                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-                                    Department
-                                </p>
-                                <p className="mt-2 text-sm font-medium text-[var(--text-main)]">
-                                    {departmentLabel}
-                                </p>
-                            </div>
-
-                            <div className="rounded-md border border-[var(--border)] bg-[var(--bg-surface)] p-4">
-                                <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]" htmlFor="priority">
-                                    Priority
-                                    <span className="required-marker">*</span>
-                                </Label>
-
-                                <div className="mt-2">
-                                    <Select
-                                        value={values.priority}
-                                        onValueChange={(value) =>
-                                        {
-                                            setValues((currentValues) => ({
-                                                ...currentValues,
-                                                priority: value as IPriority,
-                                            }));
-                                            setFormErrors((currentErrors) => ({
-                                                ...currentErrors,
-                                                priority: undefined,
-                                            }));
-                                        }}
-                                    >
-                                        <SelectTrigger aria-invalid={Boolean(formErrors.priority)} className="w-full" id="priority">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {priorityOptions.map((priorityOption) => (
-                                                <SelectItem key={priorityOption} value={priorityOption}>
-                                                    {formatTitleCase(priorityOption)}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                {formErrors.priority && <span className="mt-2 block form-error">{formErrors.priority}</span>}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <LineItemsEditor<IRepairRequestFormLineItem, IProductPickerRow>
-                    addButtonLabel="Add Product"
-                    columns={lineItemColumns}
-                    createEmptyItem={createEmptyRepairRequestLineItem}
-                    emptyMessage="No repair request items added yet."
-                    itemLabel="product"
-                    onChange={handleItemsChange}
-                    title="Repair Request Items"
-                    value={values.items}
+        <CommonForm
+            actions={(
+                <FormActions
+                    cancelDisabled={submitting}
+                    onCancel={onCancel}
+                    submitDisabled={submitting}
+                    submitLabel="Create Repair Request"
+                    submitting={submitting}
+                    submittingLabel="Creating..."
                 />
-
-                {formErrors.items && <div className="form-error">{formErrors.items}</div>}
-                {formErrors.itemIssues.length > 0 && (
-                    <div className="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-                        {formErrors.itemIssues.map((issue) => (
-                            <p key={issue}>{issue}</p>
-                        ))}
-                    </div>
-                )}
-
-                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                    <Button disabled={submitting} onClick={onCancel} type="button" variant="outline">
-                        Cancel
-                    </Button>
-                    <Button disabled={submitting} type="submit">
-                        {submitting ? "Creating..." : "Create Repair Request"}
-                    </Button>
-                </div>
-            </form>
-        </>
+            )}
+            clearError={clearFieldError}
+            disabled={submitting}
+            errors={fieldErrors}
+            onSubmit={handleSubmit}
+            sections={formItems}
+            setValue={handleValueChange}
+            values={values}
+        />
     );
 }

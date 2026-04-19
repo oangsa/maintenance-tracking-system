@@ -1,10 +1,9 @@
 import React from "react";
 import { z } from "zod";
+import CommonForm, { FormActions } from "~/components/Common/Form";
 import Loading from "~/components/Common/Loading";
-import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
 import type { IDepartmentFormValues } from "./hooks/helpers";
+import { useFormItem } from "./hooks/useFormItem";
 import { DepartmentFormSchema } from "~/schemas/departmentFormSchema";
 
 interface IDepartmentFormProps
@@ -57,6 +56,7 @@ export default function DepartmentForm({
 {
     const [values, setValues] = React.useState<IDepartmentFormValues>(initialValues);
     const [formErrors, setFormErrors] = React.useState<IDepartmentFormErrors>({});
+    const { formItems } = useFormItem();
 
     React.useEffect(() =>
     {
@@ -77,11 +77,12 @@ export default function DepartmentForm({
         }));
     }
 
-    function handleFieldChange(event: React.ChangeEvent<HTMLInputElement>)
+    function clearFieldError(fieldName: string)
     {
-        const fieldName = event.target.name as keyof IDepartmentFormValues;
-
-        handleValueChange(fieldName, event.target.value as IDepartmentFormValues[keyof IDepartmentFormValues]);
+        setFormErrors((currentErrors) => ({
+            ...currentErrors,
+            [fieldName]: undefined,
+        }));
     }
 
     function handleSubmit(event: React.FormEvent<HTMLFormElement>)
@@ -109,63 +110,24 @@ export default function DepartmentForm({
     }
 
     return (
-        <div className="card">
-            <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid gap-5 md:grid-cols-2">
-                    <div className="space-y-2">
-                        <Label htmlFor="code">
-                            Code
-                            <span className="required-marker">*</span>
-                        </Label>
-                        <Input
-                            aria-invalid={Boolean(formErrors.code)}
-                            disabled={submitting}
-                            id="code"
-                            name="code"
-                            onChange={handleFieldChange}
-                            placeholder="Enter department code"
-                            type="text"
-                            value={values.code}
-                        />
-                        {formErrors.code && <span className="form-error">{formErrors.code}</span>}
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="name">
-                            Name
-                            <span className="required-marker">*</span>
-                        </Label>
-                        <Input
-                            aria-invalid={Boolean(formErrors.name)}
-                            disabled={submitting}
-                            id="name"
-                            name="name"
-                            onChange={handleFieldChange}
-                            placeholder="Enter department name"
-                            type="text"
-                            value={values.name}
-                        />
-                        {formErrors.name && <span className="form-error">{formErrors.name}</span>}
-                    </div>
-                </div>
-
-                <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                    <Button
-                        variant="outline"
-                        disabled={submitting}
-                        onClick={onCancel}
-                        type="button"
-                    >
-                        Cancel
-                    </Button>
-                    <Button disabled={submitting} type="submit">
-                        {submitting
-                            ? (mode === "create" ? "Creating..." : "Saving...")
-                            : (mode === "create" ? "Create Department" : "Save Changes")
-                        }
-                    </Button>
-                </div>
-            </form>
-        </div>
+        <CommonForm
+            actions={(
+                <FormActions
+                    cancelDisabled={submitting}
+                    onCancel={onCancel}
+                    submitDisabled={submitting}
+                    submitLabel={mode === "create" ? "Create Department" : "Save Changes"}
+                    submitting={submitting}
+                    submittingLabel={mode === "create" ? "Creating..." : "Saving..."}
+                />
+            )}
+            clearError={clearFieldError}
+            disabled={submitting}
+            errors={formErrors}
+            onSubmit={handleSubmit}
+            sections={formItems}
+            setValue={handleValueChange}
+            values={values}
+        />
     );
 }

@@ -2,10 +2,7 @@ import { useNavigate, useParams } from "react-router";
 import Edit from "~/components/Maintain/Edit";
 import { getDepartmentById, updateDepartment } from "~/services/departments.service";
 import DepartmentForm from "../form";
-import {
-    buildUpdatePayload,
-    mapDepartmentToFormValues,
-} from "../hooks/helpers";
+import { buildUpdatePayload, mapDepartmentToFormValues } from "../hooks/helpers";
 
 export default function EditDepartmentPage()
 {

@@ -7,6 +7,7 @@ import { formatDateTime } from "~/lib/formatters";
 import { cn } from "~/lib/utils";
 import { deleteDepartment, getDepartmentById } from "~/services/departments.service";
 import type { IDetailSection } from "~/components/Common/DetailSections";
+import type { IDepartment } from "~/api/types";
 
 interface IConfirmState
 {
@@ -42,7 +43,7 @@ export default function DepartmentDetailPage()
         }
     }
 
-    async function ActionButtons(department)
+    function ActionButtons(department: IDepartment)
     {
         return (
              <>
@@ -56,7 +57,7 @@ export default function DepartmentDetailPage()
         )
     }
 
-    function sectionBuilder(department): IDetailSection[]
+    function sectionBuilder(department: IDepartment): IDetailSection[]
     {
         return [
             {

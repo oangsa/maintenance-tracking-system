@@ -12,7 +12,7 @@ import { formatDateTime, formatRequesterLabel, formatTitleCase } from "~/lib/for
 import { formatProductLabel, formatRepairStatusLabel } from "~/lib/repairRequestUtils";
 
 
-function DetailContent({ repairRequest }: { repairRequest: IRepairRequest })
+function DetailContent(repairRequest: IRepairRequest)
 {
     const lineItems: IRepairRequestDetailLineItem[] = repairRequest.repairRequestItems.map((item) => ({
         description: item.description,
@@ -91,6 +91,8 @@ export default function RepairRequestDetailPage()
         );
     }
 
+    const resolvedCurrentUser = currentUser;
+
     function sectionBuilder(repairRequest: IRepairRequest): IDetailSection[]
     {
         return [
@@ -121,7 +123,7 @@ export default function RepairRequestDetailPage()
     {
         const repairRequest = await getRepairRequestById(id);
 
-        if (repairRequest.requesterId !== currentUser.id)
+        if (repairRequest.requesterId !== resolvedCurrentUser.id)
         {
             throw new Error("You can only view your own repair requests.");
         }
