@@ -2,7 +2,7 @@ import { z } from "zod";
 import { ROLE_OPTIONS as roleOptions } from "@/constants";
 
 export const UserFormSchema = z.object({
-    name: z.string().trim().max(150, "Name must be 150 characters or fewer."),
+    name: z.string().trim().min(1, "Name is required").max(150, "Name must be 150 characters or fewer."),
     email: z.string().trim().min(1, "Email is required.").email("Enter a valid email address."),
     password: z.string(),
     role: z.string().trim().refine((value) => roleOptions.includes(value as typeof roleOptions[number]), {
