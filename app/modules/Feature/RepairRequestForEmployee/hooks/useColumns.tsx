@@ -1,9 +1,6 @@
 import React from "react";
 import type { IRepairRequest } from "~/api/types";
-import {
-    formatDateTime,
-    formatTitleCase,
-} from "~/lib/formatters";
+import { formatDateTime, formatTitleCase } from "~/lib/formatters";
 
 type IRepairRequestTableRow = IRepairRequest & Record<string, unknown>;
 
@@ -31,7 +28,7 @@ function useColumns()
             render: (_value: unknown, row: IRepairRequestTableRow) => formatDateTime(row.requestedAt),
         },
         {
-            key: "repairRequestItems",
+            key: "repair_request_items",
             label: "Items",
             render: (value: unknown) => Array.isArray(value) ? String(value.length) : "0",
             sortable: false,

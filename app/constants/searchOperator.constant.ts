@@ -1,12 +1,17 @@
-export type ISearchConditionOperator =
-    | "CONTAINS"
-    | "STARTWITH"
-    | "ENDWITH"
-    | "GREATER"
-    | "LESSER"
-    | "GREATEROREQUAL"
-    | "LESSEROREQUAL"
-    | "EQUAL"
-    | "NOTEQUAL"
-    | "ISNULL"
-    | "ISNOTNULL";
+const SEARCH_OPERATOR = {
+    CONTAINS: "CONTAINS",
+    ENDWITH: "ENDWITH",
+    EQUAL: "EQUAL",
+    GREATER: "GREATER",
+    GREATEROREQUAL: "GREATEROREQUAL",
+    ISNOTNULL: "ISNOTNULL",
+    ISNULL: "ISNULL",
+    LESSER: "LESSER",
+    LESSEROREQUAL: "LESSEROREQUAL",
+    NOTEQUAL: "NOTEQUAL",
+    STARTWITH: "STARTWITH",
+} as const;
+
+export type ISearchConditionOperator = typeof SEARCH_OPERATOR[keyof typeof SEARCH_OPERATOR];
+
+export { SEARCH_OPERATOR };

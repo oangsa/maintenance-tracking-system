@@ -134,12 +134,13 @@ function NavItem({ item }: INavItemProps)
     );
 }
 
+// When new pages are added, their routes should be added to the defaultNavSections in this file
+// TODO: Add role based access control for nav items
 const defaultNavSections: INavSection[] = [
     {
         label: "Main",
         items: [
             { label: "Home", path: "/", icon: <FiHome size={18} /> },
-            { label: "Test", path: "/test", icon: <FiFileText size={18} /> },
             { label: "Repair Requests", path: "/repair-requests", icon: <FiClipboard size={18} /> },
         ],
     },
@@ -156,6 +157,10 @@ const defaultNavSections: INavSection[] = [
             { label: "Departments", path: "/master/departments", icon: <FiLayers size={18} /> },
         ],
     },
+    {
+        label: "Reports",
+        items: [],
+    }
 ];
 
 function flattenNavItems(navSections: INavSection[]): INavItem[]

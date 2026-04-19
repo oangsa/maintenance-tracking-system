@@ -1,7 +1,12 @@
 import React from "react";
 import type { ISearchCondition } from "~/api/types";
 import type { IDataTableFilterField } from "~/components/Common/DataTable";
-import { PRIORITY_OPTIONS as priorityOptions } from "@/constants";
+import {
+    DATA_TABLE_FILTER_TYPE,
+    PRIORITY_OPTIONS,
+    REPAIR_REQUEST_FIELD_FILTER,
+    SEARCH_OPERATOR,
+} from "~/constants";
 import { formatTitleCase } from "~/lib/formatters";
 
 interface IRepairRequestFilterValues
@@ -14,35 +19,35 @@ interface IUseFieldFilterProps
     searchParams: URLSearchParams;
 }
 
-const FILTER_PARAM_KEYS = {
-    priority: "filterPriority",
-} as const;
-
-const REQUEST_NO_SEARCH_TERM = "request_no";
-
 function getFilterValues(searchParams: URLSearchParams): IRepairRequestFilterValues
 {
     return {
-        priority: searchParams.get(FILTER_PARAM_KEYS.priority) ?? "",
+        priority: searchParams.get(REPAIR_REQUEST_FIELD_FILTER.PARAM_KEY.PRIORITY) ?? "",
     };
 }
 
 function buildFilterParams(filters: IRepairRequestFilterValues): Record<string, string | undefined>
 {
     return {
-        [FILTER_PARAM_KEYS.priority]: filters.priority,
+        [REPAIR_REQUEST_FIELD_FILTER.PARAM_KEY.PRIORITY]: filters.priority,
     };
 }
 
-function buildFilterSearch(filters: Record<string, string> | undefined): ISearchCondition[]
+function buildFilterSearch(filters: Record<string, string> | undefined, departmentId: number): ISearchCondition[]
 {
-    const searchFilters: ISearchCondition[] = [];
+    const searchFilters: ISearchCondition[] = [
+        {
+            condition: SEARCH_OPERATOR.EQUAL,
+            name: "repair_request_items_department_id",
+            value: String(departmentId),
+        }
+    ];
 
     if (filters?.priority?.trim())
     {
         searchFilters.push({
-            condition: "EQUAL",
-            name: "priority",
+            condition: SEARCH_OPERATOR.EQUAL,
+            name: REPAIR_REQUEST_FIELD_FILTER.SEARCH_FIELD.PRIORITY,
             value: filters.priority.trim(),
         });
     }
@@ -61,13 +66,13 @@ export default function useFieldFilter({ searchParams }: IUseFieldFilterProps)
 {
     const fieldFilters = React.useMemo<IDataTableFilterField[]>(() => [
         {
-            key: "priority",
-            label: "Priority",
-            options: priorityOptions.map((priority) => ({
+            key: REPAIR_REQUEST_FIELD_FILTER.FIELD_KEY.PRIORITY,
+            label: REPAIR_REQUEST_FIELD_FILTER.LABEL.PRIORITY,
+            options: PRIORITY_OPTIONS.map((priority) => ({
                 label: formatTitleCase(priority),
                 value: priority,
             })),
-            type: "select",
+            type: DATA_TABLE_FILTER_TYPE.SELECT,
         },
     ], []);
 
@@ -81,7 +86,7 @@ export default function useFieldFilter({ searchParams }: IUseFieldFilterProps)
         currentFiltersRecord,
         fieldFilters,
         normalizeFilters,
-        searchTerm: REQUEST_NO_SEARCH_TERM,
+        searchTerm: REPAIR_REQUEST_FIELD_FILTER.SEARCH_TERM,
     };
 }
 

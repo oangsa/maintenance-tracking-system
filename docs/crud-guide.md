@@ -7,6 +7,7 @@ The main reference is `app/modules/Master/Users`. That module reflects the curre
 - nested page-entry folders such as `Create/index.tsx`
 - a shared `form.tsx`
 - module-local `hooks/`
+- config-driven forms through `app/components/Common/Form` plus module-local `hooks/useFormItem.tsx`
 - shared CRUD shells from `app/components/Maintain`
 - API logic kept in module entry pages and passed into shared components through props
 
@@ -128,7 +129,8 @@ app/modules/Master/Assets/
 |-- hooks/
 |   |-- helpers.ts
 |   |-- useColumns.tsx
-|   `-- useFieldFilter.ts
+|   |-- useFieldFilter.ts
+|   `-- useFormItem.tsx
 `-- index.tsx
 ```
 
@@ -142,11 +144,15 @@ Purpose of each file:
 - `hooks/helpers.ts`: payload mappers, labels, and form-value helpers
 - `hooks/useColumns.tsx`: list table columns
 - `hooks/useFieldFilter.ts`: optional advanced list filters
+- `hooks/useFormItem.tsx`: typed form metadata for `app/components/Common/Form`
+- `hooks/useLineItem.ts`: optional detail-page item loader when the page uses a secondary `/items/search` endpoint
 
 Variations:
 
 - omit `hooks/useFieldFilter.ts` when the entity only needs quick search
+- omit `hooks/useFormItem.tsx` when the form is too custom for `app/components/Common/Form`
 - omit `Create/`, `Edit/`, and `form.tsx` for a read-only module
+- add `hooks/useLineItem.ts` for read-only or detail modules that load item collections separately from the main detail record
 - keep shared cross-feature helpers outside the module when more than one feature reuses them
 
 ## Step 5: Add Route Wrapper Files
@@ -204,6 +210,8 @@ Responsibilities:
 - read URL state with `useSearchParams()`
 - define columns in `hooks/useColumns.tsx`
 - optionally define filters in `hooks/useFieldFilter.ts`
+- keep repeated filter labels, param keys, search fields, and search terms in `app/constants/fieldFilter.constants.ts`
+- use `SEARCH_OPERATOR` constants instead of repeating raw operator strings such as `"EQUAL"`
 - use `app/components/Maintain/Table`
 - use `app/components/Maintain/Table/useSearchParams`
 - keep the local `fetchData()` function inside the module file
@@ -307,9 +315,16 @@ Typical responsibilities:
 
 - local form state
 - zod validation
-- field rendering
+- field rendering through `app/components/Common/Form` when the fields fit the shared renderer
 - lookup or line-item UI when needed
 - inline field errors
+
+Recommended structure:
+
+- keep typed form metadata in `hooks/useFormItem.ts(x)`
+- keep repeated form labels, placeholders, field types, spans, and layout values in `app/constants/formItem.constants.ts`
+- keep shared field rendering and styles in `app/components/Common/Form`
+- keep submit state, zod validation, lookup fetches, and line-item orchestration inside `form.tsx`
 
 Typical props shape:
 
@@ -421,6 +436,7 @@ Responsibilities that stay in the module file:
 - `actions` rendering
 - `buildSections` mapping
 - extra content such as `LineItemsEditor` below the detail sections
+- when extra content needs its own search endpoint, keep the async state in `hooks/useLineItem.ts`
 
 ## Step 11: Add Lookup Or Line-Item Interactions When Needed
 
@@ -437,11 +453,17 @@ Line-item guidance:
 - use `LineItemsEditor` for editable row collections
 - provide the line-item columns from the feature module
 - use the read-only mode for detail pages when the collection should not be edited
+- if a detail page loads line items from `/api/v1/repair-requests/{id}/items/search`, keep that request and its loading state in `hooks/useLineItem.ts`
+- employee repair-request detail loads all submitted items through `hooks/useLineItem.ts`
+- manager repair-request detail uses the same hook pattern but adds a department-scoped `search[]` filter
 
 Reference modules:
 
 - `app/modules/Master/Users/form.tsx` for relation lookup
+- `app/modules/Master/Users/hooks/useFormItem.tsx` for config-driven CommonForm metadata
 - `app/modules/Feature/RepairRequestForEmployee/form.tsx` for editable `LineItemsEditor`
+- `app/modules/Feature/RepairRequestForEmployee/hooks/useLineItem.ts` for detail-page item loading without extra filters
+- `app/modules/Feature/RepairRequestForManager/hooks/useLineItem.ts` for detail-page item loading with manager department filtering
 - `app/modules/Feature/RepairRequestForManager/Detail/index.tsx` for read-only line-item display with injected actions
 
 ## Step 12: Validate
@@ -472,12 +494,18 @@ Use these files as the baseline:
 - `app/modules/Master/Users/Edit/index.tsx`
 - `app/modules/Master/Users/Detail/index.tsx`
 - `app/modules/Master/Users/form.tsx`
+- `app/modules/Master/Users/hooks/useFormItem.tsx`
 - `app/modules/Master/Users/hooks/helpers.ts`
 - `app/modules/Master/Users/hooks/useColumns.tsx`
 - `app/modules/Master/Users/hooks/useFieldFilter.ts`
 - `app/modules/Master/Departments/index.tsx`
+- `app/components/Common/Form/index.tsx`
+- `app/constants/formItem.constants.ts`
+- `app/constants/fieldFilter.constants.ts`
 - `app/modules/Feature/RepairRequestForEmployee/form.tsx`
+- `app/modules/Feature/RepairRequestForEmployee/hooks/useLineItem.ts`
 - `app/modules/Feature/RepairRequestForManager/Detail/index.tsx`
+- `app/modules/Feature/RepairRequestForManager/hooks/useLineItem.ts`
 - `app/api/users.api.ts`
 - `app/services/users.service.ts`
 
@@ -487,7 +515,9 @@ Use these files as the baseline:
 - do not reintroduce the older flat `Create.tsx`, `Edit.tsx`, `Detail.tsx`, or `Manage.tsx` structure for new work
 - do not move API loaders or mutations into shared Maintain components
 - do not duplicate search parameter parsing in multiple pages when `useTableSearchParams()` already covers it
+- do not duplicate filter labels, search field names, or param keys inline when `app/constants/fieldFilter.constants.ts` already owns them
 - do not move backend field-name mapping into `DataTable`
+- do not keep detail-page item search logic inline when the module already uses the `hooks/useLineItem.ts` pattern
 - do not show plain ids when code and name are available
 - do not put feature-specific logic inside raw shadcn UI primitives
 - do not copy JavaScript reference code directly without converting it to the current TypeScript pattern

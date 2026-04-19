@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { formStyleClassNames } from "~/components/Common/Form/styles";
 import { cn } from "~/lib/utils";
 
 export interface IDetailSectionField
@@ -35,17 +36,17 @@ export default function DetailSections({
                     {sectionIndex > 0 && <div className="my-6 h-px bg-[var(--border)]" />}
 
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                        <p className={formStyleClassNames.sectionTitle}>
                             {section.title}
                         </p>
 
-                        <div className={cn("mt-4 grid gap-5 md:grid-cols-2", gridClassName)}>
+                        <div className={cn("mt-4", formStyleClassNames.formGrid, gridClassName)}>
                             {section.fields.map((field, fieldIndex) => (
-                                <div className="rounded-md border border-[var(--border)] bg-[var(--bg-surface)] p-4" key={field.key ?? `${String(section.title)}-${String(field.label)}-${fieldIndex}`}>
-                                    <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                                <div className={formStyleClassNames.detailCard} key={field.key ?? `${String(section.title)}-${String(field.label)}-${fieldIndex}`}>
+                                    <div className={formStyleClassNames.detailLabel}>
                                         {field.label}
                                     </div>
-                                    <div className="mt-2 text-sm font-medium text-[var(--text-main)]">
+                                    <div className={formStyleClassNames.detailValue}>
                                         {field.value}
                                     </div>
                                 </div>

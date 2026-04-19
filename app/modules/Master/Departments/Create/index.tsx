@@ -2,10 +2,7 @@ import { useNavigate } from "react-router";
 import Create from "~/components/Maintain/Create";
 import { createDepartment } from "~/services/departments.service";
 import DepartmentForm from "../form";
-import {
-    buildCreatePayload,
-    createEmptyDepartmentFormValues,
-} from "../hooks/helpers";
+import { buildCreatePayload, createEmptyDepartmentFormValues } from "../hooks/helpers";
 
 export default function CreateDepartmentPage()
 {
@@ -18,7 +15,7 @@ export default function CreateDepartmentPage()
         navigate("/master/departments", { replace: true });
     }
 
-    sync function handleCancel()
+    async function handleCancel()
     {
         navigate("/master/departments");
     }
