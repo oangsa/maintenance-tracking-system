@@ -1,7 +1,7 @@
 import React from "react";
 import { searchRepairRequestItems } from "~/services/repairRequests.service";
 import { formatProductLabel, formatRepairStatusLabel } from "~/lib/repairRequestUtils";
-import type { IRepairRequestDetailLineItem } from "../../RepairRequests/detailLineItemColumns";
+import type { IRepairRequestDetailLineItem } from "../../../RepairRequests/detailLineItemColumns";
 
 const REPAIR_REQUEST_ITEMS_PAGE_SIZE = 100;
 

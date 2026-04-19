@@ -1,8 +1,23 @@
 # Search & Filter Guide
 
-All list/search endpoints (`POST /*/search`) accept a shared set of query parameters for filtering, searching, sorting, and pagination. This document explains how to use them correctly.
+All list/search endpoints (`POST /*/search`) accept a shared set of query parameters for filtering, searching, sorting, and pagination. This document explains how to use them correctly in the current frontend.
 
----
+## Frontend Wiring Pattern
+
+Current list pages usually follow this flow:
+
+- `useFieldFilter()` owns filter metadata, URL param parsing, and `search[]` builders
+- `useTableSearchParams()` centralizes page, search, and filter URL state
+- `buildOrderBy()` from `app/lib/pageUtils.ts` maps UI sort choices to backend `orderBy` strings
+- shared filter keys, labels, and common quick-search fields can live in `app/constants/fieldFilter.constants.ts`
+- feature-specific field names can stay in module-local hooks when the endpoint behavior is unique
+- `SEARCH_OPERATOR` from `app/constants/searchOperator.constant.ts` should be used instead of repeating raw strings such as `"EQUAL"`
+
+Current repair-request examples:
+
+- the employee list always adds `requester_id EQUAL currentUser.id`
+- the manager list filters by `repair_request_items_department_id EQUAL currentUser.departmentId`
+- manager detail line items use the separate `/items/search` endpoint and plain item field names such as `department_id`
 
 ## Request Body Structure
 
@@ -17,30 +32,17 @@ All list/search endpoints (`POST /*/search`) accept a shared set of query parame
 }
 ```
 
----
-
-## Frontend Constant Pattern
-
-Current frontend `useFieldFilter()` hooks should centralize repeated metadata in `app/constants/fieldFilter.constants.ts`.
-
-- `USER_FIELD_FILTER` owns current user-list filter labels, URL param keys, search field names, and quick-search fields.
-- `REPAIR_REQUEST_FIELD_FILTER` owns current repair-request list filter labels, URL param keys, search field names, and quick-search fields.
-- `DATA_TABLE_FILTER_TYPE` centralizes the `DataTable` filter UI type strings.
-- `SEARCH_OPERATOR` from `app/constants/searchOperator.constant.ts` should be used when building `search[]` conditions instead of repeating raw strings such as `"EQUAL"`.
-
----
-
 ## `search` — Precise Field Filter
 
-`search` is an **array** of condition objects. All conditions are combined with `AND`.
+`search` is an array of condition objects. All conditions are combined with `AND`.
 
 Each condition object:
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `name` | `string` | yes | The database column name to filter on (see [Field Name Reference](#field-name-reference)) |
-| `condition` | `string` | yes | The comparison operator (see [Conditions](#conditions)) |
-| `value` | `string` | yes | The value to compare against. Pass `""` for `ISNULL` / `ISNOTNULL` (value is ignored by the engine but the field is required by the validator) |
+| `name` | `string` | yes | The database column name to filter on |
+| `condition` | `string` | yes | The comparison operator |
+| `value` | `string` | yes | The value to compare against. Pass `""` for `ISNULL` and `ISNOTNULL` |
 
 ### Conditions
 
@@ -51,16 +53,16 @@ Each condition object:
 | `ENDWITH` | `ILIKE '%value'` | Case-insensitive suffix |
 | `EQUAL` | `= value` | Exact match |
 | `NOTEQUAL` | `!= value` | |
-| `GREATER` | `> value` | Auto-casts to number / date |
-| `LESSER` | `< value` | Auto-casts to number / date |
-| `GREATEROREQUAL` | `>= value` | Auto-casts to number / date |
-| `LESSEROREQUAL` | `<= value` | Auto-casts to number / date |
-| `ISNULL` | `IS NULL` | `value` is ignored by the engine, but must still be sent as `""` |
-| `ISNOTNULL` | `IS NOT NULL` | `value` is ignored by the engine, but must still be sent as `""` |
+| `GREATER` | `> value` | Auto-casts to number or date |
+| `LESSER` | `< value` | Auto-casts to number or date |
+| `GREATEROREQUAL` | `>= value` | Auto-casts to number or date |
+| `LESSEROREQUAL` | `<= value` | Auto-casts to number or date |
+| `ISNULL` | `IS NULL` | `value` is ignored but must still be sent |
+| `ISNOTNULL` | `IS NOT NULL` | `value` is ignored but must still be sent |
 
 ### Example
 
-Find all users with role `admin` whose name contains "John":
+Find all users with role `admin` whose name contains `John`:
 
 ```json
 {
@@ -70,8 +72,6 @@ Find all users with role `admin` whose name contains "John":
   ]
 }
 ```
-
----
 
 ## `searchTerm` — Quick Multi-Field Text Search
 
@@ -84,7 +84,7 @@ Find all users with role `admin` whose name contains "John":
 
 ### Example
 
-Search for "Pro" in both `name` and `department_name`:
+Search for `Pro` in both `name` and `department_name`:
 
 ```json
 {
@@ -95,16 +95,14 @@ Search for "Pro" in both `name` and `department_name`:
 }
 ```
 
-### Difference from `search`
+### Difference From `search`
 
 | | `search` | `searchTerm` |
 |---|---|---|
-| Multiple conditions? | Yes (AND) | Yes (OR) |
-| Condition type | Any (see above) | Always `ILIKE '%value%'` |
+| Multiple conditions? | Yes (`AND`) | Yes (`OR`) |
+| Condition type | Any supported operator | Always `ILIKE '%value%'` |
 | Multiple fields? | One field per object | Comma-separated in `name` |
 | Use case | Precise filtering | Quick keyword search |
-
----
 
 ## How The Server Applies `search` And `searchTerm`
 
@@ -118,22 +116,21 @@ The API evaluates these fields in a predictable order:
 (`search` result) AND (`searchTerm` result)
 ```
 
-### Practical meaning
+### Practical Meaning
 
-- Use `search` when you need exact or structured filtering.
-- Use `searchTerm` when you need one keyword matched across several fields.
-- Use both together when you want a strict filter plus a flexible keyword search.
+- use `search` when you need exact or structured filtering
+- use `searchTerm` when you need one keyword matched across several fields
+- use both together when you want a strict filter plus a flexible keyword search
 
-### Behavior notes
+### Behavior Notes
 
-- Field names are normalized to lowercase before SQL is built.
-- `searchTerm` only performs case-insensitive partial matching with `ILIKE '%value%'`.
-- `searchTerm.name` accepts comma-separated field names and trims spaces around each one.
-- Invalid `condition` values in `search` raise a bad request error.
-- `GREATER`, `LESSER`, `GREATEROREQUAL`, and `LESSEROREQUAL` try to parse number/date/boolean values before building SQL.
-- Joined fields can be used as long as the endpoint exposes them as flat result columns in the field reference table below.
+- field names are normalized to lowercase before SQL is built
+- `searchTerm` only performs case-insensitive partial matching with `ILIKE '%value%'`
+- `searchTerm.name` accepts comma-separated field names and trims spaces around each one
+- invalid `condition` values in `search` raise a bad request error
+- `GREATER`, `LESSER`, `GREATEROREQUAL`, and `LESSEROREQUAL` try to parse number, date, or boolean values before building SQL
 
-### Execution examples
+### Execution Example
 
 This request means:
 
@@ -151,8 +148,6 @@ This request means:
   }
 }
 ```
-
----
 
 ## Special Case: Repair Request Item Search
 
@@ -176,17 +171,17 @@ Supported item-search fields:
 
 This prefix works in both `search` and `searchTerm`.
 
-Use `repair_request_items_department_code` when filtering by a business code such as `P001`. `repair_request_items_department_id` is the numeric foreign-key ID.
+Use `repair_request_items_department_code` when filtering by a business code such as `P001`. Use `repair_request_items_department_id` when filtering by the numeric foreign-key ID.
 
-### How repair request item matching works
+### How Repair Request Item Matching Works
 
-- Header-level repair request filters still work normally.
-- Item-level prefixed filters are evaluated in an `EXISTS` subquery.
-- That means a repair request is returned when at least one requested item matches the item-side conditions.
-- If both header fields and item fields are sent, both sides must match.
-- This also applies to `searchTerm`: header fields are grouped together, item fields are grouped together, and the two groups are combined with `AND`.
+- header-level repair request filters still work normally
+- item-level prefixed filters are evaluated in an `EXISTS` subquery
+- a repair request is returned when at least one requested item matches the item-side conditions
+- if both header fields and item fields are sent, both sides must match
+- this also applies to `searchTerm`: header fields are grouped together, item fields are grouped together, and the two groups are combined with `AND`
 
-### Example: filter by header field and item field
+### Example: Filter By Header Field And Item Field
 
 ```json
 {
@@ -199,12 +194,7 @@ Use `repair_request_items_department_code` when filtering by a business code suc
 }
 ```
 
-This means:
-
-- the repair request priority must be `urgent`
-- and at least one requested item must have a product name containing `motor`
-
-### Example: combine header and item keyword search
+### Example: Combine Header And Item Keyword Search
 
 ```json
 {
@@ -217,13 +207,6 @@ This means:
 }
 ```
 
-This means:
-
-- one of the header fields `request_no` or `requester_name` must match
-- and at least one requested item `product_name` must also match
-
----
-
 ## Repair Request Item Detail Search
 
 `POST /api/v1/repair-requests/{id}/items/search` is a different endpoint from `POST /api/v1/repair-requests/search`.
@@ -232,15 +215,15 @@ Use it when a detail page needs the actual line items for one repair request ins
 
 Current frontend usage:
 
-- `app/modules/Feature/RepairRequestForEmployee/hooks/useLineItem.ts` loads all submitted items for the selected repair request.
-- `app/modules/Feature/RepairRequestForManager/hooks/useLineItem.ts` loads the same endpoint but adds `department_id EQUAL currentUser.departmentId` so managers only receive their own department's items.
+- `app/modules/Feature/employee/RepairRequests/hooks/useLineItem.ts` loads all submitted items for the selected repair request
+- `app/modules/Feature/manager/RepairRequests/hooks/useLineItem.ts` loads the same endpoint but adds `department_id EQUAL currentUser.departmentId` so managers only receive their own department's items
 
 Important:
 
 - use plain item field names such as `department_id` on the item-search endpoint
 - use `repair_request_items_*` prefixed names only on `POST /api/v1/repair-requests/search`
 
-### Item detail search fields
+### Item Detail Search Fields
 
 | Input field name | Response key | Notes |
 |---|---|---|
@@ -256,7 +239,7 @@ Important:
 | `repair_status_name` | `repairStatusName` | |
 | `department_id` | `departmentId` | |
 
-### Example: load all employee detail items
+### Example: Load All Employee Detail Items
 
 ```json
 {
@@ -267,7 +250,7 @@ Important:
 }
 ```
 
-### Example: load manager detail items for one department
+### Example: Load Manager Detail Items For One Department
 
 ```json
 {
@@ -281,13 +264,11 @@ Important:
 }
 ```
 
----
-
 ## `orderBy`
 
-A space-separated field and direction, optionally comma-separated for multiple sorts.
+`orderBy` is a space-separated field and direction, optionally comma-separated for multiple sorts.
 
-```
+```text
 "orderBy": "name asc"
 "orderBy": "created_at desc"
 "orderBy": "order_sequence asc, id desc"
@@ -295,16 +276,16 @@ A space-separated field and direction, optionally comma-separated for multiple s
 
 Default direction is `ASC` when not specified.
 
----
-
 ## Field Name Reference
 
-> **Important:** The API **response** uses `camelCase` keys (e.g. `departmentName`).
-> The `search` / `searchTerm` / `orderBy` inputs use the **flat SQL column name** as it appears in the query result (generally `snake_case`).
+Important:
+
+- the API response uses `camelCase` keys such as `departmentName`
+- the `search`, `searchTerm`, and `orderBy` inputs use the flat SQL column name, usually `snake_case`
 
 ### Users (`POST /api/v1/users/search`)
 
-| Input field name | Response key (camelCase) | Notes |
+| Input field name | Response key | Notes |
 |---|---|---|
 | `id` | `id` | |
 | `name` | `name` | |
@@ -314,14 +295,14 @@ Default direction is `ASC` when not specified.
 | `updated_at` | `updatedAt` | |
 | `created_by` | `createdBy` | |
 | `updated_by` | `updatedBy` | |
-| `deleted` | _(not returned)_ | Use `deleted: true` param instead |
+| `deleted` | _(not returned)_ | Use `deleted: true` instead |
 | `department_id` | `departmentId` | |
-| `department_name` | `departmentName` | Joined from `department` table |
-| `department_code` | `departmentCode` | Joined from `department` table |
+| `department_name` | `departmentName` | Joined from `department` |
+| `department_code` | `departmentCode` | Joined from `department` |
 
 ### Departments (`POST /api/v1/department/search`)
 
-| Input field name | Response key (camelCase) | Notes |
+| Input field name | Response key | Notes |
 |---|---|---|
 | `id` | `id` | |
 | `code` | `code` | |
@@ -331,16 +312,16 @@ Default direction is `ASC` when not specified.
 | `created_by` | `createdBy` | |
 | `updated_by` | `updatedBy` | |
 
-### Parts (`POST /api/v1/part/search`)
+### Products (`POST /api/v1/product/search`)
 
-| Input field name | Response key (camelCase) | Notes |
+| Input field name | Response key | Notes |
 |---|---|---|
 | `id` | `id` | |
 | `code` | `code` | |
 | `name` | `name` | |
 | `product_type_id` | `productTypeId` | |
-| `product_type_code` | `productTypeCode` | Joined from `product_type` table |
-| `product_type_name` | `productTypeName` | Joined from `product_type` table |
+| `product_type_code` | `productTypeCode` | Joined from `product_type` |
+| `product_type_name` | `productTypeName` | Joined from `product_type` |
 | `created_at` | `createdAt` | |
 | `updated_at` | `updatedAt` | |
 | `created_by` | `createdBy` | |
@@ -348,27 +329,13 @@ Default direction is `ASC` when not specified.
 
 ### Repair Statuses (`POST /api/v1/repair-status/search`)
 
-| Input field name | Response key (camelCase) | Notes |
+| Input field name | Response key | Notes |
 |---|---|---|
 | `id` | `id` | |
 | `code` | `code` | |
 | `name` | `name` | |
 | `order_sequence` | `orderSequence` | |
-| `is_final` | `isFinal` | `true` / `false` |
-| `created_at` | `createdAt` | |
-| `updated_at` | `updatedAt` | |
-| `created_by` | `createdBy` | |
-| `updated_by` | `updatedBy` | |
-
-### Repair Request Item Statuses (`POST /api/v1/repair-request-item-status/search`)
-
-| Input field name | Response key (camelCase) | Notes |
-|---|---|---|
-| `id` | `id` | |
-| `code` | `code` | |
-| `name` | `name` | |
-| `order_sequence` | `orderSequence` | |
-| `is_final` | `isFinal` | `true` / `false` |
+| `is_final` | `isFinal` | `true` or `false` |
 | `created_at` | `createdAt` | |
 | `updated_at` | `updatedAt` | |
 | `created_by` | `createdBy` | |
@@ -376,7 +343,7 @@ Default direction is `ASC` when not specified.
 
 ### Repair Requests (`POST /api/v1/repair-requests/search`)
 
-| Input field name | Response key (camelCase) | Notes |
+| Input field name | Response key | Notes |
 |---|---|---|
 | `id` | `id` | |
 | `request_no` | `requestNo` | |
@@ -388,13 +355,10 @@ Default direction is `ASC` when not specified.
 | `updated_at` | `updatedAt` | |
 | `created_by` | `createdBy` | |
 | `updated_by` | `updatedBy` | |
-| `current_status_code` | `currentStatusCode` | Joined repair_status |
-| `current_status_name` | `currentStatusName` | Joined repair_status |
-| `current_status_order_sequence` | _(no direct field)_ | Joined repair_status |
-| `current_status_is_final` | _(no direct field)_ | Joined repair_status |
+| `current_status_code` | `currentStatusCode` | Joined repair status |
+| `current_status_name` | `currentStatusName` | Joined repair status |
 | `requester_email` | `requesterEmail` | Joined users |
 | `requester_name` | `requesterName` | Joined users |
-| `requester_role` | _(no direct field)_ | Joined users |
 | `repair_request_items_department_id` | _(item search only)_ | Requested item department numeric ID |
 | `repair_request_items_department_code` | _(item search only)_ | Requested item department code |
 | `repair_request_items_department_name` | _(item search only)_ | Requested item department name |
@@ -405,7 +369,7 @@ Default direction is `ASC` when not specified.
 | `repair_request_items_description` | _(item search only)_ | Requested item description |
 | `repair_request_items_quantity` | _(item search only)_ | Requested item quantity |
 
----
+For additional backend search resources that are not yet wrapped in the current frontend, check `docs/openapi.yaml`.
 
 ## Complete Examples
 
@@ -422,7 +386,7 @@ Default direction is `ASC` when not specified.
 }
 ```
 
-### Search parts by name or product type name
+### Search products by name or product type name
 
 ```json
 {
@@ -467,4 +431,4 @@ Both can be used together. They are combined with `AND`.
 }
 ```
 
-This finds employees whose name **or** email contains "john".
+This finds employees whose name or email contains `john`.

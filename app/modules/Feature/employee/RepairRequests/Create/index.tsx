@@ -1,10 +1,10 @@
-import React, { useSyncExternalStore } from "react";
+import React from "react";
 import { useNavigate } from "react-router";
 import Loading from "~/components/Common/Loading";
 import Create from "~/components/Maintain/Create";
 import ErrorCard from "~/components/Maintain/ErrorCard";
-import type { IRepairStatus, IUser } from "~/api/types";
-import { ensureCurrentUser, getCurrentUser, subscribeCurrentUser } from "~/services/auth.service";
+import type { IRepairStatus } from "~/api/types";
+import { useUserContext } from "~/providers/UserProvider";
 import { createRepairRequest } from "~/services/repairRequests.service";
 import { searchRepairStatuses } from "~/services/repairStatuses.service";
 import RepairRequestForm from "../form";
@@ -24,55 +24,11 @@ function resolveInitialStatus(statuses: IRepairStatus[]): IRepairStatus | null
 export default function CreateRepairRequestPage()
 {
     const navigate = useNavigate();
-    const currentUser = useSyncExternalStore(subscribeCurrentUser, getCurrentUser, getCurrentUser);
+    const { currentUser, isLoadingUser, userError } = useUserContext();
 
     const [statusId, setStatusId] = React.useState<number | null>(null);
-    const [loadingUser, setLoadingUser] = React.useState(currentUser === null);
     const [loadingStatus, setLoadingStatus] = React.useState(true);
     const [pageError, setPageError] = React.useState("");
-
-    React.useEffect(() =>
-    {
-        let cancelled = false;
-
-        if (currentUser !== null)
-        {
-            setLoadingUser(false);
-            return () =>
-            {
-                cancelled = true;
-            };
-        }
-
-        async function loadCurrentUser()
-        {
-            try
-            {
-                await ensureCurrentUser();
-            }
-            catch (error)
-            {
-                if (!cancelled)
-                {
-                    setPageError((error as Error).message || "Unable to load your user profile.");
-                }
-            }
-            finally
-            {
-                if (!cancelled)
-                {
-                    setLoadingUser(false);
-                }
-            }
-        }
-
-        void loadCurrentUser();
-
-        return () =>
-        {
-            cancelled = true;
-        };
-    }, [currentUser]);
 
     React.useEffect(() =>
     {
@@ -124,7 +80,7 @@ export default function CreateRepairRequestPage()
         };
     }, []);
 
-    if (loadingUser || loadingStatus)
+    if ((isLoadingUser && currentUser === null) || loadingStatus)
     {
         return <Loading message="Preparing repair request form..." />;
     }
@@ -135,7 +91,7 @@ export default function CreateRepairRequestPage()
             <ErrorCard
                 backHref="/repair-requests"
                 backLabel="Back to Repair Requests"
-                message={pageError || "Unable to load your user profile."}
+                message={userError || "Unable to load your user profile."}
             />
         );
     }
@@ -183,7 +139,7 @@ export default function CreateRepairRequestPage()
             backLabel="Back to Repair Requests"
             description="Submit a repair request for your department and attach the required line items."
             Form={RepairRequestForm}
-            formProps={{ currentUser: resolvedCurrentUser as IUser }}
+            formProps={{ currentUser: resolvedCurrentUser }}
             initialValues={createEmptyRepairRequestFormValues()}
             onCancel={handleCancel}
             onSubmit={handleSubmit}

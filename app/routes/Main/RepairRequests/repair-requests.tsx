@@ -1,4 +1,4 @@
-import RepairRequestEmployeeListPage from "~/modules/Feature/RepairRequestForEmployee";
+import RepairRequestEmployeeListPage from "~/modules/Feature/employee/RepairRequests";
 
 export function meta()
 {

@@ -6,14 +6,10 @@ import type { IDetailSection } from "~/components/Common/DetailSections";
 import Loading from "~/components/Common/Loading";
 import Detail from "~/components/Maintain/Detail";
 import ErrorCard from "~/components/Maintain/ErrorCard";
+import { useUserContext } from "~/providers/UserProvider";
 import { Button } from "~/components/ui/button";
-import {
-    ensureCurrentUser,
-    getCurrentUser,
-    subscribeCurrentUser,
-} from "~/services/auth.service";
 import { getRepairRequestById } from "~/services/repairRequests.service";
-import { createRepairRequestDetailLineItemColumns } from "../../RepairRequests/detailLineItemColumns";
+import { createRepairRequestDetailLineItemColumns } from "../../../RepairRequests/detailLineItemColumns";
 import { formatDateTime, formatRequesterLabel, formatTitleCase } from "~/lib/formatters";
 import useLineItem from "../hooks/useLineItem";
 
@@ -84,60 +80,14 @@ function ManagerRepairRequestItemsSection({
 export default function RepairRequestManagerDetailPage()
 {
     const params = useParams();
-    const currentUser = React.useSyncExternalStore(subscribeCurrentUser, getCurrentUser, getCurrentUser);
-    const [loadingUser, setLoadingUser] = React.useState(currentUser === null);
-    const [userError, setUserError] = React.useState("");
-
-    React.useEffect(() =>
-    {
-        let cancelled = false;
-
-        if (currentUser !== null)
-        {
-            setLoadingUser(false);
-
-            return () =>
-            {
-                cancelled = true;
-            };
-        }
-
-        async function loadCurrentUser()
-        {
-            try
-            {
-                await ensureCurrentUser();
-            }
-            catch (error)
-            {
-                if (!cancelled)
-                {
-                    setUserError((error as Error).message || "Unable to load your user profile.");
-                }
-            }
-            finally
-            {
-                if (!cancelled)
-                {
-                    setLoadingUser(false);
-                }
-            }
-        }
-
-        void loadCurrentUser();
-
-        return () =>
-        {
-            cancelled = true;
-        };
-    }, [currentUser]);
+    const { currentUser, isLoadingUser, userError } = useUserContext();
 
     function handleViewWorkOrder()
     {
         // TODO: Open the related work order flow when the manager work-order module is available.
     }
 
-    if (loadingUser)
+    if (isLoadingUser && currentUser === null)
     {
         return <Loading message="Loading your access profile..." />;
     }

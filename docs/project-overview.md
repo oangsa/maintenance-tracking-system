@@ -7,20 +7,23 @@ This document describes the current frontend structure in `maintainance-tracking
 The project is a TypeScript React Router frontend for the Maintenance Tracking System. It uses a layered structure:
 
 - route wrappers for URL composition
+- provider-driven auth restoration and route protection
 - feature modules for page logic
-- shared Maintain components for common CRUD page shells
-- shared Common components for tables, detail sections, pickers, and line-item editing
+- shared Maintain components for CRUD page shells
+- shared Common components for tables, detail sections, forms, pickers, and line-item editing
 - `app/api/` plus `app/services/` for backend communication
 
-## Current Application Surface
+## Current Route Surface
 
-The current application is split into these route groups:
+The current application exposes these routes:
 
-- `auth/login`: login screen
-- `repair-requests/*`: employee repair request list, create, and detail
-- `manager/repair-requests/*`: manager repair request list and detail
-- `master/users/*`: user CRUD
-- `master/departments/*`: department CRUD
+- `/`: authenticated home page rendered inside `LayoutMain`
+- `/auth/login`: login screen
+- `/repair-requests/*`: employee repair request list, create, and detail
+- `/manager/repair-requests/*`: manager repair request list and detail
+- `/master/users/*`: user CRUD
+- `/master/departments/*`: department CRUD
+- `/test`: lightweight sandbox route currently kept for manual checks
 
 ## Current Project Structure
 
@@ -45,7 +48,10 @@ maintainance-tracking-system/
 |   |   |   |-- LineItemsEditor/
 |   |   |   |-- ListPickerModal/
 |   |   |   |-- Loading/
-|   |   |   `-- Modal/
+|   |   |   |-- Modal/
+|   |   |   |-- ReportTable/
+|   |   |   |-- SearchableSelect/
+|   |   |   `-- Sidebar/
 |   |   |-- Maintain/
 |   |   |   |-- Create/
 |   |   |   |-- Detail/
@@ -58,28 +64,40 @@ maintainance-tracking-system/
 |   |   |   `-- types.ts
 |   |   `-- ui/
 |   |-- constants/
-|   |   |-- fieldFilter.constants.ts
-|   |   |-- formItem.constants.ts
-|   |   |-- priority.constant.ts
-|   |   |-- role.constant.ts
-|   |   `-- searchOperator.constant.ts
+|   |-- contexts/
+|   |-- hooks/
 |   |-- layouts/
-|   |   `-- LayoutMain.tsx
 |   |-- lib/
-|   |   |-- formatters.ts
-|   |   |-- pageUtils.ts
-|   |   `-- repairRequestUtils.ts
 |   |-- modules/
 |   |   |-- auth/
 |   |   |   `-- login/
 |   |   |-- Feature/
-|   |   |   |-- RepairRequestForEmployee/
-|   |   |   |-- RepairRequestForManager/
-|   |   |   `-- RepairRequests/
-|   |   `-- Master/
-|   |       |-- Departments/
-|   |       `-- Users/
+|   |   |   |-- RepairRequests/
+|   |   |   |   |-- detailLineItemColumns.tsx
+|   |   |   |   `-- useLineItemColumn.ts
+|   |   |   |-- employee/
+|   |   |   |   `-- RepairRequests/
+|   |   |   |       |-- Create/
+|   |   |   |       |-- Detail/
+|   |   |   |       |-- form.tsx
+|   |   |   |       |-- hooks/
+|   |   |   |       |-- index.tsx
+|   |   |   |       |-- Create.tsx
+|   |   |   |       `-- Detail.tsx
+|   |   |   `-- manager/
+|   |   |       `-- RepairRequests/
+|   |   |           |-- Detail/
+|   |   |           |-- hooks/
+|   |   |           `-- index.tsx
+|   |   |-- Master/
+|   |   |   |-- Departments/
+|   |   |   `-- Users/
+|   |-- providers/
 |   |-- routes/
+|   |   |-- home.tsx
+|   |   |-- layout.tsx
+|   |   |-- login.tsx
+|   |   |-- test.tsx
 |   |   |-- Main/
 |   |   |   `-- RepairRequests/
 |   |   |-- Manager/
@@ -87,13 +105,8 @@ maintainance-tracking-system/
 |   |   `-- Master/
 |   |       |-- Departments/
 |   |       `-- Users/
+|   |-- schemas/
 |   |-- services/
-|   |   |-- auth.service.ts
-|   |   |-- departments.service.ts
-|   |   |-- products.service.ts
-|   |   |-- repairRequests.service.ts
-|   |   |-- repairStatuses.service.ts
-|   |   `-- users.service.ts
 |   |-- app.css
 |   |-- root.tsx
 |   `-- routes.ts
@@ -112,14 +125,22 @@ maintainance-tracking-system/
 ### `app/root.tsx`
 
 - loads global styles
-- starts shared providers
-- initializes auth state
+- initializes the auth service
+- starts shared providers such as `TooltipProvider`
+- wraps the route outlet with `UserProvider`
+
+### `app/providers/UserProvider.tsx`
+
+- restores the current user for authenticated sessions
+- redirects unauthenticated users away from protected routes
+- redirects authenticated users away from `/auth/*`
+- exposes `useUserContext()` so feature pages can consume `currentUser`, `isLoadingUser`, and `userError`
 
 ### `app/routes.ts`
 
 - central route registration file
-- maps URL paths to route wrapper files under `app/routes/`
-- keeps routing separate from module implementation
+- wires the authenticated layout, home route, test route, auth route, and all feature routes
+- keeps route declarations separate from page implementation
 
 ### `app/routes/`
 
@@ -149,8 +170,8 @@ maintainance-tracking-system/
   - `Form` for config-driven create and edit forms
   - `LineItemsEditor` for editable or read-only line-item collections
   - `ListPickerModal` for lookup selection dialogs
-  - `Modal` and `ConfirmModal` for confirmation flows
   - `Loading` for loading states
+  - `Modal` and confirm-dialog flows for confirmation UX
 
 ### `app/components/ui/`
 
@@ -162,43 +183,23 @@ maintainance-tracking-system/
 
 - shared UI-facing constants and metadata
 - current important files:
-  - `formItem.constants.ts` for form labels, placeholders, field types, spans, and layout constants used by `app/components/Common/Form`
-  - `fieldFilter.constants.ts` for list filter keys, labels, search field names, search terms, and shared `DataTable` filter types
+  - `formItem.constants.ts` for shared field labels, placeholders, field types, spans, and layout values
+  - `fieldFilter.constants.ts` for reusable filter keys, labels, and common search fields
   - `searchOperator.constant.ts` for reusable search operator constants such as `SEARCH_OPERATOR.EQUAL`
-- modules should import these constants instead of repeating labels, param keys, or operator strings inline
+  - `priority.constant.ts` and `role.constant.ts` for shared option values
+
+### `app/schemas/`
+
+- reusable zod validation schemas
+- current schemas cover department, user, and repair-request form validation
+- forms should import these schemas instead of duplicating validation rules inline when the schema is reused
 
 ### `app/modules/`
 
 - feature code lives here
-- the best current full-CRUD reference is `app/modules/Master/Users`
-- modules follow a nested page-entry layout instead of the older flat `Create.tsx` or `Manage.tsx` pattern
-
-Current full CRUD shape:
-
-```text
-app/modules/Master/Entity/
-|-- Create/
-|   `-- index.tsx
-|-- Detail/
-|   `-- index.tsx
-|-- Edit/
-|   `-- index.tsx
-|-- form.tsx
-|-- hooks/
-|   |-- helpers.ts
-|   |-- useColumns.tsx
-|   |-- useFieldFilter.ts
-|   `-- useFormItem.tsx
-`-- index.tsx
-```
-
-Notes:
-
-- `useFieldFilter.ts` is optional for simple list pages
-- `useFormItem.tsx` is recommended when the module uses `app/components/Common/Form`
-- read-only modules can omit `Create/`, `Edit/`, and `form.tsx`
-- detail-heavy modules can add `hooks/useLineItem.ts` when a detail page needs to load a secondary item collection from `/items/search`
-- shared cross-module helpers can live beside the feature folders, for example `app/modules/Feature/RepairRequests/detailLineItemColumns.tsx`
+- route-wired modules should use the nested page-entry layout instead of the older flat `Create.tsx`, `Edit.tsx`, or `Detail.tsx` pattern
+- some legacy flat files still exist under `app/modules/Feature/employee/RepairRequests/`; treat them as leftovers, not as the standard to copy
+- shared cross-module helpers can live in helper-only folders such as `app/modules/Feature/RepairRequests/`
 
 ### `app/api/`
 
@@ -226,6 +227,89 @@ Notes:
   - `formatters.ts` for generic formatting helpers
   - `repairRequestUtils.ts` for repair-request-specific display helpers
 
+## Current Module Shapes
+
+### Full CRUD Shape
+
+```text
+app/modules/Master/Entity/
+|-- Create/
+|   `-- index.tsx
+|-- Detail/
+|   `-- index.tsx
+|-- Edit/
+|   `-- index.tsx
+|-- form.tsx
+|-- hooks/
+|   |-- helpers.ts
+|   |-- useColumns.tsx
+|   |-- useFieldFilter.ts
+|   `-- useFormItem.tsx
+`-- index.tsx
+```
+
+Notes:
+
+- `useFieldFilter.ts` is optional for simple list pages
+- `useFormItem.tsx` is recommended when the module uses `app/components/Common/Form`
+- read-only modules can omit `Create/`, `Edit/`, and `form.tsx`
+- detail-heavy modules can add `hooks/useLineItem.ts` when a detail page needs a secondary `/items/search` request
+
+### Employee Repair Request Shape
+
+```text
+app/modules/Feature/employee/RepairRequests/
+|-- Create/
+|   `-- index.tsx
+|-- Detail/
+|   `-- index.tsx
+|-- form.tsx
+|-- hooks/
+|   |-- helpers.ts
+|   |-- useColumns.tsx
+|   |-- useFieldFilter.ts
+|   |-- useFormItem.tsx
+|   `-- useLineItem.ts
+|-- index.tsx
+|-- Create.tsx
+`-- Detail.tsx
+```
+
+Notes:
+
+- the route-wired pages use `Create/index.tsx` and `Detail/index.tsx`
+- `Create.tsx` and `Detail.tsx` still exist as legacy leftovers and should not be used as the reference for new work
+- the shared form combines `Common/Form` metadata with a custom `LineItemsEditor` block
+
+### Manager Repair Request Shape
+
+```text
+app/modules/Feature/manager/RepairRequests/
+|-- Detail/
+|   `-- index.tsx
+|-- hooks/
+|   |-- useColumns.tsx
+|   |-- useFieldFilter.ts
+|   `-- useLineItem.ts
+`-- index.tsx
+```
+
+Notes:
+
+- manager repair requests are read-only in the current frontend
+- the detail page loads line items through `hooks/useLineItem.ts`
+- the manager item search is scoped by the current user's `departmentId`
+
+### Shared Helper-Only Feature Shape
+
+```text
+app/modules/Feature/RepairRequests/
+|-- detailLineItemColumns.tsx
+`-- useLineItemColumn.ts
+```
+
+Use this folder for repair-request helpers shared by both employee and manager pages without making either module depend on the other's internal files.
+
 ## Current Reference Modules
 
 ### `app/modules/Master/Users`
@@ -234,65 +318,77 @@ Notes:
 - uses advanced filters through `hooks/useFieldFilter.ts`
 - uses `app/components/Common/Form` plus `hooks/useFormItem.tsx` for config-driven fields
 - uses a related-entity picker in `form.tsx`
-- best example for new CRUD work
+- imports reusable zod validation from `app/schemas/userFormSchema.ts`
 
 ### `app/modules/Master/Departments`
 
 - full CRUD module with a simpler list page
 - uses `app/components/Common/Form` with `hooks/useFormItem.ts`
-- no advanced filter hook today
+- imports reusable zod validation from `app/schemas/departmentFormSchema.ts`
 - good reference when the entity only needs quick search plus create, edit, detail, and delete
 
-### `app/modules/Feature/RepairRequestForEmployee`
+### `app/modules/Feature/employee/RepairRequests`
 
 - list, create, and detail only
-- create page loads current user and initial repair status before rendering the form
-- create page uses `LineItemsEditor` for repair request items
-- detail page uses `hooks/useLineItem.ts` to load all submitted items from `/api/v1/repair-requests/{id}/items/search`
-- list pages always scope results to the current requester
+- list page always scopes results to the current requester
+- create page loads the current user and the initial repair status before rendering the form
+- form reuses `Common/Form` for request metadata and renders `LineItemsEditor` for requested items
+- detail page loads submitted items through `hooks/useLineItem.ts`
 
-### `app/modules/Feature/RepairRequestForManager`
+### `app/modules/Feature/manager/RepairRequests`
 
 - read-only list and detail module
 - disables create, edit, and delete actions in the table
-- detail page uses `hooks/useLineItem.ts` to load line items from `/api/v1/repair-requests/{id}/items/search`
-- manager detail filters that item search by the current user's `departmentId` and can inject manager-only row actions
+- detail page uses `hooks/useLineItem.ts` to load `/api/v1/repair-requests/{id}/items/search`
+- the line-item search adds `department_id EQUAL currentUser.departmentId`
+
+### `app/modules/Feature/RepairRequests`
+
+- shared repair-request helper folder
+- currently owns reusable detail line-item columns and related helper types
+- use this folder when employee and manager pages need the same helper but should stay independently structured
 
 ## Current Page Flow Patterns
 
-### List pages
+### Auth-Aware Pages
+
+1. The route renders inside `UserProvider`.
+2. Module pages read `currentUser`, `isLoadingUser`, and `userError` from `useUserContext()`.
+3. Route protection and redirects stay in `UserProvider`; page modules only handle feature-specific gating such as requester ownership or manager department checks.
+
+### List Pages
 
 1. A route wrapper renders the module `index.tsx`.
 2. The module reads URL state with `useSearchParams()`.
 3. `useColumns()` returns the table column definitions.
-4. Optional `useFieldFilter()` owns filter metadata plus mapping from UI filters to backend `search[]` conditions, usually consuming constants from `app/constants/fieldFilter.constants.ts`.
+4. Optional `useFieldFilter()` owns filter metadata plus mapping from UI filters to backend `search[]` conditions.
 5. `useTableSearchParams()` centralizes the `page`, `search`, and filter URL updates.
 6. The module defines a local `fetchData()` function that calls the correct service.
 7. The page renders `app/components/Maintain/Table` with the local fetch and delete props.
 
-### Create pages
+### Create Pages
 
 1. `Create/index.tsx` stays thin.
 2. The file keeps API-related work local, such as prerequisite loading and `create<Entity>()` submission.
 3. The page renders `app/components/Maintain/Create`.
 4. The shared component renders `form.tsx` and handles submit state and page-level error display.
-5. When the module uses `app/components/Common/Form`, `form.tsx` should consume `hooks/useFormItem.ts(x)` for static field metadata.
+5. When the module uses `app/components/Common/Form`, `form.tsx` should consume `hooks/useFormItem.ts(x)` for static field metadata and `app/schemas/*.ts` for reusable zod validation.
 
-### Edit pages
+### Edit Pages
 
 1. `Edit/index.tsx` owns the record loader and update mutation.
 2. The page renders `app/components/Maintain/Edit`.
 3. The shared component handles invalid id checks, loading, not-found states, and submit state.
 4. `form.tsx` is reused between create and edit.
-5. `hooks/useFormItem.ts(x)` stays module-local so the page-level form state and zod validation remain in `form.tsx`.
+5. `hooks/useFormItem.ts(x)` stays module-local so the page-level form state and validation logic remain in `form.tsx`.
 
-### Detail pages
+### Detail Pages
 
 1. `Detail/index.tsx` owns the record loader and any delete confirmation flow.
 2. The page renders `app/components/Maintain/Detail`.
 3. The shared component handles invalid id checks, loading, not-found states, and section layout.
 4. Module code still owns `actions`, `buildSections`, and any extra content below the detail sections.
-5. If the detail page needs to load a secondary collection such as repair request items, keep that request in a module-local hook like `hooks/useLineItem.ts` instead of embedding it in shared Maintain components.
+5. If the detail page needs a secondary collection such as repair request items, keep that request in a module-local hook like `hooks/useLineItem.ts` instead of embedding it in shared Maintain components.
 
 ## Important Conventions
 
@@ -301,23 +397,25 @@ Notes:
 - keep route wrappers thin
 - keep API calls in module pages, services, and api files; do not move domain-specific fetching into shared Maintain components
 - prefer the current nested module layout with `Create/index.tsx`, `Edit/index.tsx`, `Detail/index.tsx`, `form.tsx`, and `hooks/`
-- centralize repeated form metadata in `app/constants/formItem.constants.ts` and repeated list filter metadata in `app/constants/fieldFilter.constants.ts`
+- use `app/providers/UserProvider.tsx` for current-user restoration and protected-route behavior instead of duplicating auth bootstrapping in each module
+- centralize repeated form metadata in `app/constants/formItem.constants.ts` and reusable list filter metadata in `app/constants/fieldFilter.constants.ts`
+- keep reusable zod schemas in `app/schemas/` when the validation is shared across create and edit forms
 - use `search` for structured filters and `searchTerm` for free-text search
 - keep backend field mapping near the module, not inside `DataTable`
 - when detail pages load item collections from `/items/search`, keep that request in module-local hooks such as `hooks/useLineItem.ts`
 - show meaningful business values such as code and name instead of internal ids where possible
-- use zod for form validation
 - use shared Common components before creating a new abstraction
 
 ## Where To Look First
 
-- start with `app/modules/Master/Users` for the full current pattern
+- start with `app/modules/Master/Users` for the full current CRUD pattern
 - use `app/modules/Master/Departments` for the simpler CRUD pattern without advanced filters
-- use `app/modules/Feature/RepairRequestForEmployee` for `LineItemsEditor` and preloaded create-page dependencies
-- use `app/modules/Feature/RepairRequestForManager` for read-only list and detail patterns
+- use `app/modules/Feature/employee/RepairRequests` for `LineItemsEditor`, auth-aware feature gating, and preloaded create-page dependencies
+- use `app/modules/Feature/manager/RepairRequests` for read-only list and detail patterns
+- use `app/modules/Feature/RepairRequests/detailLineItemColumns.tsx` for shared repair-request detail column helpers
 - use `app/components/Common/Form` plus `app/constants/formItem.constants.ts` when building config-driven forms
-- use `app/constants/fieldFilter.constants.ts` when wiring list filters
-- use `app/modules/Feature/RepairRequestForEmployee/hooks/useLineItem.ts` and `app/modules/Feature/RepairRequestForManager/hooks/useLineItem.ts` for detail-page line item loading patterns
+- use `app/schemas/` for reusable zod validation
+- use `app/constants/fieldFilter.constants.ts` when wiring repeated list filters or quick-search field names
 - use `docs/crud-guide.md` when creating or refactoring a module
 - use `docs/search-guide.md` when wiring list filters or quick search
 - use `docs/openapi.yaml` when checking backend contracts
