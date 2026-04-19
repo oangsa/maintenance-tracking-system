@@ -107,7 +107,7 @@ export function initAuthService(): void
         return;
     }
 
-    _currentUser = readStoredCurrentUser();
+    _currentUser = getAccessToken() === null ? null : readStoredCurrentUser();
     registerRefreshFn(refreshAccessToken);
     _isInitialized = true;
 }
@@ -201,6 +201,11 @@ export async function logoutAll(): Promise<void>
  */
 export function getCurrentUser(): IUser | null
 {
+    if (getAccessToken() === null)
+    {
+        return null;
+    }
+
     if (_currentUser)
     {
         return _currentUser;

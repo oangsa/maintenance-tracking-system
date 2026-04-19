@@ -10,6 +10,7 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 import { TooltipProvider } from "./components/ui/tooltip";
+import { UserProvider } from "./providers/UserProvider";
 import { initAuthService } from "./services/auth.service";
 
 initAuthService();
@@ -50,7 +51,11 @@ export function Layout({ children }: { children: React.ReactNode })
 
 export default function App()
 {
-    return <Outlet />;
+    return (
+        <UserProvider>
+            <Outlet />
+        </UserProvider>
+    );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps)

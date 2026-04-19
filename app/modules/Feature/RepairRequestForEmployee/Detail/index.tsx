@@ -1,4 +1,4 @@
-import React, { useSyncExternalStore } from "react";
+import React from "react";
 import { useParams } from "react-router";
 import LineItemsEditor from "~/components/Common/LineItemsEditor";
 import type { IRepairRequest } from "~/api/types";
@@ -7,7 +7,7 @@ import Loading from "~/components/Common/Loading";
 import Detail from "~/components/Maintain/Detail";
 import ErrorCard from "~/components/Maintain/ErrorCard";
 import { createRepairRequestDetailLineItemColumns } from "../../RepairRequests/detailLineItemColumns";
-import { ensureCurrentUser, getCurrentUser, subscribeCurrentUser } from "~/services/auth.service";
+import { useUserContext } from "~/providers/UserProvider";
 import { getRepairRequestById } from "~/services/repairRequests.service";
 import { formatDateTime, formatRequesterLabel, formatTitleCase } from "~/lib/formatters";
 import useLineItem from "../hooks/useLineItem";
@@ -59,44 +59,12 @@ function EmployeeRepairRequestItemsSection({ repairRequestId }: IEmployeeRepairR
 export default function RepairRequestDetailPage()
 {
     const params = useParams();
-    const currentUser = useSyncExternalStore(subscribeCurrentUser, getCurrentUser, getCurrentUser);
+    const { currentUser, isLoadingUser, userError } = useUserContext();
 
-    const [pageError, setPageError] = React.useState("");
-
-    React.useEffect(() =>
+    if (isLoadingUser && currentUser === null)
     {
-        let cancelled = false;
-
-        if (currentUser !== null)
-        {
-            return () =>
-            {
-                cancelled = true;
-            };
-        }
-
-        async function loadCurrentUser()
-        {
-            try
-            {
-                await ensureCurrentUser();
-            }
-            catch
-            {
-                if (!cancelled)
-                {
-                    setPageError("Unable to load your user profile.");
-                }
-            }
-        }
-
-        void loadCurrentUser();
-
-        return () =>
-        {
-            cancelled = true;
-        };
-    }, [currentUser]);
+        return <Loading message="Loading your access profile..." />;
+    }
 
     if (currentUser === null)
     {
@@ -104,7 +72,7 @@ export default function RepairRequestDetailPage()
             <ErrorCard
                 backHref="/repair-requests"
                 backLabel="Back to Repair Requests"
-                message={pageError || "Unable to load your user profile."}
+                message={userError || "Unable to load your user profile."}
             />
         );
     }

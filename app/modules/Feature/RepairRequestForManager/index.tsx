@@ -1,19 +1,19 @@
-import React, { useSyncExternalStore } from "react";
+import React from "react";
 import { useSearchParams } from "react-router";
 import type { IFetchParams, IFetchResult } from "~/components/Common/DataTable";
+import Loading from "~/components/Common/Loading";
 import Table from "~/components/Maintain/Table";
 import useTableSearchParams from "~/components/Maintain/Table/useSearchParams";
 import { buildOrderBy } from "~/lib/pageUtils";
+import { useUserContext } from "~/providers/UserProvider";
 import { searchRepairRequests } from "~/services/repairRequests.service";
 import useColumns, { type IRepairRequestTableRow } from "./hooks/useColumns";
 import useFieldFilter from "./hooks/useFieldFilter";
-import { ensureCurrentUser, getCurrentUser, subscribeCurrentUser } from "~/services/auth.service";
 
 export default function RepairRequestManagerListPage()
 {
     const [searchParams, setSearchParams] = useSearchParams();
-    const currentUser = useSyncExternalStore(subscribeCurrentUser, getCurrentUser, getCurrentUser);
-    const [loadingUser, setLoadingUser] = React.useState(currentUser === null);
+    const { currentUser, isLoadingUser, userError } = useUserContext();
     const columns = useColumns();
     const {
         buildFilterParams,
@@ -39,57 +39,29 @@ export default function RepairRequestManagerListPage()
         setSearchParams,
     });
 
-    React.useEffect(() =>
-    {
-        let cancelled = false;
-
-        if (currentUser !== null)
-        {
-            setLoadingUser(false);
-            return () =>
-            {
-                cancelled = true;
-            };
-        }
-
-        async function loadCurrentUser()
-        {
-            try
-            {
-                await ensureCurrentUser();
-            }
-            catch (error)
-            {
-                if (!cancelled)
-                {
-                    setPageError((error as Error).message || "Unable to load your user profile.");
-                }
-            }
-            finally
-            {
-                if (!cancelled)
-                {
-                    setLoadingUser(false);
-                }
-            }
-        }
-
-        void loadCurrentUser();
-
-        return () =>
-        {
-            cancelled = true;
-        };
-    }, [currentUser]);
+    const currentUserDepartmentId = currentUser?.departmentId ?? null;
 
     const fetchData = React.useCallback(async (params: IFetchParams): Promise<IFetchResult<IRepairRequestTableRow>> =>
     {
+        if (currentUserDepartmentId === null)
+        {
+            return {
+                currentPage: params.page,
+                data: [],
+                hasNext: false,
+                hasPrevious: false,
+                pageItemCount: 0,
+                total: 0,
+                totalPages: 0,
+            };
+        }
+
         const response = await searchRepairRequests({
             deleted: false,
             orderBy: buildOrderBy(params.sortBy, params.sortDir, "requested_at desc"),
             pageNumber: params.page,
             pageSize: params.limit,
-            search: buildFilterSearch(params.search, currentUser?.departmentId),
+            search: buildFilterSearch(params.search, currentUserDepartmentId),
             searchTerm: params.searchTerm
                 ? {
                     name: "request_no,requester_name",
@@ -107,7 +79,22 @@ export default function RepairRequestManagerListPage()
             hasNext: response.pagination.hasNext,
             hasPrevious: response.pagination.hasPrevious,
         };
-    }, []);
+    }, [buildFilterSearch, currentUserDepartmentId, searchTerm]);
+
+    if (isLoadingUser && currentUser === null)
+    {
+        return <Loading message="Loading repair requests..." />;
+    }
+
+    if (!currentUser)
+    {
+        return <div className="alert alert-error">{userError || "Unable to load your user profile."}</div>;
+    }
+
+    if (currentUserDepartmentId === null)
+    {
+        return <div className="alert alert-error">Your user account is not assigned to a department, so repair requests cannot be loaded.</div>;
+    }
 
     return (
         <Table<IRepairRequestTableRow>
@@ -115,6 +102,7 @@ export default function RepairRequestManagerListPage()
             columns={columns}
             currentPageValue={currentPage}
             emptyMessage="No repair requests found."
+            error={userError}
             fetchData={fetchData}
             itemKey="id"
             itemName="repair requests"

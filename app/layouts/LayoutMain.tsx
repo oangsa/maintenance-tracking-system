@@ -1,15 +1,10 @@
-import { useEffect, useSyncExternalStore } from "react";
 import { FiTool } from "react-icons/fi";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import AppSidebar, { defaultNavSections, flattenNavItems } from "~/components/Common/Sidebar";
+import Loading from "~/components/Common/Loading";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "~/components/ui/sidebar";
-import {
-    ensureCurrentUser,
-    getCurrentUser,
-    isAuthenticated,
-    logout,
-    subscribeCurrentUser,
-} from "~/services/auth.service";
+import { useUserContext } from "~/providers/UserProvider";
+import { logout } from "~/services/auth.service";
 
 function getPageTitle(pathname: string): string
 {
@@ -30,50 +25,19 @@ export default function LayoutMain()
 {
     const location = useLocation();
     const navigate = useNavigate();
-    const currentUser = useSyncExternalStore(subscribeCurrentUser, getCurrentUser, getCurrentUser);
+    const { currentUser, isLoadingUser } = useUserContext();
     const pageTitle = getPageTitle(location.pathname);
     const userName = currentUser?.name ?? currentUser?.email ?? "User";
     const userRole = currentUser?.role ?? undefined;
 
-    useEffect(() =>
+    if (isLoadingUser && currentUser === null)
     {
-        let cancelled = false;
-
-        if (currentUser !== null || !isAuthenticated())
-        {
-            return () =>
-            {
-                cancelled = true;
-            };
-        }
-
-        async function restoreCurrentUser()
-        {
-            try
-            {
-                const restoredUser = await ensureCurrentUser();
-
-                if (!cancelled && restoredUser === null)
-                {
-                    navigate("/auth/login", { replace: true });
-                }
-            }
-            catch
-            {
-                if (!cancelled)
-                {
-                    navigate("/auth/login", { replace: true });
-                }
-            }
-        }
-
-        void restoreCurrentUser();
-
-        return () =>
-        {
-            cancelled = true;
-        };
-    }, [currentUser, navigate]);
+        return (
+            <div className="flex min-h-svh items-center justify-center bg-background px-4">
+                <Loading message="Loading your workspace..." size="large" />
+            </div>
+        );
+    }
 
     async function handleLogout()
     {

@@ -7,9 +7,12 @@ import type { IRepairStatus } from "~/api/types";
 import { useUserContext } from "~/providers/UserProvider";
 import { createRepairRequest } from "~/services/repairRequests.service";
 import { searchRepairStatuses } from "~/services/repairStatuses.service";
-import RepairRequestForm from "../form";
-import { buildCreatePayload, createEmptyRepairRequestFormValues } from "../hooks/helpers";
-import type { IRepairRequestFormValues } from "../hooks/helpers";
+import RepairRequestForm from "./form";
+import {
+    buildCreatePayload,
+    createEmptyRepairRequestFormValues,
+} from "./hooks/helpers";
+import type { IRepairRequestFormValues } from "./hooks/helpers";
 
 function resolveInitialStatus(statuses: IRepairStatus[]): IRepairStatus | null
 {
@@ -118,31 +121,21 @@ export default function CreateRepairRequestPage()
         );
     }
 
-    const resolvedCurrentUser = currentUser;
-    const resolvedStatusId = statusId;
-
-    async function handleSubmit(values: IRepairRequestFormValues)
-    {
-        const createdRepairRequest = await createRepairRequest(buildCreatePayload(values, resolvedStatusId, resolvedCurrentUser));
-
-        navigate(`/repair-requests/${createdRepairRequest.id}`, { replace: true });
-    }
-
-    async function handleCancel()
-    {
-        navigate("/repair-requests");
-    }
-
     return (
         <Create
             backHref="/repair-requests"
             backLabel="Back to Repair Requests"
             description="Submit a repair request for your department and attach the required line items."
             Form={RepairRequestForm}
-            formProps={{ currentUser: resolvedCurrentUser }}
+            formProps={{ currentUser }}
             initialValues={createEmptyRepairRequestFormValues()}
-            onCancel={handleCancel}
-            onSubmit={handleSubmit}
+            onCancel={() => navigate("/repair-requests")}
+            onSubmit={async (values: IRepairRequestFormValues) =>
+            {
+                const createdRepairRequest = await createRepairRequest(buildCreatePayload(values, statusId, currentUser));
+
+                navigate(`/repair-requests/${createdRepairRequest.id}`, { replace: true });
+            }}
             submitErrorMessage="Unable to create the repair request."
             title="Create Repair Request"
         />
