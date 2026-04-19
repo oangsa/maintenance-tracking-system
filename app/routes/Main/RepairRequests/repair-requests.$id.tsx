@@ -1,4 +1,4 @@
-import RepairRequestDetailPage from "~/modules/Feature/RepairRequestForEmployee/Detail";
+import RepairRequestDetailPage from "~/modules/Feature/employee/RepairRequests/Detail";
 
 export function meta()
 {

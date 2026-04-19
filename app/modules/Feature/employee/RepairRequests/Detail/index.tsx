@@ -1,4 +1,3 @@
-import React from "react";
 import { useParams } from "react-router";
 import LineItemsEditor from "~/components/Common/LineItemsEditor";
 import type { IRepairRequest } from "~/api/types";
@@ -6,7 +5,7 @@ import type { IDetailSection } from "~/components/Common/DetailSections";
 import Loading from "~/components/Common/Loading";
 import Detail from "~/components/Maintain/Detail";
 import ErrorCard from "~/components/Maintain/ErrorCard";
-import { createRepairRequestDetailLineItemColumns } from "../../RepairRequests/detailLineItemColumns";
+import { createRepairRequestDetailLineItemColumns } from "../../../RepairRequests/detailLineItemColumns";
 import { useUserContext } from "~/providers/UserProvider";
 import { getRepairRequestById } from "~/services/repairRequests.service";
 import { formatDateTime, formatRequesterLabel, formatTitleCase } from "~/lib/formatters";

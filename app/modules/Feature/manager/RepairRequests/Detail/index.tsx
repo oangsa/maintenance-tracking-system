@@ -9,7 +9,7 @@ import ErrorCard from "~/components/Maintain/ErrorCard";
 import { useUserContext } from "~/providers/UserProvider";
 import { Button } from "~/components/ui/button";
 import { getRepairRequestById } from "~/services/repairRequests.service";
-import { createRepairRequestDetailLineItemColumns } from "../../RepairRequests/detailLineItemColumns";
+import { createRepairRequestDetailLineItemColumns } from "../../../RepairRequests/detailLineItemColumns";
 import { formatDateTime, formatRequesterLabel, formatTitleCase } from "~/lib/formatters";
 import useLineItem from "../hooks/useLineItem";
 

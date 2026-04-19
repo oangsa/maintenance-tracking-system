@@ -1,4 +1,4 @@
-import RepairRequestManagerListPage from "~/modules/Feature/RepairRequestForManager";
+import RepairRequestManagerListPage from "~/modules/Feature/manager/RepairRequests";
 
 export function meta()
 {
