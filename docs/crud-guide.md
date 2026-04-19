@@ -2,14 +2,22 @@
 
 This guide explains how to add or refactor a module so it matches the current project standard.
 
-The main reference is `app/modules/Master/Users`. That module reflects the current architecture:
+The main references are `app/modules/Master/Users` for the full CRUD pattern and `app/modules/Master/Departments` for a simpler variant.
 
-- nested page-entry folders such as `Create/index.tsx`
-- a shared `form.tsx`
-- module-local `hooks/`
-- config-driven forms through `app/components/Common/Form` plus module-local `hooks/useFormItem.tsx`
-- shared CRUD shells from `app/components/Maintain`
-- API logic kept in module entry pages and passed into shared components through props
+## Current Standard
+
+Current modules should follow these rules:
+
+- use nested page-entry folders such as `Create/index.tsx`, `Edit/index.tsx`, and `Detail/index.tsx`
+- keep a shared `form.tsx` for create and edit when both flows exist
+- keep module-local hooks for columns, filters, form metadata, and detail-side item loading
+- use `app/components/Maintain/Create`, `Edit`, `Detail`, and `Table` as the shared page shells
+- use `app/components/Common/Form` plus `hooks/useFormItem.ts(x)` when the fields fit the shared renderer
+- keep reusable zod schemas in `app/schemas/`
+- use `app/providers/UserProvider.tsx` for current-user access instead of duplicating auth restoration logic in each page
+- keep API logic inside module entry pages and pass it into shared components through props
+
+Important: some older feature folders still contain flat files such as `Create.tsx` or `Detail.tsx`. Those are legacy leftovers. Do not copy that structure for new work.
 
 ## Recommended Order
 
@@ -20,10 +28,10 @@ The main reference is `app/modules/Master/Users`. That module reflects the curre
 5. Add route wrapper files.
 6. Register routes in `app/routes.ts`.
 7. Build the list page.
-8. Build the shared form.
-9. Build the create, edit, and detail entry pages.
-10. Add lookup or line-item interactions if needed.
-11. Validate with typecheck.
+8. Build the shared form and validation schema.
+9. Build the create and edit entry pages.
+10. Build the detail page and any secondary item loading.
+11. Validate with typecheck and manual checks.
 
 ## Step 1: Define The Entity Contract
 
@@ -155,6 +163,8 @@ Variations:
 - add `hooks/useLineItem.ts` for read-only or detail modules that load item collections separately from the main detail record
 - keep shared cross-feature helpers outside the module when more than one feature reuses them
 
+If multiple related modules need the same helper, place it in a shared helper-only folder. The current repair-request example is `app/modules/Feature/RepairRequests/detailLineItemColumns.tsx`.
+
 ## Step 5: Add Route Wrapper Files
 
 Create thin route wrappers under `app/routes/`.
@@ -210,7 +220,7 @@ Responsibilities:
 - read URL state with `useSearchParams()`
 - define columns in `hooks/useColumns.tsx`
 - optionally define filters in `hooks/useFieldFilter.ts`
-- keep repeated filter labels, param keys, search fields, and search terms in `app/constants/fieldFilter.constants.ts`
+- keep repeated filter labels, param keys, and shared search field names in `app/constants/fieldFilter.constants.ts` when more than one module reuses them
 - use `SEARCH_OPERATOR` constants instead of repeating raw operator strings such as `"EQUAL"`
 - use `app/components/Maintain/Table`
 - use `app/components/Maintain/Table/useSearchParams`
@@ -266,7 +276,10 @@ export default function AssetsListPage()
             pageSize: params.limit,
             search: buildFilterSearch(params.search),
             searchTerm: params.searchTerm
-                ? { name: searchTerm, value: params.searchTerm }
+                ? {
+                    name: searchTerm,
+                    value: params.searchTerm,
+                }
                 : undefined,
         });
 
@@ -307,7 +320,7 @@ export default function AssetsListPage()
 }
 ```
 
-## Step 8: Build The Shared Form
+## Step 8: Build The Shared Form And Validation Schema
 
 The shared form lives in `form.tsx` and should be reusable for create and edit.
 
@@ -321,10 +334,11 @@ Typical responsibilities:
 
 Recommended structure:
 
+- keep reusable zod schemas in `app/schemas/<entity>FormSchema.ts`
 - keep typed form metadata in `hooks/useFormItem.ts(x)`
 - keep repeated form labels, placeholders, field types, spans, and layout values in `app/constants/formItem.constants.ts`
 - keep shared field rendering and styles in `app/components/Common/Form`
-- keep submit state, zod validation, lookup fetches, and line-item orchestration inside `form.tsx`
+- keep submit state, validation mapping, lookup fetches, and line-item orchestration inside `form.tsx`
 
 Typical props shape:
 
@@ -425,7 +439,7 @@ export default function EditAssetPage()
 }
 ```
 
-## Step 10: Build The Detail Page
+## Step 10: Build The Detail Page And Any Secondary Item Loading
 
 The detail page should use `app/components/Maintain/Detail`.
 
@@ -436,9 +450,10 @@ Responsibilities that stay in the module file:
 - `actions` rendering
 - `buildSections` mapping
 - extra content such as `LineItemsEditor` below the detail sections
-- when extra content needs its own search endpoint, keep the async state in `hooks/useLineItem.ts`
 
-## Step 11: Add Lookup Or Line-Item Interactions When Needed
+If the detail page needs a secondary collection such as line items, keep the async state in `hooks/useLineItem.ts` instead of embedding it directly in the page component or shared Maintain layer.
+
+## Step 11: Handle Lookup, Line-Item, And Auth-Aware Cases
 
 Use the existing shared components instead of building custom solutions first.
 
@@ -451,20 +466,15 @@ Lookup guidance:
 Line-item guidance:
 
 - use `LineItemsEditor` for editable row collections
-- provide the line-item columns from the feature module
+- provide the line-item columns from the feature module or a shared helper folder
 - use the read-only mode for detail pages when the collection should not be edited
-- if a detail page loads line items from `/api/v1/repair-requests/{id}/items/search`, keep that request and its loading state in `hooks/useLineItem.ts`
-- employee repair-request detail loads all submitted items through `hooks/useLineItem.ts`
-- manager repair-request detail uses the same hook pattern but adds a department-scoped `search[]` filter
+- if the detail page loads line items from `/api/v1/repair-requests/{id}/items/search`, keep that request and its loading state in `hooks/useLineItem.ts`
 
-Reference modules:
+Auth-aware guidance:
 
-- `app/modules/Master/Users/form.tsx` for relation lookup
-- `app/modules/Master/Users/hooks/useFormItem.tsx` for config-driven CommonForm metadata
-- `app/modules/Feature/RepairRequestForEmployee/form.tsx` for editable `LineItemsEditor`
-- `app/modules/Feature/RepairRequestForEmployee/hooks/useLineItem.ts` for detail-page item loading without extra filters
-- `app/modules/Feature/RepairRequestForManager/hooks/useLineItem.ts` for detail-page item loading with manager department filtering
-- `app/modules/Feature/RepairRequestForManager/Detail/index.tsx` for read-only line-item display with injected actions
+- consume `useUserContext()` when a page needs the current user, department, or route-gating state
+- keep current-user restoration in `UserProvider`; do not duplicate `ensureCurrentUser()` effects in each module
+- keep feature-specific checks in the page, for example requester ownership or manager department restrictions
 
 ## Step 12: Validate
 
@@ -499,13 +509,18 @@ Use these files as the baseline:
 - `app/modules/Master/Users/hooks/useColumns.tsx`
 - `app/modules/Master/Users/hooks/useFieldFilter.ts`
 - `app/modules/Master/Departments/index.tsx`
+- `app/modules/Master/Departments/form.tsx`
 - `app/components/Common/Form/index.tsx`
 - `app/constants/formItem.constants.ts`
 - `app/constants/fieldFilter.constants.ts`
-- `app/modules/Feature/RepairRequestForEmployee/form.tsx`
-- `app/modules/Feature/RepairRequestForEmployee/hooks/useLineItem.ts`
-- `app/modules/Feature/RepairRequestForManager/Detail/index.tsx`
-- `app/modules/Feature/RepairRequestForManager/hooks/useLineItem.ts`
+- `app/schemas/userFormSchema.ts`
+- `app/schemas/departmentFormSchema.ts`
+- `app/modules/Feature/employee/RepairRequests/form.tsx`
+- `app/modules/Feature/employee/RepairRequests/hooks/useLineItem.ts`
+- `app/modules/Feature/manager/RepairRequests/Detail/index.tsx`
+- `app/modules/Feature/manager/RepairRequests/hooks/useLineItem.ts`
+- `app/modules/Feature/RepairRequests/detailLineItemColumns.tsx`
+- `app/providers/UserProvider.tsx`
 - `app/api/users.api.ts`
 - `app/services/users.service.ts`
 
@@ -514,8 +529,9 @@ Use these files as the baseline:
 - do not call raw `fetch()` from modules when `app/api/` already exists
 - do not reintroduce the older flat `Create.tsx`, `Edit.tsx`, `Detail.tsx`, or `Manage.tsx` structure for new work
 - do not move API loaders or mutations into shared Maintain components
+- do not duplicate auth restoration logic in multiple feature pages when `UserProvider` already owns that behavior
 - do not duplicate search parameter parsing in multiple pages when `useTableSearchParams()` already covers it
-- do not duplicate filter labels, search field names, or param keys inline when `app/constants/fieldFilter.constants.ts` already owns them
+- do not duplicate filter labels, search field names, or param keys inline when the same values already live in shared constants
 - do not move backend field-name mapping into `DataTable`
 - do not keep detail-page item search logic inline when the module already uses the `hooks/useLineItem.ts` pattern
 - do not show plain ids when code and name are available
