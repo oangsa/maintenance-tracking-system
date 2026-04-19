@@ -18,6 +18,7 @@ export default function RepairRequestEmployeeListPage()
     const [loadingUser, setLoadingUser] = React.useState(currentUser === null);
     const [pageError, setPageError] = React.useState("");
     const columns = useColumns();
+
     const {
         buildFilterParams,
         buildFilterSearch,
@@ -27,6 +28,7 @@ export default function RepairRequestEmployeeListPage()
         normalizeFilters,
         searchTerm,
     } = useFieldFilter({ searchParams });
+
     const {
         currentPage,
         currentSearch,

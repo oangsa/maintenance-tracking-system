@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useSyncExternalStore } from "react";
 import { useSearchParams } from "react-router";
 import type { IFetchParams, IFetchResult } from "~/components/Common/DataTable";
 import Table from "~/components/Maintain/Table";
@@ -7,10 +7,13 @@ import { buildOrderBy } from "~/lib/pageUtils";
 import { searchRepairRequests } from "~/services/repairRequests.service";
 import useColumns, { type IRepairRequestTableRow } from "./hooks/useColumns";
 import useFieldFilter from "./hooks/useFieldFilter";
+import { ensureCurrentUser, getCurrentUser, subscribeCurrentUser } from "~/services/auth.service";
 
 export default function RepairRequestManagerListPage()
 {
     const [searchParams, setSearchParams] = useSearchParams();
+    const currentUser = useSyncExternalStore(subscribeCurrentUser, getCurrentUser, getCurrentUser);
+    const [loadingUser, setLoadingUser] = React.useState(currentUser === null);
     const columns = useColumns();
     const {
         buildFilterParams,
@@ -21,6 +24,7 @@ export default function RepairRequestManagerListPage()
         normalizeFilters,
         searchTerm,
     } = useFieldFilter({ searchParams });
+
     const {
         currentPage,
         currentSearch,
@@ -35,6 +39,49 @@ export default function RepairRequestManagerListPage()
         setSearchParams,
     });
 
+    React.useEffect(() =>
+    {
+        let cancelled = false;
+
+        if (currentUser !== null)
+        {
+            setLoadingUser(false);
+            return () =>
+            {
+                cancelled = true;
+            };
+        }
+
+        async function loadCurrentUser()
+        {
+            try
+            {
+                await ensureCurrentUser();
+            }
+            catch (error)
+            {
+                if (!cancelled)
+                {
+                    setPageError((error as Error).message || "Unable to load your user profile.");
+                }
+            }
+            finally
+            {
+                if (!cancelled)
+                {
+                    setLoadingUser(false);
+                }
+            }
+        }
+
+        void loadCurrentUser();
+
+        return () =>
+        {
+            cancelled = true;
+        };
+    }, [currentUser]);
+
     const fetchData = React.useCallback(async (params: IFetchParams): Promise<IFetchResult<IRepairRequestTableRow>> =>
     {
         const response = await searchRepairRequests({
@@ -42,7 +89,7 @@ export default function RepairRequestManagerListPage()
             orderBy: buildOrderBy(params.sortBy, params.sortDir, "requested_at desc"),
             pageNumber: params.page,
             pageSize: params.limit,
-            search: buildFilterSearch(params.search),
+            search: buildFilterSearch(params.search, currentUser?.departmentId),
             searchTerm: params.searchTerm
                 ? {
                     name: "request_no,requester_name",

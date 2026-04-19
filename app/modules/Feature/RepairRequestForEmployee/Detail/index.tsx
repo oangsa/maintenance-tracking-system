@@ -3,31 +3,49 @@ import { useParams } from "react-router";
 import LineItemsEditor from "~/components/Common/LineItemsEditor";
 import type { IRepairRequest } from "~/api/types";
 import type { IDetailSection } from "~/components/Common/DetailSections";
+import Loading from "~/components/Common/Loading";
 import Detail from "~/components/Maintain/Detail";
 import ErrorCard from "~/components/Maintain/ErrorCard";
-import { createRepairRequestDetailLineItemColumns, type IRepairRequestDetailLineItem } from "../../RepairRequests/detailLineItemColumns";
+import { createRepairRequestDetailLineItemColumns } from "../../RepairRequests/detailLineItemColumns";
 import { ensureCurrentUser, getCurrentUser, subscribeCurrentUser } from "~/services/auth.service";
 import { getRepairRequestById } from "~/services/repairRequests.service";
 import { formatDateTime, formatRequesterLabel, formatTitleCase } from "~/lib/formatters";
-import { formatProductLabel, formatRepairStatusLabel } from "~/lib/repairRequestUtils";
+import useLineItem from "../hooks/useLineItem";
 
-
-function DetailContent(repairRequest: IRepairRequest)
+interface IEmployeeRepairRequestItemsSectionProps
 {
-    const lineItems: IRepairRequestDetailLineItem[] = repairRequest.repairRequestItems.map((item) => ({
-        description: item.description,
-        id: item.id,
-        productLabel: formatProductLabel(item),
-        quantity: item.quantity,
-        repairStatus: formatRepairStatusLabel(item),
-    }));
+    repairRequestId: number;
+}
+
+function EmployeeRepairRequestItemsSection({ repairRequestId }: IEmployeeRepairRequestItemsSectionProps)
+{
+    const {
+        emptyMessage,
+        itemsError,
+        lineItems,
+        loadingItems,
+    } = useLineItem({ repairRequestId });
 
     const lineItemColumns = createRepairRequestDetailLineItemColumns();
+
+    if (loadingItems)
+    {
+        return <Loading message="Loading repair request items..." />;
+    }
+
+    if (itemsError)
+    {
+        return (
+            <div className="card">
+                <div className="alert alert-error">{itemsError}</div>
+            </div>
+        );
+    }
 
     return (
         <LineItemsEditor
             columns={lineItemColumns}
-            emptyMessage="No repair request items were submitted for this request."
+            emptyMessage={emptyMessage}
             itemLabel="line item"
             onChange={() => undefined}
             readOnly
@@ -92,6 +110,11 @@ export default function RepairRequestDetailPage()
     }
 
     const resolvedCurrentUser = currentUser;
+
+    function DetailContent(repairRequest: IRepairRequest)
+    {
+        return <EmployeeRepairRequestItemsSection repairRequestId={repairRequest.id} />;
+    }
 
     function sectionBuilder(repairRequest: IRepairRequest): IDetailSection[]
     {

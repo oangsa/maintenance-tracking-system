@@ -33,9 +33,15 @@ function buildFilterParams(filters: IRepairRequestFilterValues): Record<string, 
     };
 }
 
-function buildFilterSearch(filters: Record<string, string> | undefined): ISearchCondition[]
+function buildFilterSearch(filters: Record<string, string> | undefined, departmentId: number): ISearchCondition[]
 {
-    const searchFilters: ISearchCondition[] = [];
+    const searchFilters: ISearchCondition[] = [
+        {
+            condition: SEARCH_OPERATOR.EQUAL,
+            name: "repair_request_items_department_id",
+            value: String(departmentId),
+        }
+    ];
 
     if (filters?.priority?.trim())
     {

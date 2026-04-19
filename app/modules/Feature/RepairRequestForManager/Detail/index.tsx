@@ -3,12 +3,19 @@ import { FiFileText } from "react-icons/fi";
 import { useParams } from "react-router";
 import LineItemsEditor from "~/components/Common/LineItemsEditor";
 import type { IDetailSection } from "~/components/Common/DetailSections";
+import Loading from "~/components/Common/Loading";
 import Detail from "~/components/Maintain/Detail";
+import ErrorCard from "~/components/Maintain/ErrorCard";
 import { Button } from "~/components/ui/button";
+import {
+    ensureCurrentUser,
+    getCurrentUser,
+    subscribeCurrentUser,
+} from "~/services/auth.service";
 import { getRepairRequestById } from "~/services/repairRequests.service";
-import { createRepairRequestDetailLineItemColumns, type IRepairRequestDetailLineItem } from "../../RepairRequests/detailLineItemColumns";
+import { createRepairRequestDetailLineItemColumns } from "../../RepairRequests/detailLineItemColumns";
 import { formatDateTime, formatRequesterLabel, formatTitleCase } from "~/lib/formatters";
-import { formatProductLabel, formatRepairStatusLabel } from "~/lib/repairRequestUtils";
+import useLineItem from "../hooks/useLineItem";
 
 function handleAssignWorkOrder(repairRequestItemId: number)
 {
@@ -17,28 +24,53 @@ function handleAssignWorkOrder(repairRequestItemId: number)
     // TODO: Assign a work order for the selected repair request item when the manager work-order flow is available.
 }
 
-function DetailContent(repairRequest: Awaited<ReturnType<typeof getRepairRequestById>>)
+interface IManagerRepairRequestItemsSectionProps
 {
-    const lineItems: IRepairRequestDetailLineItem[] = repairRequest.repairRequestItems.map((item) => ({
-        description: item.description,
-        id: item.id,
-        productLabel: formatProductLabel(item),
-        quantity: item.quantity,
-        repairStatus: formatRepairStatusLabel(item),
-    }));
+    currentUserDepartmentId: number | null;
+    repairRequestId: number;
+}
 
-    const lineItemColumns = createRepairRequestDetailLineItemColumns({
+function ManagerRepairRequestItemsSection({
+    currentUserDepartmentId,
+    repairRequestId,
+}: IManagerRepairRequestItemsSectionProps)
+{
+    const {
+        emptyMessage,
+        itemsError,
+        lineItems,
+        loadingItems,
+    } = useLineItem({
+        currentUserDepartmentId,
+        repairRequestId,
+    });
+
+    const lineItemColumns = React.useMemo(() => createRepairRequestDetailLineItemColumns({
         renderAction: (item) => (
             <Button onClick={() => handleAssignWorkOrder(Number(item.id))} type="button" variant="outline">
                 Assign Work Order
             </Button>
         ),
-    });
+    }), []);
+
+    if (loadingItems)
+    {
+        return <Loading message="Loading repair request items..." />;
+    }
+
+    if (itemsError)
+    {
+        return (
+            <div className="card">
+                <div className="alert alert-error">{itemsError}</div>
+            </div>
+        );
+    }
 
     return (
         <LineItemsEditor
             columns={lineItemColumns}
-            emptyMessage="No repair request items were submitted for this request."
+            emptyMessage={emptyMessage}
             itemLabel="line item"
             onChange={() => undefined}
             readOnly
@@ -49,14 +81,88 @@ function DetailContent(repairRequest: Awaited<ReturnType<typeof getRepairRequest
     );
 }
 
-
 export default function RepairRequestManagerDetailPage()
 {
     const params = useParams();
+    const currentUser = React.useSyncExternalStore(subscribeCurrentUser, getCurrentUser, getCurrentUser);
+    const [loadingUser, setLoadingUser] = React.useState(currentUser === null);
+    const [userError, setUserError] = React.useState("");
+
+    React.useEffect(() =>
+    {
+        let cancelled = false;
+
+        if (currentUser !== null)
+        {
+            setLoadingUser(false);
+
+            return () =>
+            {
+                cancelled = true;
+            };
+        }
+
+        async function loadCurrentUser()
+        {
+            try
+            {
+                await ensureCurrentUser();
+            }
+            catch (error)
+            {
+                if (!cancelled)
+                {
+                    setUserError((error as Error).message || "Unable to load your user profile.");
+                }
+            }
+            finally
+            {
+                if (!cancelled)
+                {
+                    setLoadingUser(false);
+                }
+            }
+        }
+
+        void loadCurrentUser();
+
+        return () =>
+        {
+            cancelled = true;
+        };
+    }, [currentUser]);
 
     function handleViewWorkOrder()
     {
         // TODO: Open the related work order flow when the manager work-order module is available.
+    }
+
+    if (loadingUser)
+    {
+        return <Loading message="Loading your access profile..." />;
+    }
+
+    if (!currentUser)
+    {
+        return (
+            <ErrorCard
+                backHref="/manager/repair-requests"
+                backLabel="Back to Repair Requests"
+                message={userError || "Unable to load your user profile."}
+            />
+        );
+    }
+
+    const currentUserDepartmentId = currentUser.departmentId;
+
+    function DetailContent(repairRequest: Awaited<ReturnType<typeof getRepairRequestById>>)
+    {
+        return (
+            <ManagerRepairRequestItemsSection
+                currentUserDepartmentId={currentUserDepartmentId}
+                repairRequestId={repairRequest.id}
+            />
+        );
     }
 
     function sectionBuilder(repairRequest: Awaited<ReturnType<typeof getRepairRequestById>>): IDetailSection[]
