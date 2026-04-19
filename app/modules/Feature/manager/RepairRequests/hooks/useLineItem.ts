@@ -2,7 +2,7 @@ import React from "react";
 import { SEARCH_OPERATOR } from "~/constants";
 import { searchRepairRequestItems } from "~/services/repairRequests.service";
 import { formatProductLabel, formatRepairStatusLabel } from "~/lib/repairRequestUtils";
-import type { IRepairRequestDetailLineItem } from "../../RepairRequests/detailLineItemColumns";
+import type { IRepairRequestDetailLineItem } from "../../../RepairRequests/detailLineItemColumns";
 
 const MANAGER_ITEM_SEARCH_FIELD = "department_id";
 const REPAIR_REQUEST_ITEMS_PAGE_SIZE = 100;
