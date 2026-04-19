@@ -1,9 +1,17 @@
 import React from "react";
 import type { ISearchCondition } from "~/api/types";
 import type { IDataTableFilterField, IDataTableFilterOption } from "~/components/Common/DataTable";
+import {
+    DATA_TABLE_FILTER_TYPE,
+    ROLE_OPTIONS,
+    SEARCH_OPERATOR,
+    USER_FIELD_FILTER,
+} from "~/constants";
 import { searchDepartments } from "~/services/departments.service";
-import { formatDepartmentLabel, formatRoleLabel} from "./helpers";
-import { ROLE_OPTIONS as roleOptions } from "~/constants/role.constant";
+import {
+    formatDepartmentLabel,
+    formatRoleLabel,
+} from "./helpers";
 
 interface IUserFilterValues
 {
@@ -16,26 +24,19 @@ interface IUseFieldFilterProps
     searchParams: URLSearchParams;
 }
 
-const USER_FILTER_PARAM_KEYS = {
-    department: "filterDepartment",
-    role: "filterRole",
-} as const;
-
-const USER_SEARCH_TERM = "name,email";
-
 function getUserFilterValues(searchParams: URLSearchParams): IUserFilterValues
 {
     return {
-        department: searchParams.get(USER_FILTER_PARAM_KEYS.department) ?? "",
-        role: searchParams.get(USER_FILTER_PARAM_KEYS.role) ?? "",
+        department: searchParams.get(USER_FIELD_FILTER.PARAM_KEY.DEPARTMENT) ?? "",
+        role: searchParams.get(USER_FIELD_FILTER.PARAM_KEY.ROLE) ?? "",
     };
 }
 
 function buildFilterParams(filters: IUserFilterValues): Record<string, string | undefined>
 {
     return {
-        [USER_FILTER_PARAM_KEYS.department]: filters.department,
-        [USER_FILTER_PARAM_KEYS.role]: filters.role,
+        [USER_FIELD_FILTER.PARAM_KEY.DEPARTMENT]: filters.department,
+        [USER_FIELD_FILTER.PARAM_KEY.ROLE]: filters.role,
     };
 }
 
@@ -45,12 +46,20 @@ function buildFilterSearch(filters?: Record<string, string>): ISearchCondition[]
 
     if (filters?.role?.trim())
     {
-        searchFilters.push({ name: "role", condition: "EQUAL", value: filters.role.trim() });
+        searchFilters.push({
+            condition: SEARCH_OPERATOR.EQUAL,
+            name: USER_FIELD_FILTER.SEARCH_FIELD.ROLE,
+            value: filters.role.trim(),
+        });
     }
 
     if (filters?.department?.trim())
     {
-        searchFilters.push({ name: "department_id", condition: "EQUAL", value: filters.department.trim() });
+        searchFilters.push({
+            condition: SEARCH_OPERATOR.EQUAL,
+            name: USER_FIELD_FILTER.SEARCH_FIELD.DEPARTMENT_ID,
+            value: filters.department.trim(),
+        });
     }
 
     return searchFilters.length > 0 ? searchFilters : undefined;
@@ -78,9 +87,9 @@ export default function useFieldFilter({ searchParams }: IUseFieldFilterProps)
             {
                 const response = await searchDepartments({
                     deleted: false,
-                    orderBy: "name asc",
-                    pageNumber: 1,
-                    pageSize: 100,
+                    orderBy: USER_FIELD_FILTER.DEPARTMENT_OPTION_QUERY.ORDER_BY,
+                    pageNumber: USER_FIELD_FILTER.DEPARTMENT_OPTION_QUERY.PAGE_NUMBER,
+                    pageSize: USER_FIELD_FILTER.DEPARTMENT_OPTION_QUERY.PAGE_SIZE,
                 });
 
                 if (cancelled)
@@ -112,19 +121,19 @@ export default function useFieldFilter({ searchParams }: IUseFieldFilterProps)
 
     const fieldFilters = React.useMemo<IDataTableFilterField[]>(() => [
         {
-            key: "role",
-            label: "Role",
-            options: roleOptions.map((role: string) => ({
+            key: USER_FIELD_FILTER.FIELD_KEY.ROLE,
+            label: USER_FIELD_FILTER.LABEL.ROLE,
+            options: ROLE_OPTIONS.map((role) => ({
                 label: formatRoleLabel(role),
                 value: role,
             })),
-            type: "select",
+            type: DATA_TABLE_FILTER_TYPE.SELECT,
         },
         {
-            key: "department",
-            label: "Department",
+            key: USER_FIELD_FILTER.FIELD_KEY.DEPARTMENT,
+            label: USER_FIELD_FILTER.LABEL.DEPARTMENT,
             options: departmentOptions,
-            type: "select",
+            type: DATA_TABLE_FILTER_TYPE.SELECT,
         },
     ], [departmentOptions]);
 
@@ -138,7 +147,7 @@ export default function useFieldFilter({ searchParams }: IUseFieldFilterProps)
         currentFiltersRecord,
         fieldFilters,
         normalizeFilters,
-        searchTerm: USER_SEARCH_TERM,
+        searchTerm: USER_FIELD_FILTER.SEARCH_TERM,
     };
 }
 
