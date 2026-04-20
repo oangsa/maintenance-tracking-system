@@ -10,7 +10,7 @@ import type {
     IRepairRequestStatusLog,
     ISearchRequest,
     IWorkOrder,
-} from "./types";
+} from "./types/types";
 
 const PREFIX = "/api/v1/repair-requests";
 

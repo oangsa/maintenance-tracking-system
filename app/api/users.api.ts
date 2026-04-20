@@ -10,7 +10,7 @@ import type {
     IUser,
     IUserForCreate,
     IUserForUpdate,
-} from "./types";
+} from "./types/types";
 
 const PREFIX = "/api/v1/users";
 

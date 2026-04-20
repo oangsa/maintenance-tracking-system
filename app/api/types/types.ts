@@ -41,8 +41,13 @@ export type {
     IRepairRequestItem,
     IRepairRequestItemForCreate,
     IRepairRequestStatusLog,
-    IWorkOrder,
 } from "../types/repairRequest.types";
+
+export type {
+    IRepairRequestItemStatus,
+    IRepairRequestItemStatusForCreate,
+    IRepairRequestItemStatusForUpdate,
+} from "../types/repairRequestItemStatus.types";
 
 export type {
     IDeleteCollectionRequest,
@@ -50,5 +55,9 @@ export type {
     IUserForCreate,
     IUserForUpdate,
 } from "../types/user.types";
+
+export type {
+    IWorkOrder,
+} from "../types/workOrder.types";
 
 export type { IApiErrorBody } from "../types/core/error.types";

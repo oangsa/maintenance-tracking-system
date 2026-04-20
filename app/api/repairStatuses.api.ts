@@ -1,9 +1,5 @@
 import { http, httpPaginated } from "./http";
-import type {
-    IPagedResult,
-    IRepairStatus,
-    ISearchRequest,
-} from "./types";
+import type { IPagedResult, IRepairStatus, ISearchRequest } from "./types/types";
 
 const PREFIX = "/api/v1/repair-status";
 

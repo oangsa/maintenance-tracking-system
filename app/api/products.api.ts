@@ -3,7 +3,7 @@ import type {
     IPagedResult,
     IProduct,
     ISearchRequest,
-} from "./types";
+} from "./types/types";
 
 const PREFIX = "/api/v1/product";
 

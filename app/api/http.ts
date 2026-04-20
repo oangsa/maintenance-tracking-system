@@ -1,4 +1,4 @@
-import type { IPaginationMeta, IPagedResult } from "./types";
+import type { IPaginationMeta, IPagedResult } from "./types/types";
 
 const CONFIGURED_BASE_URL: string = (import.meta.env.VITE_BASE_API_URL ?? "").replace(/\/$/, "");
 

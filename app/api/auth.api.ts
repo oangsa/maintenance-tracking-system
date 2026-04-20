@@ -3,7 +3,7 @@
 // Token management is NOT handled here — that belongs in auth.service.ts.
 
 import { http } from "./http";
-import type { ILoginRequest, ILoginResponse, IMessageResponse, IRefreshResponse } from "./types";
+import type { ILoginRequest, ILoginResponse, IMessageResponse, IRefreshResponse } from "./types/types";
 
 const PREFIX = "/api/v1/authentication";
 

@@ -6,7 +6,7 @@ import type {
     IDepartmentForUpdate,
     IPagedResult,
     ISearchRequest,
-} from "./types";
+} from "./types/types";
 
 const PREFIX = "/api/v1/department";
 
