@@ -85,7 +85,7 @@ const REPAIR_REQUEST_ITEM_STATUS_FORM_ITEM = {
     CODE_PLACEHOLDER: "Enter status code",
     NAME_LABEL: "Name",
     NAME_PLACEHOLDER: "Enter status name",
-    IS_FINAL_LABEL: "Is Final Status",
+    IS_FINAL_LABEL: "Final Processing Status",
     ORDER_SEQUENCE_LABEL: "Order Sequence",
     SECTION_KEY: "repair-request-item-status-fields",
 }

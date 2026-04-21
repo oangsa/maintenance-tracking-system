@@ -1,6 +1,6 @@
 import React from "react";
 import { type IRepairRequestItemStatusFormValues } from "./helpers";
-import { FORM_SECTION_GUTTER, FORM_TYPE, REPAIR_REQUEST_ITEM_STATUS_FORM_ITEM } from "~/constants/formItem.constants";
+import { FORM_LAYOUT, FORM_SECTION_GUTTER, FORM_TYPE, REPAIR_REQUEST_ITEM_STATUS_FORM_ITEM } from "~/constants/formItem.constants";
 import type { IFormSection } from "@/components/Common/Form";
 
 interface IUseFormItemResult
@@ -42,12 +42,17 @@ export function useFormItem(): IUseFormItemResult
                     key: "isFinal",
                     name: "isFinal",
                     label: REPAIR_REQUEST_ITEM_STATUS_FORM_ITEM.IS_FINAL_LABEL,
-                    type: FORM_TYPE.SELECT,
+                    type: FORM_TYPE.RADIO,
                     span: 12,
                     options: [
                         { label: "True", value: "true" },
                         { label: "False", value: "false" },
                     ],
+                    layout: FORM_LAYOUT.HORIZONTAL,
+                    onChange: (value, context) =>
+                    {
+                        context.setValue("isFinal", (value === "true") as IRepairRequestItemStatusFormValues["isFinal"]);
+                    },
                 },
                 {
                     key: "orderSequence",
@@ -57,6 +62,11 @@ export function useFormItem(): IUseFormItemResult
                     span: 12,
                     required: true,
                     min: 0,
+                    onChange: (value, context) =>
+                    {
+                        const parsed = parseInt(value, 10);
+                        context.setValue("orderSequence", (isNaN(parsed) ? 0 : parsed) as IRepairRequestItemStatusFormValues["orderSequence"]);
+                    },
                 }
             ]
         }

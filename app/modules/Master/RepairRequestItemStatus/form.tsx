@@ -1,6 +1,6 @@
 import React from "react";
 import { type IRepairRequestItemStatusFormValues } from "./hooks/helpers";
-import { RepairRequestFormSchema } from "@/schemas/repairRequestFormSchema";
+import { RepairRequestItemStatusFormSchema } from "@/schemas/repairRequestItemStatusFormSchema";
 import CommonForm, { FormActions } from "~/components/Common/Form";
 import { useFormItem } from "./hooks/useFormItem";
 import Loading from "@/components/Common/Loading";
@@ -26,7 +26,7 @@ interface IRepairRequestItemStatusFormErrors
 function validateForm(values: IRepairRequestItemStatusFormValues): IRepairRequestItemStatusFormErrors
 {
     const nextErrors: IRepairRequestItemStatusFormErrors = {};
-    const validationResult = RepairRequestFormSchema.safeParse(values);
+    const validationResult = RepairRequestItemStatusFormSchema.safeParse(values);
 
     if (validationResult.success)
     {
