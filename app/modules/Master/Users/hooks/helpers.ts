@@ -1,4 +1,4 @@
-import type { IUser, IUserForCreate, IUserForUpdate } from "~/api/types";
+import type { IUser, IUserForCreate, IUserForUpdate } from "~/api/types/types";
 import type { IRole } from "~/constants";
 import { formatDepartmentLabel as formatDepartmentLabelBase } from "~/lib/formatters";
 

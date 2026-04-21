@@ -1,6 +1,6 @@
 import { useParams } from "react-router";
 import LineItemsEditor from "~/components/Common/LineItemsEditor";
-import type { IRepairRequest } from "~/api/types";
+import type { IRepairRequest } from "~/api/types/types";
 import type { IDetailSection } from "~/components/Common/DetailSections";
 import Loading from "~/components/Common/Loading";
 import Detail from "~/components/Maintain/Detail";

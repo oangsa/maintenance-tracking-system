@@ -21,7 +21,7 @@ import type {
     IRepairRequestStatusLog,
     ISearchRequest,
     IWorkOrder,
-} from "../api/types";
+} from "../api/types/types";
 
 export async function searchRepairRequests(params: ISearchRequest): Promise<IPagedResult<IRepairRequest>>
 {

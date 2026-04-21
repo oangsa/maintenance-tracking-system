@@ -1,5 +1,5 @@
 import React from "react";
-import type { IUser } from "~/api/types";
+import type { IUser } from "~/api/types/types";
 import { formatDateTime } from "~/lib/formatters";
 import { formatRoleLabel } from "./helpers";
 

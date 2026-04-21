@@ -7,7 +7,7 @@ import { formatDateTime } from "~/lib/formatters";
 import { cn } from "~/lib/utils";
 import { deleteDepartment, getDepartmentById } from "~/services/departments.service";
 import type { IDetailSection } from "~/components/Common/DetailSections";
-import type { IDepartment } from "~/api/types";
+import type { IDepartment } from "~/api/types/types";
 
 interface IConfirmState
 {

@@ -6,7 +6,7 @@ import type {
     IPagedResult,
     IProduct,
     ISearchRequest,
-} from "../api/types";
+} from "../api/types/types";
 
 export async function searchProducts(params: ISearchRequest): Promise<IPagedResult<IProduct>>
 {

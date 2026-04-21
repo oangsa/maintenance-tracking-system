@@ -6,7 +6,7 @@ import type {
     IPagedResult,
     IRepairStatus,
     ISearchRequest,
-} from "../api/types";
+} from "../api/types/types";
 
 export async function searchRepairStatuses(params: ISearchRequest): Promise<IPagedResult<IRepairStatus>>
 {

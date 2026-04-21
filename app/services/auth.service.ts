@@ -20,7 +20,7 @@ import {
     refreshTokenRequest,
 } from "../api/auth.api";
 import { getCurrentUserRequest } from "../api/users.api";
-import type { ILoginRequest, IUser } from "../api/types";
+import type { ILoginRequest, IUser } from "../api/types/types";
 
 // ---- In-memory session state ------------------------------
 
