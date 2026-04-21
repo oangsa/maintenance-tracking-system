@@ -10,19 +10,30 @@ export default [
             route("repair-requests/new", "routes/Main/RepairRequests/repair-requests.new.tsx"),
             route("repair-requests/:id", "routes/Main/RepairRequests/repair-requests.$id.tsx"),
 
-            // master routes
+            // Region: Master routes
+            // departments
             route("master/departments", "routes/Master/Departments/master.departments.tsx"),
             route("master/departments/new", "routes/Master/Departments/master.departments.new.tsx"),
             route("master/departments/:id/edit", "routes/Master/Departments/master.departments.$id.edit.tsx"),
             route("master/departments/:id", "routes/Master/Departments/master.departments.$id.tsx"),
+
+            // users
             route("master/users", "routes/Master/Users/master.users.tsx"),
             route("master/users/new", "routes/Master/Users/master.users.new.tsx"),
             route("master/users/:id/edit", "routes/Master/Users/master.users.$id.edit.tsx"),
             route("master/users/:id", "routes/Master/Users/master.users.$id.tsx"),
 
-            // manager routes
+            // repair request item status
+            route("master/repair-request-item-status", "routes/Master/RepairRequestItemStatus/master.repairRequestItemStatus.tsx"),
+
+            // End Region: Master routes
+
+            // Region: Manager routes
+            // repair requests
             route("manager/repair-requests", "routes/Manager/RepairRequests/manager.repair-requests.tsx"),
             route("manager/repair-requests/:id", "routes/Manager/RepairRequests/manager.repair-requests.$id.tsx"),
+
+            // End Region: Manager routes
         ]),
         route("auth/login", "routes/login.tsx"),
     ] satisfies RouteConfig;
