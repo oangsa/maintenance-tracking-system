@@ -1,4 +1,4 @@
-import type { IDepartment, IDepartmentForCreate, IDepartmentForUpdate } from "~/api/types";
+import type { IDepartment, IDepartmentForCreate, IDepartmentForUpdate } from "~/api/types/types";
 
 interface IDepartmentFormValues
 {

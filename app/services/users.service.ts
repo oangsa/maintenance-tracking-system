@@ -18,7 +18,7 @@ import type {
     IUser,
     IUserForCreate,
     IUserForUpdate,
-} from "../api/types";
+} from "../api/types/types";
 
 // ---- Query ---------------------------------------------------
 

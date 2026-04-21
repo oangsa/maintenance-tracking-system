@@ -13,7 +13,7 @@ import type {
     IDepartmentForUpdate,
     IPagedResult,
     ISearchRequest,
-} from "../api/types";
+} from "../api/types/types";
 
 export async function searchDepartments(params: ISearchRequest): Promise<IPagedResult<IDepartment>>
 {

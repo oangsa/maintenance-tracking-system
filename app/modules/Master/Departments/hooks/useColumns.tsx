@@ -1,5 +1,5 @@
 import React from "react";
-import type { IDepartment } from "~/api/types";
+import type { IDepartment } from "~/api/types/types";
 import { formatDateTime } from "~/lib/formatters";
 
 type IDepartmentTableRow = IDepartment & Record<string, unknown>;
