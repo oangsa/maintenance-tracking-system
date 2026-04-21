@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import Loading from "~/components/Common/Loading";
 import Create from "~/components/Maintain/Create";
 import ErrorCard from "~/components/Maintain/ErrorCard";
-import type { IRepairStatus } from "~/api/types";
+import type { IRepairStatus } from "~/api/types/types";
 import { useUserContext } from "~/providers/UserProvider";
 import { createRepairRequest } from "~/services/repairRequests.service";
 import { searchRepairStatuses } from "~/services/repairStatuses.service";

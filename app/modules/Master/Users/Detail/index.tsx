@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { ConfirmModal } from "~/components/Common/Modal";
-import type { IUser } from "~/api/types";
+import type { IUser } from "~/api/types/types";
 import type { IDetailSection } from "~/components/Common/DetailSections";
 import Detail from "~/components/Maintain/Detail";
 import { buttonVariants, Button } from "~/components/ui/button";

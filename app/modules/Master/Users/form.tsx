@@ -3,7 +3,7 @@ import { z } from "zod";
 import CommonForm, { FormActions } from "~/components/Common/Form";
 import ListPickerModal from "~/components/Common/ListPickerModal";
 import Loading from "~/components/Common/Loading";
-import type { IDepartment } from "~/api/types";
+import type { IDepartment } from "~/api/types/types";
 import { searchDepartments } from "~/services/departments.service";
 import { useFormItem } from "./hooks/useFormItem";
 import type { IUserFormValues } from "./hooks//helpers";

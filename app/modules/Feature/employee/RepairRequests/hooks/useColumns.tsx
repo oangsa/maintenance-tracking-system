@@ -1,5 +1,5 @@
 import React from "react";
-import type { IRepairRequest } from "~/api/types";
+import type { IRepairRequest } from "~/api/types/types";
 import { formatDateTime, formatTitleCase } from "~/lib/formatters";
 
 type IRepairRequestTableRow = IRepairRequest & Record<string, unknown>;

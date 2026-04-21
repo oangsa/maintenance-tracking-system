@@ -1,6 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router";
-import type { IUser } from "~/api/types";
+import type { IUser } from "~/api/types/types";
 import { ensureCurrentUser, getCurrentUser, isAuthenticated, subscribeCurrentUser } from "~/services/auth.service";
 
 const AUTH_ROUTE_PREFIX = "/auth/";

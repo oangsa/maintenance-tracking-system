@@ -1,5 +1,5 @@
 import React from "react";
-import type { ISearchCondition } from "~/api/types";
+import type { ISearchCondition } from "~/api/types/types";
 import type { IDataTableFilterField } from "~/components/Common/DataTable";
 import {
     DATA_TABLE_FILTER_TYPE,

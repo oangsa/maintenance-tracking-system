@@ -7,7 +7,7 @@ import LineItemsEditor, { type ILineItemColumn, type ILineItemPickerColumn, type
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
-import type { IProduct, IUser } from "~/api/types";
+import type { IProduct, IUser } from "~/api/types/types";
 import { formatDepartmentLabel, formatRequesterLabel } from "~/lib/formatters";
 import { searchProducts } from "~/services/products.service";
 import { createEmptyRepairRequestLineItem, mapProductToLineItem, parsePositiveNumber } from "./hooks/helpers";

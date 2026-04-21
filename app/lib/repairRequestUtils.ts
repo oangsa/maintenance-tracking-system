@@ -1,4 +1,4 @@
-import type { IRepairRequestItem } from "~/api/types";
+import type { IRepairRequestItem } from "~/api/types/types";
 import {
     formatJoinedLabel,
     formatTitleCase,
