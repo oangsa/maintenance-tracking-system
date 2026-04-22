@@ -19,7 +19,7 @@ function useColumns()
         },
         {
             key: "updatedAt",
-            label: "Updated",
+            label: "Updated At",
             render: (value: unknown) => formatDateTime(value as string | null | undefined),
         },
     ], []);

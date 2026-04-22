@@ -23,13 +23,13 @@ function useColumns()
             render: (value: unknown, row: IRepairRequestItemStatusTableRow) => String(value ?? row.code),
         },
         {
-            key: "isFinal",
+            key: "is_final",
             label: "Is Final",
             render: (value: unknown) => (value ? "True" : "False"),
         },
         {
-            key: "updatedAt",
-            label: "Updated",
+            key: "updated_at",
+            label: "Updated At",
             render: (value: unknown) => formatDateTime(value as string | null | undefined),
         }
     ], []);

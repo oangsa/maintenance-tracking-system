@@ -23,15 +23,21 @@ function useColumns()
             render: (value: unknown) => formatRoleLabel(String(value ?? "")),
         },
         {
-            key: "departmentName",
-            label: "Department",
-            render: (_value: unknown, row: IUserTableRow) => row.departmentName ?? row.departmentCode ?? "-",
+            key: "department_code",
+            label: "Department Code",
+            render: (_value: unknown, row: IUserTableRow) => row.departmentCode ?? "-",
             sortable: false,
         },
         {
-            key: "updatedAt",
-            label: "Updated",
-            render: (value: unknown) => formatDateTime(value as string | null | undefined),
+            key: "department_name",
+            label: "Department Name",
+            render: (_value: unknown, row: IUserTableRow) => row.departmentName ?? "-",
+            sortable: false,
+        },
+        {
+            key: "updated_at",
+            label: "Updated At",
+            render: (value: unknown, row: IUserTableRow) => formatDateTime( row.updatedAt as string | null | undefined),
         },
     ], []);
 }
