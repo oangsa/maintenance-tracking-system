@@ -29,11 +29,11 @@ export default function DepartmentsListPage()
             pageNumber: params.page,
             pageSize: params.limit,
             searchTerm: params.searchTerm
-                ? {
-                    name: "code,name",
-                    value: params.searchTerm,
-                }
-                : undefined,
+            ? {
+                name: "code,name",
+                value: params.searchTerm,
+            }
+            : undefined,
         });
 
         return {

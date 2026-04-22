@@ -8,9 +8,9 @@ function useColumns()
 {
     return React.useMemo(() => [
         {
-            key: "orderSequence",
+            key: "order_sequence",
             label: "Order Sequence",
-            render: (value: unknown) => String(value ?? ""),
+            render: (value: unknown, row: IRepairRequestItemStatusTableRow) => String(row.orderSequence ?? ""),
         },
         {
             key: "code",
@@ -25,12 +25,12 @@ function useColumns()
         {
             key: "is_final",
             label: "Is Final",
-            render: (value: unknown) => (value ? "True" : "False"),
+            render: (value: unknown, row: IRepairRequestItemStatusTableRow) => (row.isFinal ? "True" : "False"),
         },
         {
             key: "updated_at",
             label: "Updated At",
-            render: (value: unknown) => formatDateTime(value as string | null | undefined),
+            render: (value: unknown, row: IRepairRequestItemStatusTableRow) => formatDateTime(row.updatedAt as string | null | undefined),
         }
     ], []);
 }

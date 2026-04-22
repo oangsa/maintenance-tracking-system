@@ -10,7 +10,6 @@ export default function CreateRepairRequestItemStatusPage()
 
     const handleSubmit = async (values: ReturnType<typeof createEmptyRepairRequestItemStatusFormValues>) => {
         await createRepairRequestItemStatus(values);
-        console.log("Repair request item status created successfully.");
 
         navigate("/master/repair-request-item-status", { replace: true });
     }
