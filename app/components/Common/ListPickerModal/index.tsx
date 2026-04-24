@@ -34,7 +34,7 @@ import {
 } from "~/components/ui/select";
 import { cn } from "~/lib/utils";
 
-interface IPickerColumn<T = Record<string, unknown>>
+export interface IPickerColumn<T = Record<string, unknown>>
 {
     key: string;
     label: string;
@@ -43,7 +43,7 @@ interface IPickerColumn<T = Record<string, unknown>>
     style?: React.CSSProperties;
 }
 
-interface IFetchParams
+export interface IFetchParams
 {
     search: string;
     page: number;
@@ -52,7 +52,7 @@ interface IFetchParams
     sortDir?: "asc" | "desc";
 }
 
-interface IFetchResult<T>
+export interface IFetchResult<T>
 {
     data: T[];
     total: number;

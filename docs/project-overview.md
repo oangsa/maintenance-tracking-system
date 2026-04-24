@@ -10,7 +10,7 @@ The project is a TypeScript React Router frontend for the Maintenance Tracking S
 - provider-driven auth restoration and route protection
 - feature modules for page logic
 - shared Maintain components for CRUD page shells
-- shared Common components for tables, detail sections, forms, pickers, and line-item editing
+- shared Common components for tables, detail sections, forms, lookup pickers, and line-item editing
 - `app/api/` plus `app/services/` for backend communication
 
 ## Current Route Surface
@@ -23,7 +23,7 @@ The current application exposes these routes:
 - `/manager/repair-requests/*`: manager repair request list and detail
 - `/master/users/*`: user CRUD
 - `/master/departments/*`: department CRUD
-- `/test`: lightweight sandbox route currently kept for manual checks
+- `/master/repair-request-item-status/*`: repair request item status CRUD
 
 ## Current Project Structure
 
@@ -48,6 +48,7 @@ maintainance-tracking-system/
 |   |   |   |-- LineItemsEditor/
 |   |   |   |-- ListPickerModal/
 |   |   |   |-- Loading/
+|   |   |   |-- LookupField/
 |   |   |   |-- Modal/
 |   |   |   |-- ReportTable/
 |   |   |   |-- SearchableSelect/
@@ -64,6 +65,14 @@ maintainance-tracking-system/
 |   |   |   `-- types.ts
 |   |   `-- ui/
 |   |-- constants/
+|   |   |-- fieldFilter.constants.ts
+|   |   |-- formItem.constants.ts
+|   |   |-- lookupColumn.constants.ts
+|   |   |-- lookupQuery.constants.ts
+|   |   |-- priority.constant.ts
+|   |   |-- role.constant.ts
+|   |   |-- searchOperator.constant.ts
+|   |   `-- index.ts
 |   |-- contexts/
 |   |-- hooks/
 |   |-- layouts/
@@ -83,7 +92,6 @@ maintainance-tracking-system/
 |   |   |   |       |-- hooks/
 |   |   |   |       |-- index.tsx
 |   |   |   |       |-- Create.tsx
-|   |   |   |       `-- Detail.tsx
 |   |   |   `-- manager/
 |   |   |       `-- RepairRequests/
 |   |   |           |-- Detail/
@@ -91,19 +99,20 @@ maintainance-tracking-system/
 |   |   |           `-- index.tsx
 |   |   |-- Master/
 |   |   |   |-- Departments/
+|   |   |   |-- RepairRequestItemStatus/
 |   |   |   `-- Users/
 |   |-- providers/
 |   |-- routes/
 |   |   |-- home.tsx
 |   |   |-- layout.tsx
 |   |   |-- login.tsx
-|   |   |-- test.tsx
 |   |   |-- Main/
 |   |   |   `-- RepairRequests/
 |   |   |-- Manager/
 |   |   |   `-- RepairRequests/
 |   |   `-- Master/
 |   |       |-- Departments/
+|   |       |-- RepairRequestItemStatus/
 |   |       `-- Users/
 |   |-- schemas/
 |   |-- services/
@@ -169,6 +178,7 @@ maintainance-tracking-system/
   - `DetailSections` for section-based read-only pages
   - `Form` for config-driven create and edit forms
   - `LineItemsEditor` for editable or read-only line-item collections
+  - `LookupField` for form lookup controls that reuse `ListPickerModal`
   - `ListPickerModal` for lookup selection dialogs
   - `Loading` for loading states
   - `Modal` and confirm-dialog flows for confirmation UX
@@ -185,6 +195,8 @@ maintainance-tracking-system/
 - current important files:
   - `formItem.constants.ts` for shared field labels, placeholders, field types, spans, and layout values
   - `fieldFilter.constants.ts` for reusable filter keys, labels, and common search fields
+  - `lookupColumn.constants.ts` for centralized lookup picker columns
+  - `lookupQuery.constants.ts` for `LOOKUP_ORDER_BY`, `LOOKUP_SEARCH_FIELDS`, and `buildLookupPayload()`
   - `searchOperator.constant.ts` for reusable search operator constants such as `SEARCH_OPERATOR.EQUAL`
   - `priority.constant.ts` and `role.constant.ts` for shared option values
 
@@ -271,14 +283,13 @@ app/modules/Feature/employee/RepairRequests/
 |   |-- useFormItem.tsx
 |   `-- useLineItem.ts
 |-- index.tsx
-|-- Create.tsx
-`-- Detail.tsx
+`-- Create.tsx
 ```
 
 Notes:
 
 - the route-wired pages use `Create/index.tsx` and `Detail/index.tsx`
-- `Create.tsx` and `Detail.tsx` still exist as legacy leftovers and should not be used as the reference for new work
+- `Create.tsx` still exists as a legacy leftover and should not be used as the reference for new work
 - the shared form combines `Common/Form` metadata with a custom `LineItemsEditor` block
 
 ### Manager Repair Request Shape
@@ -317,8 +328,14 @@ Use this folder for repair-request helpers shared by both employee and manager p
 - full CRUD reference module
 - uses advanced filters through `hooks/useFieldFilter.ts`
 - uses `app/components/Common/Form` plus `hooks/useFormItem.tsx` for config-driven fields
-- uses a related-entity picker in `form.tsx`
+- uses `LookupField` and `app/components/Common/LookupField/lookups/department.lookup.ts` for related-entity selection
 - imports reusable zod validation from `app/schemas/userFormSchema.ts`
+
+### `app/modules/Master/RepairRequestItemStatus`
+
+- full CRUD module with lookup usage patterns and list filters
+- good reference for status-like entities that need `code`, `name`, and ordering behavior
+- imports reusable zod validation from `app/schemas/repairRequestItemStatusFormSchema.ts`
 
 ### `app/modules/Master/Departments`
 
@@ -399,6 +416,7 @@ Use this folder for repair-request helpers shared by both employee and manager p
 - prefer the current nested module layout with `Create/index.tsx`, `Edit/index.tsx`, `Detail/index.tsx`, `form.tsx`, and `hooks/`
 - use `app/providers/UserProvider.tsx` for current-user restoration and protected-route behavior instead of duplicating auth bootstrapping in each module
 - centralize repeated form metadata in `app/constants/formItem.constants.ts` and reusable list filter metadata in `app/constants/fieldFilter.constants.ts`
+- centralize lookup picker columns and query defaults in `app/constants/lookupColumn.constants.ts` and `app/constants/lookupQuery.constants.ts`
 - keep reusable zod schemas in `app/schemas/` when the validation is shared across create and edit forms
 - use `search` for structured filters and `searchTerm` for free-text search
 - keep backend field mapping near the module, not inside `DataTable`
@@ -410,12 +428,15 @@ Use this folder for repair-request helpers shared by both employee and manager p
 
 - start with `app/modules/Master/Users` for the full current CRUD pattern
 - use `app/modules/Master/Departments` for the simpler CRUD pattern without advanced filters
+- use `app/modules/Master/RepairRequestItemStatus` for another full CRUD example with status ordering patterns
 - use `app/modules/Feature/employee/RepairRequests` for `LineItemsEditor`, auth-aware feature gating, and preloaded create-page dependencies
 - use `app/modules/Feature/manager/RepairRequests` for read-only list and detail patterns
 - use `app/modules/Feature/RepairRequests/detailLineItemColumns.tsx` for shared repair-request detail column helpers
 - use `app/components/Common/Form` plus `app/constants/formItem.constants.ts` when building config-driven forms
+- use `app/components/Common/LookupField` and `app/components/Common/LookupField/lookups/` when building lookup form controls
 - use `app/schemas/` for reusable zod validation
 - use `app/constants/fieldFilter.constants.ts` when wiring repeated list filters or quick-search field names
+- use `app/constants/lookupQuery.constants.ts` for lookup payload defaults and `orderBy`/search-field consistency
 - use `docs/crud-guide.md` when creating or refactoring a module
 - use `docs/search-guide.md` when wiring list filters or quick search
 - use `docs/openapi.yaml` when checking backend contracts

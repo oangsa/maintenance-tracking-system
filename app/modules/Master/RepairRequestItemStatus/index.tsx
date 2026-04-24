@@ -2,6 +2,7 @@ import React from "react";
 import useColumns, { type IRepairRequestItemStatusTableRow } from "./hooks/useColumns";
 import useTableSearchParams from "@/components/Maintain/Table/useSearchParams";
 import { useSearchParams } from "react-router";
+import { buildLookupPayload } from "~/constants";
 import { deleteRepairRequestItemStatus, searchRepairRequestItemStatus } from "~/services/repairRequestItemStatus.service";
 import type { IFetchParams, IFetchResult } from "@/components/Common/DataTable";
 import Table from "@/components/Maintain/Table";
@@ -23,15 +24,13 @@ export default function RepairRequestItemStatusPage()
 
     const fetchData = React.useCallback(async (params: IFetchParams): Promise<IFetchResult<IRepairRequestItemStatusTableRow>> =>
     {
-        const res = await searchRepairRequestItemStatus({
-            orderBy: "id asc",
-            pageNumber: params.page,
-            pageSize: params.limit,
-            searchTerm: params.searchTerm ? {
-                name: "code,name",
-                value: params.searchTerm,
-            } : undefined,
-        });
+        const res = await searchRepairRequestItemStatus(buildLookupPayload("repairRequestItemStatus", {
+            limit: params.limit,
+            page: params.page,
+            search: String(params.searchTerm ?? ""),
+            sortBy: params.sortBy,
+            sortDir: params.sortDir,
+        }));
 
         return {
             data: res.data as IRepairRequestItemStatusTableRow[],

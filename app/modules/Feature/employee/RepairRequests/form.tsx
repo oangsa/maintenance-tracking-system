@@ -11,6 +11,7 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import type { IProduct, IUser } from "~/api/types/types";
+import { buildLookupPayload } from "~/constants";
 import { formatDepartmentLabel, formatRequesterLabel } from "~/lib/formatters";
 import { searchProducts } from "~/services/products.service";
 import { createEmptyRepairRequestLineItem, mapProductToLineItem, parsePositiveNumber } from "./hooks/helpers";
@@ -228,20 +229,13 @@ export default function RepairRequestForm({
 
     const fetchProducts = React.useCallback(async (params: ILineItemPickerFetchParams) =>
     {
-        const response = await searchProducts({
-            deleted: false,
-            orderBy: params.sortBy
-                ? `${params.sortBy} ${params.sortDir === "desc" ? "desc" : "asc"}`
-                : "code asc",
-            pageNumber: params.page,
-            pageSize: params.limit,
-            searchTerm: params.search
-                ? {
-                    name: "code,name",
-                    value: params.search,
-                }
-                : undefined,
-        });
+        const response = await searchProducts(buildLookupPayload("product", {
+            limit: params.limit,
+            page: params.page,
+            search: params.search,
+            sortBy: params.sortBy,
+            sortDir: params.sortDir,
+        }));
 
         return {
             currentPage: response.pagination.currentPage,
@@ -257,10 +251,11 @@ export default function RepairRequestForm({
     const resolveProductByCode = React.useCallback(async (code: string) =>
     {
         const response = await searchProducts({
-            deleted: false,
-            orderBy: "code asc",
-            pageNumber: 1,
-            pageSize: 1,
+            ...buildLookupPayload("product", {
+                limit: 1,
+                page: 1,
+                search: "",
+            }),
             search: [
                 {
                     condition: "EQUAL",
