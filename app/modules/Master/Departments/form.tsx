@@ -32,7 +32,7 @@ export default function DepartmentForm({
     onSubmit,
 }: IDepartmentFormProps)
 {
-    const { formItems } = useFormItem();
+    const { formItems } = useFormItem({ mode });
     const {
         values,
         errors: formErrors,

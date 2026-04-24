@@ -8,6 +8,7 @@ import { createEmptyRepairRequestLineItem, type IRepairRequestFormLineItem, type
 
 interface IUseFormItemProps<TPickerRow extends Record<string, unknown>>
 {
+    mode: "create" | "edit";
     departmentLabel: string;
     itemIssues: string[];
     items: IRepairRequestFormLineItem[];
@@ -23,6 +24,7 @@ interface IUseFormItemResult
 }
 
 export function useFormItem<TPickerRow extends Record<string, unknown>>({
+    mode,
     departmentLabel,
     itemIssues,
     items,
@@ -82,6 +84,7 @@ export function useFormItem<TPickerRow extends Record<string, unknown>>({
                     name: "priority",
                     options: repairRequestPriorityOptions,
                     required: true,
+                    editable: mode === "create",
                     span: FORM_FIELD_SPAN.THIRD,
                     type: FORM_TYPE.SELECT,
                 },
@@ -125,7 +128,7 @@ export function useFormItem<TPickerRow extends Record<string, unknown>>({
             ],
             key: REPAIR_REQUEST_FORM_ITEM.SUMMARY_SECTION_KEY,
         },
-    ], [departmentLabel, itemIssues, items, itemsError, lineItemColumns, onItemsChange, repairRequestPriorityOptions, requesterLabel]);
+    ], [departmentLabel, itemIssues, items, itemsError, lineItemColumns, mode, onItemsChange, repairRequestPriorityOptions, requesterLabel]);
 
     return { formItems };
 }

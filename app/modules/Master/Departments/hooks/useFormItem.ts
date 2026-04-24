@@ -8,7 +8,12 @@ interface IUseFormItemResult
     formItems: IFormSection<IDepartmentFormValues>[];
 }
 
-export function useFormItem(): IUseFormItemResult
+interface IUseFormItemProps
+{
+    mode: "create" | "edit";
+}
+
+export function useFormItem({ mode }: IUseFormItemProps): IUseFormItemResult
 {
     const formItems = React.useMemo<IFormSection<IDepartmentFormValues>[]>(() => [
         {
@@ -21,6 +26,7 @@ export function useFormItem(): IUseFormItemResult
                     maxLength: 150,
                     name: "code",
                     placeholder: DEPARTMENT_FORM_ITEM.CODE_PLACEHOLDER,
+                    editable: mode === "create",
                     required: true,
                     showCount: true,
                     span: FORM_FIELD_SPAN.HALF,
@@ -40,7 +46,7 @@ export function useFormItem(): IUseFormItemResult
             ],
             key: DEPARTMENT_FORM_ITEM.SECTION_KEY,
         },
-    ], []);
+    ], [mode]);
 
     return { formItems };
 }

@@ -22,6 +22,7 @@ type IProductPickerRow = IProduct & Record<string, unknown>;
 
 interface IRepairRequestFormProps
 {
+    mode: "create" | "edit";
     currentUser: IUser;
     initialValues: IRepairRequestFormValues;
     submitting?: boolean;
@@ -101,6 +102,7 @@ function mapRepairRequestFormErrors(fieldErrors: FieldErrors<IRepairRequestFormV
 }
 
 export default function RepairRequestForm({
+    mode,
     currentUser,
     initialValues,
     submitting = false,
@@ -522,6 +524,7 @@ export default function RepairRequestForm({
     ], [fetchProducts, itemMessages, productColumns, resolvingRows]);
 
     const { formItems } = useFormItem<IProductPickerRow>({
+        mode,
         departmentLabel,
         itemIssues: formErrors.itemIssues,
         items: values.items,
@@ -538,9 +541,9 @@ export default function RepairRequestForm({
                     cancelDisabled={submitting}
                     onCancel={onCancel}
                     submitDisabled={submitting}
-                    submitLabel="Create Repair Request"
+                    submitLabel={mode === "create" ? "Create Repair Request" : "Save Changes"}
                     submitting={submitting}
-                    submittingLabel="Creating..."
+                    submittingLabel={mode === "create" ? "Creating..." : "Saving..."}
                 />
             )}
             clearError={clearFieldError}

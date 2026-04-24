@@ -22,11 +22,7 @@ interface IUseFormItemResult
     formItems: IFormSection<IUserFormValues>[];
 }
 
-export function useFormItem({
-    mode,
-    onClearDepartment,
-    onOpenDepartmentLookup,
-}: IUseFormItemProps): IUseFormItemResult
+export function useFormItem({ mode, onClearDepartment, onOpenDepartmentLookup }: IUseFormItemProps): IUseFormItemResult
 {
     const userFormRoleOptions = React.useMemo(() => ROLE_OPTIONS.map((roleOption) => ({
         label: formatRoleLabel(roleOption),

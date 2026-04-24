@@ -34,7 +34,7 @@ export default function RepairRequestItemStatusForm({
     onSubmit,
 }: IRepairRequestItemStatusFormProps)
 {
-    const { formItems } = useFormItem();
+    const { formItems } = useFormItem({ mode });
     const {
         values,
         errors: formErrors,

@@ -64,6 +64,7 @@ export interface IFormFieldBase<TValues>
 interface IBoundFormFieldBase<TValues> extends IFormFieldBase<TValues>
 {
     name: TFormFieldName<TValues>;
+    editable?: TConditionalFieldValue<TValues>;
     disabled?: TConditionalFieldValue<TValues>;
 }
 
@@ -390,7 +391,12 @@ function RenderField<TValues>(field: IFormField<TValues>, context: IFormRenderCo
         );
     }
 
-    const resolvedDisabled = context.disabled || ResolveConditionalValue(field.disabled, context);
+    const resolvedEditable = field.editable === undefined
+        ? true
+        : ResolveConditionalValue(field.editable, context);
+    const resolvedDisabled = context.disabled
+        || !resolvedEditable
+        || ResolveConditionalValue(field.disabled, context);
     const errorMessage = context.errors[field.name];
     const wrapperClassName = cn(
         ResolveFieldSpanClassName(field.span),

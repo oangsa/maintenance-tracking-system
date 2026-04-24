@@ -127,7 +127,7 @@ export default function CreateRepairRequestPage()
             backLabel="Back to Repair Requests"
             description="Submit a repair request for your department and attach the required line items."
             Form={RepairRequestForm}
-            formProps={{ currentUser }}
+            formProps={{ mode: "create", currentUser } as const}
             initialValues={createEmptyRepairRequestFormValues()}
             onCancel={() => navigate("/repair-requests")}
             onSubmit={async (values: IRepairRequestFormValues) =>
