@@ -8,7 +8,12 @@ interface IUseFormItemResult
     formItems: IFormSection<IRepairRequestItemStatusFormValues>[];
 }
 
-export function useFormItem(): IUseFormItemResult
+interface IUseFormItemProps
+{
+    mode: "create" | "edit";
+}
+
+export function useFormItem({ mode }: IUseFormItemProps): IUseFormItemResult
 {
     const formItems = React.useMemo<IFormSection<IRepairRequestItemStatusFormValues>[]>(() => [
         {
@@ -21,6 +26,7 @@ export function useFormItem(): IUseFormItemResult
                     name: "code",
                     label: REPAIR_REQUEST_ITEM_STATUS_FORM_ITEM.CODE_LABEL,
                     placeholder: REPAIR_REQUEST_ITEM_STATUS_FORM_ITEM.CODE_PLACEHOLDER,
+                    editable: mode === "create",
                     required: true,
                     maxLength: 150,
                     showCount: true,
@@ -70,7 +76,7 @@ export function useFormItem(): IUseFormItemResult
                 }
             ]
         }
-    ], []);
+    ], [mode]);
 
     return { formItems };
 }

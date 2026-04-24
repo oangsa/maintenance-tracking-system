@@ -1,9 +1,12 @@
 import React from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { FiSearch, FiX } from "react-icons/fi";
 import { GripVertical, LoaderCircle } from "lucide-react";
 import { z } from "zod";
+import type { FieldErrors } from "react-hook-form";
 import CommonForm, { FormActions } from "~/components/Common/Form";
 import LineItemsEditor, { type ILineItemColumn, type ILineItemPickerColumn, type ILineItemPickerFetchParams } from "~/components/Common/LineItemsEditor";
+import { useManagedForm } from "~/components/Common/Form/useManagedForm";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
@@ -19,6 +22,7 @@ type IProductPickerRow = IProduct & Record<string, unknown>;
 
 interface IRepairRequestFormProps
 {
+    mode: "create" | "edit";
     currentUser: IUser;
     initialValues: IRepairRequestFormValues;
     submitting?: boolean;
@@ -33,12 +37,80 @@ interface IRepairRequestFormErrors
     priority?: string;
 }
 
-function validateForm(values: IRepairRequestFormValues): IRepairRequestFormErrors
+function resolveErrorMessage(errorValue: unknown): string | undefined
 {
-    const nextErrors: IRepairRequestFormErrors = {
-        itemIssues: [],
+    if (!errorValue || typeof errorValue !== "object")
+    {
+        return undefined;
+    }
+
+    if (!("message" in errorValue))
+    {
+        return undefined;
+    }
+
+    const messageValue = (errorValue as { message?: unknown }).message;
+
+    if (typeof messageValue === "string" && messageValue.trim() !== "")
+    {
+        return messageValue;
+    }
+
+    return undefined;
+}
+
+function mapRepairRequestFormErrors(fieldErrors: FieldErrors<IRepairRequestFormValues>): IRepairRequestFormErrors
+{
+    const nextItemIssues: string[] = [];
+    const itemErrors = fieldErrors.items;
+
+    if (Array.isArray(itemErrors))
+    {
+        itemErrors.forEach((itemError, index) =>
+        {
+            if (!itemError || typeof itemError !== "object")
+            {
+                return;
+            }
+
+            Object.values(itemError).forEach((fieldErrorValue) =>
+            {
+                const message = resolveErrorMessage(fieldErrorValue);
+
+                if (!message)
+                {
+                    return;
+                }
+
+                nextItemIssues.push(`Item ${index + 1}: ${message}`);
+            });
+        });
+    }
+
+    let itemsMessage = resolveErrorMessage(itemErrors);
+
+    if (!itemsMessage && nextItemIssues.length > 0)
+    {
+        itemsMessage = "Review the repair request items and complete all required fields.";
+    }
+
+    return {
+        itemIssues: nextItemIssues,
+        items: itemsMessage,
+        priority: fieldErrors.priority?.message,
     };
-    const validationResult = RepairRequestFormSchema.superRefine((currentValues, ctx) =>
+}
+
+export default function RepairRequestForm({
+    mode,
+    currentUser,
+    initialValues,
+    submitting = false,
+    onCancel,
+    onSubmit,
+}: IRepairRequestFormProps)
+{
+    const resolvedSchema = React.useMemo(() => RepairRequestFormSchema.superRefine((currentValues, ctx) =>
     {
         currentValues.items.forEach((item, index) =>
         {
@@ -53,52 +125,19 @@ function validateForm(values: IRepairRequestFormValues): IRepairRequestFormError
                 });
             }
         });
-    }).safeParse(values);
-
-    if (validationResult.success)
-    {
-        return nextErrors;
-    }
-
-    for (const issue of validationResult.error.issues)
-    {
-        const [fieldName, itemIndex] = issue.path;
-
-        if (fieldName === "items" && typeof itemIndex === "number")
-        {
-            nextErrors.itemIssues.push(`Item ${itemIndex + 1}: ${issue.message}`);
-            continue;
-        }
-
-        if (fieldName === "priority" && !nextErrors.priority)
-        {
-            nextErrors.priority = issue.message;
-        }
-
-        if (fieldName === "items" && !nextErrors.items)
-        {
-            nextErrors.items = issue.message;
-        }
-    }
-
-    if (nextErrors.itemIssues.length > 0 && !nextErrors.items)
-    {
-        nextErrors.items = "Review the repair request items and complete all required fields.";
-    }
-
-    return nextErrors;
-}
-
-export default function RepairRequestForm({
-    currentUser,
-    initialValues,
-    submitting = false,
-    onCancel,
-    onSubmit,
-}: IRepairRequestFormProps)
-{
-    const [values, setValues] = React.useState<IRepairRequestFormValues>(initialValues);
-    const [formErrors, setFormErrors] = React.useState<IRepairRequestFormErrors>({ itemIssues: [] });
+    }), []);
+    const {
+        values,
+        errors: formErrors,
+        clearFieldError,
+        handleFormSubmit,
+        setFieldValue,
+    } = useManagedForm<IRepairRequestFormValues, IRepairRequestFormErrors>({
+        initialValues,
+        mapErrors: mapRepairRequestFormErrors,
+        onSubmit,
+        resolver: zodResolver(resolvedSchema),
+    });
     const [itemMessages, setItemMessages] = React.useState<Record<number, string | undefined>>({});
     const [resolvingRows, setResolvingRows] = React.useState<Record<number, boolean>>({});
 
@@ -128,8 +167,6 @@ export default function RepairRequestForm({
 
     React.useEffect(() =>
     {
-        setValues(initialValues);
-        setFormErrors({ itemIssues: [] });
         setItemMessages({});
         setResolvingRows({});
     }, [initialValues]);
@@ -137,52 +174,14 @@ export default function RepairRequestForm({
     const requesterLabel = formatRequesterLabel(currentUser.name, currentUser.email);
     const departmentLabel = formatDepartmentLabel(currentUser.departmentCode, currentUser.departmentName);
 
-    function handleSubmit(event: React.FormEvent<HTMLFormElement>)
-    {
-        event.preventDefault();
-
-        const nextErrors = validateForm(values);
-
-        if (nextErrors.priority || nextErrors.items || nextErrors.itemIssues.length > 0)
-        {
-            setFormErrors(nextErrors);
-            return;
-        }
-
-        void onSubmit(values);
-    }
-
     function handleValueChange<TKey extends keyof IRepairRequestFormValues>(fieldName: TKey, value: IRepairRequestFormValues[TKey])
     {
-        setValues((currentValues) => ({
-            ...currentValues,
-            [fieldName]: value,
-        }));
-        setFormErrors((currentErrors) => ({
-            ...currentErrors,
-            [fieldName]: undefined,
-        }));
-    }
-
-    function clearFieldError(fieldName: string)
-    {
-        setFormErrors((currentErrors) => ({
-            ...currentErrors,
-            [fieldName]: undefined,
-        }));
+        setFieldValue(fieldName, value);
     }
 
     function handleItemsChange(nextItems: IRepairRequestFormLineItem[])
     {
-        setValues((currentValues) => ({
-            ...currentValues,
-            items: nextItems,
-        }));
-        setFormErrors((currentErrors) => ({
-            ...currentErrors,
-            itemIssues: [],
-            items: undefined,
-        }));
+        setFieldValue("items", nextItems);
     }
 
     function updateItem(index: number, patch: Partial<IRepairRequestFormLineItem>)
@@ -525,6 +524,7 @@ export default function RepairRequestForm({
     ], [fetchProducts, itemMessages, productColumns, resolvingRows]);
 
     const { formItems } = useFormItem<IProductPickerRow>({
+        mode,
         departmentLabel,
         itemIssues: formErrors.itemIssues,
         items: values.items,
@@ -541,15 +541,15 @@ export default function RepairRequestForm({
                     cancelDisabled={submitting}
                     onCancel={onCancel}
                     submitDisabled={submitting}
-                    submitLabel="Create Repair Request"
+                    submitLabel={mode === "create" ? "Create Repair Request" : "Save Changes"}
                     submitting={submitting}
-                    submittingLabel="Creating..."
+                    submittingLabel={mode === "create" ? "Creating..." : "Saving..."}
                 />
             )}
             clearError={clearFieldError}
             disabled={submitting}
             errors={fieldErrors}
-            onSubmit={handleSubmit}
+            onSubmit={handleFormSubmit}
             sections={formItems}
             setValue={handleValueChange}
             values={values}
