@@ -10,8 +10,16 @@ Current list pages usually follow this flow:
 - `useTableSearchParams()` centralizes page, search, and filter URL state
 - `buildOrderBy()` from `app/lib/pageUtils.ts` maps UI sort choices to backend `orderBy` strings
 - shared filter keys, labels, and common quick-search fields can live in `app/constants/fieldFilter.constants.ts`
+- lookup-search defaults can be centralized in `app/constants/lookupQuery.constants.ts` via `LOOKUP_ORDER_BY`, `LOOKUP_SEARCH_FIELDS`, and `buildLookupPayload()`
 - feature-specific field names can stay in module-local hooks when the endpoint behavior is unique
 - `SEARCH_OPERATOR` from `app/constants/searchOperator.constant.ts` should be used instead of repeating raw strings such as `"EQUAL"`
+
+Current lookup pattern:
+
+- `LookupField` (`app/components/Common/LookupField`) opens `ListPickerModal` for selection
+- lookup definitions live in `app/components/Common/LookupField/lookups/`
+- lookup columns can be shared from `app/constants/lookupColumn.constants.ts`
+- lookup request payloads should use `buildLookupPayload("<lookupKey>", params)` for consistent `orderBy` and `searchTerm` behavior
 
 Current repair-request examples:
 
@@ -275,6 +283,16 @@ Important:
 ```
 
 Default direction is `ASC` when not specified.
+
+### Centralized Lookup `orderBy`
+
+For lookup endpoints used by pickers, prefer the centralized defaults in `app/constants/lookupQuery.constants.ts`:
+
+- `LOOKUP_ORDER_BY` for default sort strings
+- `LOOKUP_SEARCH_FIELDS` for quick-search `searchTerm.name`
+- `buildLookupPayload()` to compose a consistent request body from picker params
+
+This prevents each module from repeating ad-hoc `orderBy` and `searchTerm` values.
 
 ## Field Name Reference
 

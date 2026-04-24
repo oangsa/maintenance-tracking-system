@@ -13,6 +13,7 @@ Current modules should follow these rules:
 - keep module-local hooks for columns, filters, form metadata, and detail-side item loading
 - use `app/components/Maintain/Create`, `Edit`, `Detail`, and `Table` as the shared page shells
 - use `app/components/Common/Form` plus `hooks/useFormItem.ts(x)` when the fields fit the shared renderer
+- use `app/components/Common/LookupField` for lookup controls before building one-off picker wiring in each form
 - keep reusable zod schemas in `app/schemas/`
 - use `app/providers/UserProvider.tsx` for current-user access instead of duplicating auth restoration logic in each page
 - keep API logic inside module entry pages and pass it into shared components through props
@@ -337,8 +338,10 @@ Recommended structure:
 - keep reusable zod schemas in `app/schemas/<entity>FormSchema.ts`
 - keep typed form metadata in `hooks/useFormItem.ts(x)`
 - keep repeated form labels, placeholders, field types, spans, and layout values in `app/constants/formItem.constants.ts`
+- keep lookup definitions under `app/components/Common/LookupField/lookups/` when the lookup should be reused
+- use `buildLookupPayload()` plus lookup constants from `app/constants/lookupQuery.constants.ts` for consistent lookup search payloads
 - keep shared field rendering and styles in `app/components/Common/Form`
-- keep submit state, validation mapping, lookup fetches, and line-item orchestration inside `form.tsx`
+- keep submit state, validation mapping, and line-item orchestration inside `form.tsx`
 
 Typical props shape:
 
@@ -354,7 +357,7 @@ interface IAssetFormProps
 }
 ```
 
-Keep page-level API work out of `form.tsx` unless the field itself needs a lookup service or a local helper query.
+Keep page-level API work out of `form.tsx`. For lookups, prefer `LookupField` + shared lookup definitions.
 
 ## Step 9: Build Create And Edit Entry Pages
 
@@ -459,8 +462,9 @@ Use the existing shared components instead of building custom solutions first.
 
 Lookup guidance:
 
-- use `ListPickerModal` for related-record selection
-- keep the picker request function close to the form that needs it
+- use `LookupField` for form lookup controls and let it open `ListPickerModal`
+- place reusable lookup definitions in `app/components/Common/LookupField/lookups/`
+- use `LOOKUP_COLUMNS`, `LOOKUP_ORDER_BY`, and `buildLookupPayload()` to keep lookup behavior consistent
 - show business labels such as `code` and `name`, not only ids
 
 Line-item guidance:
@@ -508,13 +512,21 @@ Use these files as the baseline:
 - `app/modules/Master/Users/hooks/helpers.ts`
 - `app/modules/Master/Users/hooks/useColumns.tsx`
 - `app/modules/Master/Users/hooks/useFieldFilter.ts`
+- `app/modules/Master/RepairRequestItemStatus/index.tsx`
+- `app/modules/Master/RepairRequestItemStatus/form.tsx`
+- `app/modules/Master/RepairRequestItemStatus/hooks/useFormItem.tsx`
 - `app/modules/Master/Departments/index.tsx`
 - `app/modules/Master/Departments/form.tsx`
 - `app/components/Common/Form/index.tsx`
+- `app/components/Common/LookupField/index.tsx`
+- `app/components/Common/LookupField/lookups/department.lookup.ts`
 - `app/constants/formItem.constants.ts`
 - `app/constants/fieldFilter.constants.ts`
+- `app/constants/lookupColumn.constants.ts`
+- `app/constants/lookupQuery.constants.ts`
 - `app/schemas/userFormSchema.ts`
 - `app/schemas/departmentFormSchema.ts`
+- `app/schemas/repairRequestItemStatusFormSchema.ts`
 - `app/modules/Feature/employee/RepairRequests/form.tsx`
 - `app/modules/Feature/employee/RepairRequests/hooks/useLineItem.ts`
 - `app/modules/Feature/manager/RepairRequests/Detail/index.tsx`
@@ -532,6 +544,7 @@ Use these files as the baseline:
 - do not duplicate auth restoration logic in multiple feature pages when `UserProvider` already owns that behavior
 - do not duplicate search parameter parsing in multiple pages when `useTableSearchParams()` already covers it
 - do not duplicate filter labels, search field names, or param keys inline when the same values already live in shared constants
+- do not duplicate lookup columns or lookup search payload defaults inline when `lookupColumn.constants.ts` and `lookupQuery.constants.ts` already cover them
 - do not move backend field-name mapping into `DataTable`
 - do not keep detail-page item search logic inline when the module already uses the `hooks/useLineItem.ts` pattern
 - do not show plain ids when code and name are available
