@@ -4,6 +4,7 @@ import Loading from "~/components/Common/Loading";
 import Create from "~/components/Maintain/Create";
 import ErrorCard from "~/components/Maintain/ErrorCard";
 import type { IRepairStatus } from "~/api/types/types";
+import { buildLookupPayload } from "~/constants";
 import { useUserContext } from "~/providers/UserProvider";
 import { createRepairRequest } from "~/services/repairRequests.service";
 import { searchRepairStatuses } from "~/services/repairStatuses.service";
@@ -42,10 +43,11 @@ export default function CreateRepairRequestPage()
             try
             {
                 const response = await searchRepairStatuses({
-                    deleted: false,
-                    orderBy: "order_sequence asc",
-                    pageNumber: 1,
-                    pageSize: 100,
+                    ...buildLookupPayload("repairStatus", {
+                        limit: 100,
+                        page: 1,
+                        search: "",
+                    }),
                 });
                 const initialStatus = resolveInitialStatus(response.data);
 

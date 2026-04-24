@@ -1,5 +1,5 @@
 import React from "react";
-import { SEARCH_OPERATOR } from "~/constants";
+import { buildLookupPayload, SEARCH_OPERATOR } from "~/constants";
 import { searchRepairRequestItems } from "~/services/repairRequests.service";
 import { formatProductLabel, formatRepairStatusLabel } from "~/lib/repairRequestUtils";
 import type { IRepairRequestDetailLineItem } from "../../../RepairRequests/detailLineItemColumns";
@@ -30,10 +30,11 @@ async function loadManagerLineItems(repairRequestId: number, currentUserDepartme
     while (currentPage <= totalPages)
     {
         const response = await searchRepairRequestItems(repairRequestId, {
-            deleted: false,
-            orderBy: "id asc",
-            pageNumber: currentPage,
-            pageSize: REPAIR_REQUEST_ITEMS_PAGE_SIZE,
+            ...buildLookupPayload("repairRequestItem", {
+                limit: REPAIR_REQUEST_ITEMS_PAGE_SIZE,
+                page: currentPage,
+                search: "",
+            }),
             search: [
                 {
                     condition: SEARCH_OPERATOR.EQUAL,

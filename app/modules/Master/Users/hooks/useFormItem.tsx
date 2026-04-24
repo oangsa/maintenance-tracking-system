@@ -1,9 +1,8 @@
 import React from "react";
 import type { IFormSection } from "~/components/Common/Form";
-import { formStyleClassNames } from "~/components/Common/Form/styles";
 import { FORM_FIELD_SPAN, FORM_LAYOUT, FORM_SECTION_GUTTER, FORM_TYPE, ROLE_OPTIONS, USER_FORM_ITEM } from "~/constants";
-import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
+import LookupField from "~/components/Common/LookupField";
+import { DepartmentLookupDefinition, type IDepartmentLookupRow } from "~/lookups/department.lookup";
 import {
     formatDepartmentLabel,
     formatRoleLabel,
@@ -14,7 +13,7 @@ interface IUseFormItemProps
 {
     mode: "create" | "edit";
     onClearDepartment: () => void;
-    onOpenDepartmentLookup: () => void;
+    onSelectDepartment: (department: IDepartmentLookupRow) => void;
 }
 
 interface IUseFormItemResult
@@ -22,7 +21,7 @@ interface IUseFormItemResult
     formItems: IFormSection<IUserFormValues>[];
 }
 
-export function useFormItem({ mode, onClearDepartment, onOpenDepartmentLookup }: IUseFormItemProps): IUseFormItemResult
+export function useFormItem({ mode, onClearDepartment, onSelectDepartment }: IUseFormItemProps): IUseFormItemResult
 {
     const userFormRoleOptions = React.useMemo(() => ROLE_OPTIONS.map((roleOption) => ({
         label: formatRoleLabel(roleOption),
@@ -87,45 +86,21 @@ export function useFormItem({ mode, onClearDepartment, onOpenDepartmentLookup }:
                     name: "departmentId",
                     renderControl: (context) =>
                     {
-                        const departmentError = context.errors.departmentId;
-                        const departmentDisplayValue = formatDepartmentLabel(
-                            context.values.departmentCode,
-                            context.values.departmentName,
-                        );
-
                         return (
-                            <div className={formStyleClassNames.inlineFieldLayout}>
-                                <div className={formStyleClassNames.inlineFieldInput}>
-                                    <Input
-                                        aria-invalid={Boolean(departmentError)}
-                                        disabled={context.disabled}
-                                        id="departmentLookupDisplay"
-                                        placeholder={USER_FORM_ITEM.DEPARTMENT_PLACEHOLDER}
-                                        readOnly={true}
-                                        type="text"
-                                        value={departmentDisplayValue}
-                                    />
-                                </div>
-
-                                <div className={formStyleClassNames.inlineFieldActions}>
-                                    <Button
-                                        disabled={context.disabled}
-                                        onClick={onOpenDepartmentLookup}
-                                        type="button"
-                                        variant="outline"
-                                    >
-                                        {USER_FORM_ITEM.LOOKUP_DEPARTMENT}
-                                    </Button>
-                                    <Button
-                                        disabled={context.disabled || !context.values.departmentId}
-                                        onClick={onClearDepartment}
-                                        type="button"
-                                        variant="outline"
-                                    >
-                                        {USER_FORM_ITEM.CLEAR_DEPARTMENT}
-                                    </Button>
-                                </div>
-                            </div>
+                            <LookupField<IDepartmentLookupRow>
+                                clearButtonLabel={USER_FORM_ITEM.CLEAR_DEPARTMENT}
+                                controlId="departmentLookupDisplay"
+                                definition={DepartmentLookupDefinition}
+                                disabled={context.disabled}
+                                displayValue={formatDepartmentLabel(context.values.departmentCode, context.values.departmentName)}
+                                hasError={Boolean(context.errors.departmentId)}
+                                initialSearch={String(context.values.departmentCode || context.values.departmentName || "")}
+                                lookupButtonLabel={USER_FORM_ITEM.LOOKUP_DEPARTMENT}
+                                onClear={onClearDepartment}
+                                onSelect={onSelectDepartment}
+                                placeholder={USER_FORM_ITEM.DEPARTMENT_PLACEHOLDER}
+                                value={context.values.departmentId}
+                            />
                         );
                     },
                     span: FORM_FIELD_SPAN.FULL,
@@ -142,7 +117,7 @@ export function useFormItem({ mode, onClearDepartment, onOpenDepartmentLookup }:
             ],
             key: USER_FORM_ITEM.SECTION_KEY,
         },
-    ], [mode, onClearDepartment, onOpenDepartmentLookup, userFormRoleOptions]);
+    ], [mode, onClearDepartment, onSelectDepartment, userFormRoleOptions]);
 
     return { formItems };
 }

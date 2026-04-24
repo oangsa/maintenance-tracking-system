@@ -1,4 +1,5 @@
 import React from "react";
+import { buildLookupPayload } from "~/constants";
 import { searchRepairRequestItems } from "~/services/repairRequests.service";
 import { formatProductLabel, formatRepairStatusLabel } from "~/lib/repairRequestUtils";
 import type { IRepairRequestDetailLineItem } from "../../../RepairRequests/detailLineItemColumns";
@@ -26,12 +27,11 @@ async function loadEmployeeLineItems(repairRequestId: number): Promise<IRepairRe
 
     while (currentPage <= totalPages)
     {
-        const response = await searchRepairRequestItems(repairRequestId, {
-            deleted: false,
-            orderBy: "id asc",
-            pageNumber: currentPage,
-            pageSize: REPAIR_REQUEST_ITEMS_PAGE_SIZE,
-        });
+        const response = await searchRepairRequestItems(repairRequestId, buildLookupPayload("repairRequestItem", {
+            limit: REPAIR_REQUEST_ITEMS_PAGE_SIZE,
+            page: currentPage,
+            search: "",
+        }));
 
         lineItems.push(...response.data.map((item) => ({
             description: item.description,
