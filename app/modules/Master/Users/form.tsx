@@ -7,7 +7,7 @@ import { useManagedForm } from "~/components/Common/Form/useManagedForm";
 import { useFormItem } from "./hooks/useFormItem";
 import type { IUserFormValues } from "./hooks//helpers";
 import { UserFormSchema } from "~/schemas/userFormSchema";
-import type { IDepartmentLookupRow } from "~/lookups/department.lookup";
+import type { IDepartmentLookupRow } from "~/components/Common/LookupField/lookups/department.lookup";
 
 interface IUserFormProps
 {

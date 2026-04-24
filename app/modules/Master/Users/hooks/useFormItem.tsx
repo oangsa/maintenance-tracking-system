@@ -2,7 +2,7 @@ import React from "react";
 import type { IFormSection } from "~/components/Common/Form";
 import { FORM_FIELD_SPAN, FORM_LAYOUT, FORM_SECTION_GUTTER, FORM_TYPE, ROLE_OPTIONS, USER_FORM_ITEM } from "~/constants";
 import LookupField from "~/components/Common/LookupField";
-import { DepartmentLookupDefinition, type IDepartmentLookupRow } from "~/lookups/department.lookup";
+import { DepartmentLookupDefinition, type IDepartmentLookupRow } from "~/components/Common/LookupField/lookups/department.lookup";
 import {
     formatDepartmentLabel,
     formatRoleLabel,
