@@ -1,6 +1,8 @@
 import React from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import CommonForm, { FormActions } from "~/components/Common/Form";
 import Loading from "~/components/Common/Loading";
+import { useManagedForm } from "~/components/Common/Form/useManagedForm";
 import type { IDepartmentFormValues } from "./hooks/helpers";
 import { useFormItem } from "./hooks/useFormItem";
 import { DepartmentFormSchema } from "~/schemas/departmentFormSchema";
@@ -21,29 +23,6 @@ interface IDepartmentFormErrors
     name?: string;
 }
 
-function validateForm(values: IDepartmentFormValues): IDepartmentFormErrors
-{
-    const nextErrors: IDepartmentFormErrors = {};
-    const validationResult = DepartmentFormSchema.safeParse(values);
-
-    if (validationResult.success)
-    {
-        return nextErrors;
-    }
-
-    for (const issue of validationResult.error.issues)
-    {
-        const fieldName = issue.path[0];
-
-        if (typeof fieldName === "string" && !nextErrors[fieldName as keyof IDepartmentFormErrors])
-        {
-            nextErrors[fieldName as keyof IDepartmentFormErrors] = issue.message;
-        }
-    }
-
-    return nextErrors;
-}
-
 export default function DepartmentForm({
     mode,
     initialValues,
@@ -53,50 +32,26 @@ export default function DepartmentForm({
     onSubmit,
 }: IDepartmentFormProps)
 {
-    const [values, setValues] = React.useState<IDepartmentFormValues>(initialValues);
-    const [formErrors, setFormErrors] = React.useState<IDepartmentFormErrors>({});
     const { formItems } = useFormItem();
-
-    React.useEffect(() =>
-    {
-        setValues(initialValues);
-        setFormErrors({});
-    }, [initialValues]);
+    const {
+        values,
+        errors: formErrors,
+        clearFieldError,
+        handleFormSubmit,
+        setFieldValue,
+    } = useManagedForm<IDepartmentFormValues, IDepartmentFormErrors>({
+        initialValues,
+        mapErrors: React.useCallback((fieldErrors) => ({
+            code: fieldErrors.code?.message,
+            name: fieldErrors.name?.message,
+        }), []),
+        onSubmit,
+        resolver: zodResolver(DepartmentFormSchema),
+    });
 
     function handleValueChange<TKey extends keyof IDepartmentFormValues>(fieldName: TKey, value: IDepartmentFormValues[TKey])
     {
-        setValues((currentValues) => ({
-            ...currentValues,
-            [fieldName]: value,
-        }));
-
-        setFormErrors((currentErrors) => ({
-            ...currentErrors,
-            [fieldName]: undefined,
-        }));
-    }
-
-    function clearFieldError(fieldName: string)
-    {
-        setFormErrors((currentErrors) => ({
-            ...currentErrors,
-            [fieldName]: undefined,
-        }));
-    }
-
-    function handleSubmit(event: React.FormEvent<HTMLFormElement>)
-    {
-        event.preventDefault();
-
-        const nextErrors = validateForm(values);
-
-        if (Object.keys(nextErrors).length > 0)
-        {
-            setFormErrors(nextErrors);
-            return;
-        }
-
-        void onSubmit(values);
+        setFieldValue(fieldName, value);
     }
 
     if (loading)
@@ -123,7 +78,7 @@ export default function DepartmentForm({
             clearError={clearFieldError}
             disabled={submitting}
             errors={formErrors}
-            onSubmit={handleSubmit}
+            onSubmit={handleFormSubmit}
             sections={formItems}
             setValue={handleValueChange}
             values={values}

@@ -1,8 +1,10 @@
 import React from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import CommonForm, { FormActions } from "~/components/Common/Form";
 import ListPickerModal from "~/components/Common/ListPickerModal";
 import Loading from "~/components/Common/Loading";
+import { useManagedForm } from "~/components/Common/Form/useManagedForm";
 import type { IDepartment } from "~/api/types/types";
 import { searchDepartments } from "~/services/departments.service";
 import { useFormItem } from "./hooks/useFormItem";
@@ -31,10 +33,17 @@ interface IUserFormErrors
     avatarUrl?: string;
 }
 
-function validateForm(values: IUserFormValues, mode: "create" | "edit"): IUserFormErrors
+export default function UserForm({
+    mode,
+    initialValues,
+    loading = false,
+    submitting = false,
+    onCancel,
+    onSubmit,
+}: IUserFormProps)
 {
-    const nextErrors: IUserFormErrors = {};
-    const validationResult = UserFormSchema.superRefine((currentValues, ctx) =>
+    const [isDepartmentLookupOpen, setIsDepartmentLookupOpen] = React.useState(false);
+    const resolvedSchema = React.useMemo(() => UserFormSchema.superRefine((currentValues, ctx) =>
     {
         if (mode === "create" && currentValues.password.length < 6)
         {
@@ -53,38 +62,27 @@ function validateForm(values: IUserFormValues, mode: "create" | "edit"): IUserFo
                 path: ["password"],
             });
         }
-    }).safeParse(values);
-
-    if (validationResult.success)
-    {
-        return nextErrors;
-    }
-
-    for (const issue of validationResult.error.issues)
-    {
-        const fieldName = issue.path[0];
-
-        if (typeof fieldName === "string" && !nextErrors[fieldName as keyof IUserFormErrors])
-        {
-            nextErrors[fieldName as keyof IUserFormErrors] = issue.message;
-        }
-    }
-
-    return nextErrors;
-}
-
-export default function UserForm({
-    mode,
-    initialValues,
-    loading = false,
-    submitting = false,
-    onCancel,
-    onSubmit,
-}: IUserFormProps)
-{
-    const [values, setValues] = React.useState<IUserFormValues>(initialValues);
-    const [formErrors, setFormErrors] = React.useState<IUserFormErrors>({});
-    const [isDepartmentLookupOpen, setIsDepartmentLookupOpen] = React.useState(false);
+    }), [mode]);
+    const {
+        values,
+        errors: formErrors,
+        clearFieldError,
+        handleFormSubmit,
+        setFieldValue,
+        setFieldValues,
+    } = useManagedForm<IUserFormValues, IUserFormErrors>({
+        initialValues,
+        mapErrors: React.useCallback((fieldErrors) => ({
+            avatarUrl: fieldErrors.avatarUrl?.message,
+            departmentId: fieldErrors.departmentId?.message,
+            email: fieldErrors.email?.message,
+            name: fieldErrors.name?.message,
+            password: fieldErrors.password?.message,
+            role: fieldErrors.role?.message,
+        }), []),
+        onSubmit,
+        resolver: zodResolver(resolvedSchema),
+    });
     const { formItems } = useFormItem({
         mode,
         onClearDepartment: handleDepartmentClear,
@@ -102,46 +100,9 @@ export default function UserForm({
         },
     ], []);
 
-    React.useEffect(() =>
-    {
-        setValues(initialValues);
-        setFormErrors({});
-    }, [initialValues]);
-
     function handleValueChange<TKey extends keyof IUserFormValues>(fieldName: TKey, value: IUserFormValues[TKey])
     {
-        setValues((currentValues) => ({
-            ...currentValues,
-            [fieldName]: value,
-        }));
-
-        setFormErrors((currentErrors) => ({
-            ...currentErrors,
-            [fieldName]: undefined,
-        }));
-    }
-
-    function clearFieldError(fieldName: string)
-    {
-        setFormErrors((currentErrors) => ({
-            ...currentErrors,
-            [fieldName]: undefined,
-        }));
-    }
-
-    function handleSubmit(event: React.FormEvent<HTMLFormElement>)
-    {
-        event.preventDefault();
-
-        const nextErrors = validateForm(values, mode);
-
-        if (Object.keys(nextErrors).length > 0)
-        {
-            setFormErrors(nextErrors);
-            return;
-        }
-
-        void onSubmit(values);
+        setFieldValue(fieldName, value);
     }
 
     const fetchDepartments = React.useCallback(async (params: {
@@ -180,32 +141,22 @@ export default function UserForm({
 
     function handleDepartmentSelect(department: IDepartmentPickerRow)
     {
-        setValues((currentValues) => ({
-            ...currentValues,
+        setFieldValues({
             departmentCode: department.code,
             departmentId: String(department.id),
             departmentName: department.name,
-        }));
-
-        setFormErrors((currentErrors) => ({
-            ...currentErrors,
-            departmentId: undefined,
-        }));
+        });
+        clearFieldError("departmentId");
     }
 
     function handleDepartmentClear()
     {
-        setValues((currentValues) => ({
-            ...currentValues,
+        setFieldValues({
             departmentCode: "",
             departmentId: "",
             departmentName: "",
-        }));
-
-        setFormErrors((currentErrors) => ({
-            ...currentErrors,
-            departmentId: undefined,
-        }));
+        });
+        clearFieldError("departmentId");
     }
 
     function handleOpenDepartmentLookup()
@@ -238,7 +189,7 @@ export default function UserForm({
                 clearError={clearFieldError}
                 disabled={submitting}
                 errors={formErrors}
-                onSubmit={handleSubmit}
+                onSubmit={handleFormSubmit}
                 sections={formItems}
                 setValue={handleValueChange}
                 values={values}

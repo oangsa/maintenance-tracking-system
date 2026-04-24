@@ -1,9 +1,11 @@
 import React from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { type IRepairRequestItemStatusFormValues } from "./hooks/helpers";
 import { RepairRequestItemStatusFormSchema } from "@/schemas/repairRequestItemStatusFormSchema";
 import CommonForm, { FormActions } from "~/components/Common/Form";
 import { useFormItem } from "./hooks/useFormItem";
 import Loading from "@/components/Common/Loading";
+import { useManagedForm } from "~/components/Common/Form/useManagedForm";
 
 interface IRepairRequestItemStatusFormProps
 {
@@ -23,29 +25,6 @@ interface IRepairRequestItemStatusFormErrors
     orderSequence?: string;
 }
 
-function validateForm(values: IRepairRequestItemStatusFormValues): IRepairRequestItemStatusFormErrors
-{
-    const nextErrors: IRepairRequestItemStatusFormErrors = {};
-    const validationResult = RepairRequestItemStatusFormSchema.safeParse(values);
-
-    if (validationResult.success)
-    {
-        return nextErrors;
-    }
-
-    for (const issue of validationResult.error.issues)
-    {
-        const fieldName = issue.path[0];
-
-        if (typeof fieldName === "string" && !nextErrors[fieldName as keyof IRepairRequestItemStatusFormErrors])
-        {
-            nextErrors[fieldName as keyof IRepairRequestItemStatusFormErrors] = issue.message;
-        }
-    }
-
-    return nextErrors;
-}
-
 export default function RepairRequestItemStatusForm({
     mode,
     initialValues,
@@ -55,40 +34,28 @@ export default function RepairRequestItemStatusForm({
     onSubmit,
 }: IRepairRequestItemStatusFormProps)
 {
-    const [values, setValues] = React.useState<IRepairRequestItemStatusFormValues>(initialValues);
-    const [formErrors, setFormErrors] = React.useState<IRepairRequestItemStatusFormErrors>({});
     const { formItems } = useFormItem();
-
-    React.useEffect(() =>
-    {
-        setValues(initialValues);
-        setFormErrors({});
-    }, [initialValues]);
+    const {
+        values,
+        errors: formErrors,
+        clearFieldError,
+        handleFormSubmit,
+        setFieldValue,
+    } = useManagedForm<IRepairRequestItemStatusFormValues, IRepairRequestItemStatusFormErrors>({
+        initialValues,
+        mapErrors: React.useCallback((fieldErrors) => ({
+            code: fieldErrors.code?.message,
+            isFinal: fieldErrors.isFinal?.message,
+            name: fieldErrors.name?.message,
+            orderSequence: fieldErrors.orderSequence?.message,
+        }), []),
+        onSubmit,
+        resolver: zodResolver(RepairRequestItemStatusFormSchema),
+    });
 
     function handleValueChange<TKey extends keyof IRepairRequestItemStatusFormValues>(fieldName: TKey, value: IRepairRequestItemStatusFormValues[TKey])
     {
-        setValues((currentValue) => ({ ...currentValue, ...{ [fieldName]: value } }));
-        setFormErrors((currentErrors) => ({ ...currentErrors, ...{ [fieldName]: undefined } }));
-    }
-
-    function clearFieldError(fieldName: string)
-    {
-        setFormErrors((currentErrors) => ({ ...currentErrors, ...{ [fieldName]: undefined } }));
-    }
-
-    function handleSubmit(event: React.FormEvent<HTMLFormElement>)
-    {
-        event.preventDefault();
-
-        const nextErrors = validateForm(values);
-
-        if (Object.keys(nextErrors).length > 0)
-        {
-            setFormErrors(nextErrors);
-            return;
-        }
-
-        void onSubmit(values);
+        setFieldValue(fieldName, value);
     }
 
     if (loading)
@@ -118,7 +85,7 @@ export default function RepairRequestItemStatusForm({
             disabled={submitting}
             sections={formItems}
             errors={formErrors}
-            onSubmit={handleSubmit}
+            onSubmit={handleFormSubmit}
             setValue={handleValueChange}
             values={values}
         />
