@@ -1,6 +1,5 @@
 import type { IDashboardCardDefinition, TDashboardCardZone } from "./types";
 import LatestRepairRequestsCard from "./cards/LatestRepairRequestsCard";
-import LowStockPartsCard from "./cards/LowStockPartsCard";
 import MonthlyRepairTrendCard from "./cards/MonthlyRepairTrendCard";
 import PendingRepairsCard from "./cards/PendingRepairsCard";
 import RepairStatusBreakdownCard from "./cards/RepairStatusBreakdownCard";
@@ -31,12 +30,6 @@ const dashboardCardDefinitions: IDashboardCardDefinition[] = [
         zone: SUMMARY_ZONE,
         title: "Urgent Requests",
         component: UrgentRequestsCard,
-    },
-    {
-        id: "low-stock-parts",
-        zone: SUMMARY_ZONE,
-        title: "Low Stock Parts",
-        component: LowStockPartsCard,
     },
     // Phi
     {

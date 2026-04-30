@@ -42,7 +42,7 @@ export default function DashboardPage()
 
     return (
         <div className="space-y-4">
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {summaryCards.map((card) => renderCard(card))}
             </section>
 
