@@ -3,6 +3,8 @@
 // Import from here or directly from the individual files.
 // ============================================================
 
+import type { IRepairRequestCountGroupByStatus } from "./repairRequestCountGroupByStatus.type";
+
 export type { IPriority, IRole, ISearchConditionOperator } from "../../constants";
 
 export type {
@@ -59,5 +61,9 @@ export type {
 export type {
     IWorkOrder,
 } from "../types/workOrder.types";
+
+export type {
+    IRepairRequestCountGroupByStatus
+} from "../types/repairRequestCountGroupByStatus.type";
 
 export type { IApiErrorBody } from "../types/core/error.types";

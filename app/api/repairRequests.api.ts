@@ -3,6 +3,7 @@ import type {
     IDeleteCollectionRequest,
     IPagedResult,
     IRepairRequest,
+    IRepairRequestCountGroupByStatus,
     IRepairRequestForCreate,
     IRepairRequestForUpdate,
     IRepairRequestItem,
@@ -85,4 +86,15 @@ export async function deleteRepairRequestCollectionRequest(body: IDeleteCollecti
         method: "DELETE",
         body: JSON.stringify(body),
     });
+}
+
+
+export async function getRepairRequestCountGroupByStatusRequest(body: ISearchRequest): Promise<IPagedResult<IRepairRequestCountGroupByStatus>>
+{
+    return httpPaginated<IRepairRequestCountGroupByStatus>(`${PREFIX}/reports/group-by-status/search`,
+        {
+            method: "POST",
+            body: JSON.stringify(body),
+        }
+    );
 }
