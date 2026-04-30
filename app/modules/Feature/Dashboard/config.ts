@@ -1,0 +1,87 @@
+import type { IDashboardCardDefinition, TDashboardCardZone } from "./types";
+import LatestRepairRequestsCard from "./cards/LatestRepairRequestsCard";
+import LowStockPartsCard from "./cards/LowStockPartsCard";
+import MonthlyRepairTrendCard from "./cards/MonthlyRepairTrendCard";
+import PendingRepairsCard from "./cards/PendingRepairsCard";
+import RepairStatusBreakdownCard from "./cards/RepairStatusBreakdownCard";
+import RepairsByDepartmentCard from "./cards/RepairsByDepartmentCard";
+import TopRepairedProductsCard from "./cards/TopRepairedProductsCard";
+import TotalActiveProductsCard from "./cards/TotalActiveProductsCard";
+import UrgentRequestsCard from "./cards/UrgentRequestsCard";
+
+const SUMMARY_ZONE: TDashboardCardZone = "summary";
+
+
+// Change this config to add/remove/rearrange cards on the dashboard.
+const dashboardCardDefinitions: IDashboardCardDefinition[] = [
+    {
+        id: "total-active-products",
+        zone: SUMMARY_ZONE,
+        title: "Total Active Products",
+        description: "Quick operational snapshot",
+        component: TotalActiveProductsCard,
+    },
+    {
+        id: "pending-repairs",
+        zone: SUMMARY_ZONE,
+        title: "Pending Repairs",
+        description: "Quick operational snapshot",
+        component: PendingRepairsCard,
+    },
+    {
+        id: "urgent-requests",
+        zone: SUMMARY_ZONE,
+        title: "Urgent Requests",
+        description: "Quick operational snapshot",
+        component: UrgentRequestsCard,
+    },
+    {
+        id: "low-stock-parts",
+        zone: SUMMARY_ZONE,
+        title: "Low Stock Parts",
+        description: "Quick operational snapshot",
+        component: LowStockPartsCard,
+    },
+    // Phi
+    {
+        id: "repairs-by-department",
+        zone: "main-left",
+        title: "Repairs by Department",
+        description: "Graph Card",
+        component: RepairsByDepartmentCard,
+    },
+    // Ploy
+    {
+        id: "monthly-repair-trend",
+        zone: "main-right-top",
+        title: "Monthly Repair Trend",
+        description: "Graph Card",
+        component: MonthlyRepairTrendCard,
+    },
+    // Oangsa
+    {
+        id: "repair-status-breakdown",
+        zone: "main-right-bottom-left",
+        title: "Repair Status Breakdown",
+        description: "Graph Card",
+        component: RepairStatusBreakdownCard,
+    },
+    // Oangsa
+    {
+        id: "latest-repair-requests",
+        zone: "main-right-bottom-right-top",
+        title: "Latest Repair Requests",
+        description: "List Card",
+        component: LatestRepairRequestsCard,
+    },
+    // Philaiwan (Just want it to be 3P :))
+    {
+        id: "top-repaired-products",
+        zone: "main-right-bottom-right-bottom",
+        title: "Top Repaired Products",
+        description: "List Card",
+        component: TopRepairedProductsCard,
+    },
+];
+
+export { dashboardCardDefinitions };
