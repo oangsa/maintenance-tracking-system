@@ -80,10 +80,37 @@ export function clearAccessToken(): void
 }
 
 let _refreshFn: (() => Promise<string>) | null = null;
+let _isNavigatingToLogin = false;
 
 export function registerRefreshFn(fn: () => Promise<string>): void
 {
     _refreshFn = fn;
+}
+
+function hasSessionSignal(): boolean
+{
+    return getAccessToken() !== null;
+}
+
+function isAuthRoute(pathname: string): boolean
+{
+    return pathname.startsWith("/auth/");
+}
+
+function redirectToLoginPage(): void
+{
+    if (typeof window === "undefined")
+    {
+        return;
+    }
+
+    if (_isNavigatingToLogin || isAuthRoute(window.location.pathname))
+    {
+        return;
+    }
+
+    _isNavigatingToLogin = true;
+    window.location.replace("/auth/login");
 }
 
 let _isRefreshing = false;
@@ -244,7 +271,33 @@ async function rawFetch<T>(path: string, options: IHttpRequestOptions, tokenOver
 
 function shouldAttemptRefresh(err: unknown, options: IHttpRequestOptions): boolean
 {
-    return !options.skipRefresh && err instanceof ApiError && err.statusCode === 401 && _refreshFn !== null;
+    if (options.skipRefresh || options.skipAuth)
+    {
+        return false;
+    }
+
+    if (!(err instanceof ApiError) || err.statusCode !== 401 || _refreshFn === null)
+    {
+        return false;
+    }
+
+    return hasSessionSignal();
+}
+
+function shouldRedirectToLogin(err: unknown, options: IHttpRequestOptions): boolean
+{
+    return !options.skipAuth && err instanceof ApiError && err.statusCode === 401;
+}
+
+function handleUnauthorizedFallback(err: unknown, options: IHttpRequestOptions): void
+{
+    if (!shouldRedirectToLogin(err, options))
+    {
+        return;
+    }
+
+    clearAccessToken();
+    redirectToLoginPage();
 }
 
 async function getRefreshedAccessToken(): Promise<string>
@@ -289,24 +342,33 @@ async function getRefreshedAccessToken(): Promise<string>
  */
 export async function http<T>(path: string, options: IHttpRequestOptions = {}): Promise<T>
 {
+    const requestOptions = options as IHttpRequestOptions;
+
     try
     {
-        const { body } = await rawFetch<T>(path, options);
+        const { body } = await rawFetch<T>(path, requestOptions);
         return body;
     }
     catch (err)
     {
-        const requestOptions = options as IHttpRequestOptions;
-
         if (!shouldAttemptRefresh(err, requestOptions))
         {
+            handleUnauthorizedFallback(err, requestOptions);
             throw err;
         }
 
-        const newToken = await getRefreshedAccessToken();
-        const { body } = await rawFetch<T>(path, requestOptions, newToken);
+        try
+        {
+            const newToken = await getRefreshedAccessToken();
+            const { body } = await rawFetch<T>(path, requestOptions, newToken);
 
-        return body;
+            return body;
+        }
+        catch (refreshErr)
+        {
+            handleUnauthorizedFallback(refreshErr, requestOptions);
+            throw refreshErr;
+        }
     }
 }
 
@@ -328,11 +390,20 @@ export async function httpPaginated<T>(path: string, options: IHttpRequestOption
     {
         if (!shouldAttemptRefresh(err, requestOptions))
         {
+            handleUnauthorizedFallback(err, requestOptions);
             throw err;
         }
 
-        const newToken = await getRefreshedAccessToken();
-        rawRes = await rawFetch<T[]>(path, requestOptions, newToken);
+        try
+        {
+            const newToken = await getRefreshedAccessToken();
+            rawRes = await rawFetch<T[]>(path, requestOptions, newToken);
+        }
+        catch (refreshErr)
+        {
+            handleUnauthorizedFallback(refreshErr, requestOptions);
+            throw refreshErr;
+        }
     }
 
     const data = Array.isArray(rawRes.body) ? rawRes.body : [];
