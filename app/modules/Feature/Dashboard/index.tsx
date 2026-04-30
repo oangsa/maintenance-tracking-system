@@ -2,6 +2,8 @@ import React from "react";
 import DashboardCard from "~/components/Common/DashboardCard";
 import { dashboardCardDefinitions } from "./config";
 import type { IDashboardCardDefinition, TDashboardCardZone } from "./types";
+import MonthlyRepairTrendCard, { MonthlyRepairTrendFilters } from "./cards/MonthlyRepairTrendCard";
+import { useMonthlyRepairTrend } from "./hooks/useMonthlyRepairTrend";
 
 function findCardByZone(zone: TDashboardCardZone): IDashboardCardDefinition | null
 {
@@ -15,6 +17,11 @@ function renderCard(card: IDashboardCardDefinition | null)
         return null;
     }
 
+    if (card.id === "monthly-repair-trend")
+    {
+        return <MonthlyRepairTrendDashboardCard card={card} key={card.id} />;
+    }
+
     const CardComponent = card.component;
 
     return (
@@ -26,6 +33,31 @@ function renderCard(card: IDashboardCardDefinition | null)
             <CardComponent
                 description={card.description}
                 title={card.title}
+            />
+        </DashboardCard>
+    );
+}
+
+interface IMonthlyRepairTrendDashboardCardProps
+{
+    card: IDashboardCardDefinition;
+}
+
+function MonthlyRepairTrendDashboardCard({ card }: IMonthlyRepairTrendDashboardCardProps)
+{
+    const trendState = useMonthlyRepairTrend();
+
+    return (
+        <DashboardCard
+            actions={<MonthlyRepairTrendFilters trendState={trendState} />}
+            description={card.description}
+            title={card.title}
+        >
+            <MonthlyRepairTrendCard
+                description={card.description}
+                hideFilters={true}
+                title={card.title}
+                trendState={trendState}
             />
         </DashboardCard>
     );
