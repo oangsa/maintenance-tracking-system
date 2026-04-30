@@ -16,9 +16,24 @@ export default function PendingRepairsCard({}: IDashboardCardComponentProps)
                 search: [
                     {
                         name: "current_status_code",
-                        condition: "EQUAL",
-                        value: "REQUESTED",
-                    }
+                        condition: "NOTEQUAL",
+                        value: "COMPLETED",
+                    },
+                    {
+                        name: "current_status_code",
+                        condition: "NOTEQUAL",
+                        value: "CANCELLED",
+                    },
+                    {
+                        name: "current_status_code",
+                        condition: "NOTEQUAL",
+                        value: "READY",
+                    },
+                    {
+                        name: "current_status_code",
+                        condition: "NOTEQUAL",
+                        value: "REJECTED",
+                    },
                 ]
             };
 
@@ -31,7 +46,7 @@ export default function PendingRepairsCard({}: IDashboardCardComponentProps)
 
     return (
         <MetricSummaryValue
-            caption="Pending Repairs"
+            caption="Ongoing Repair Requests"
             value={pendingRepairs?.toString() ?? "Loading..."}
         />
     );
