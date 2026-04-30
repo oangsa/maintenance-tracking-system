@@ -741,3 +741,4 @@ You have to follow these rules strictly
 - 15. For showing data do not show running id, please show code and name instead.
 - 16. Instead of using normal html tags, use shadcn ui components instead eg. Button, Input, etc.
 - 17. For `/search` endpoint there's a guide how we using it in `/docs/search-guide.md` in the main project folder
+- 18. When user ask about the flow of the program (work flow), please look at `docs/repair-workflow.md` inorder to understand it before answering anything.
