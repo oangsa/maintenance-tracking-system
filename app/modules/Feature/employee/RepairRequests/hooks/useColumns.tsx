@@ -30,7 +30,7 @@ function useColumns()
         {
             key: "repair_request_items",
             label: "Items",
-            render: (value: unknown) => Array.isArray(value) ? String(value.length) : "0",
+            render: (value: unknown, row: IRepairRequestTableRow) => Array.isArray(row.repairRequestItems) ? String(row.repairRequestItems.length) : "0",
             sortable: false,
         },
     ], []);

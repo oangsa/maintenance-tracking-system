@@ -10,17 +10,17 @@ function useColumns()
         {
             key: "code",
             label: "Code",
-            render: (value: unknown, row: IDepartmentTableRow) => String(value ?? row.name),
+            render: (value: unknown, row: IDepartmentTableRow) => String(value ?? row.code),
         },
         {
             key: "name",
             label: "Name",
-            render: (value: unknown, row: IDepartmentTableRow) => String(value ?? row.code),
+            render: (value: unknown, row: IDepartmentTableRow) => String(value ?? row.name),
         },
         {
-            key: "updatedAt",
+            key: "updated_at",
             label: "Updated At",
-            render: (value: unknown) => formatDateTime(value as string | null | undefined),
+            render: (value: unknown, row: IDepartmentTableRow) => formatDateTime(row.updatedAt as string | null | undefined),
         },
     ], []);
 }

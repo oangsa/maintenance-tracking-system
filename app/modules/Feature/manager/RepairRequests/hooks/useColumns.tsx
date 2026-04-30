@@ -8,33 +8,34 @@ function useColumns()
 {
     return React.useMemo(() => [
         {
-            key: "requestNo",
+            key: "request_no",
             label: "Request No",
+            render: (value: unknown, row: IRepairRequestTableRow) => row.requestNo,
         },
         {
-            key: "requesterName",
+            key: "requester_name",
             label: "Requester",
-            render: (_value: unknown, row: IRepairRequestTableRow) => formatRequesterLabel(row.requesterName, row.requesterEmail),
+            render: (value: unknown, row: IRepairRequestTableRow) => formatRequesterLabel(row.requesterName, row.requesterEmail),
         },
         {
             key: "priority",
             label: "Priority",
-            render: (value: unknown) => formatTitleCase(String(value ?? "")),
+            render: (value: unknown, row: IRepairRequestTableRow) => formatTitleCase(String(value ?? "")),
         },
         {
-            key: "currentStatusName",
+            key: "current_status_name",
             label: "Current Status",
-            render: (value: unknown, row: IRepairRequestTableRow) => String(value ?? row.currentStatusCode ?? "-"),
+            render: (value: unknown, row: IRepairRequestTableRow) => String(value ?? row.currentStatusName ?? "-"),
         },
         {
-            key: "requestedAt",
+            key: "requested_at",
             label: "Requested At",
-            render: (value: unknown) => formatDateTime(value as string | null | undefined),
+            render: (value: unknown, row: IRepairRequestTableRow) => formatDateTime(row.requestedAt as string | null | undefined),
         },
         {
-            key: "repairRequestItems",
+            key: "repair_request_items",
             label: "Items",
-            render: (value: unknown) => Array.isArray(value) ? String(value.length) : "0",
+            render: (value: unknown, row: IRepairRequestTableRow) => Array.isArray(row.repairRequestItems) ? String(row.repairRequestItems.length) : "0",
             sortable: false,
         },
     ], []);
