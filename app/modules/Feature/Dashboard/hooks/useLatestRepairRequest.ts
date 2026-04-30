@@ -33,13 +33,13 @@ export function useLatestRepairRequest(): IUseLatestRepairRequestResult
             pageSize: 5,
             pageNumber: 1,
             orderBy: "requested_at desc",
-            search: [
-                {
-                    name: "repair_request_items_department_id",
-                    condition: "EQUAL",
-                    value: String(currentUser.departmentId),
-                },
-            ],
+            // search: [
+            //     {
+            //         name: "repair_request_items_department_id",
+            //         condition: "EQUAL",
+            //         value: String(currentUser.departmentId),
+            //     },
+            // ],
         };
     }, [currentUser, isLoadingUser]);
 
