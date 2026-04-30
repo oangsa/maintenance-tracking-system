@@ -47,20 +47,20 @@ export default function DashboardPage()
             </section>
 
             <section className="grid gap-4 xl:grid-cols-12">
-                <div className="xl:col-span-4">
+                <div className="xl:col-span-4 xl:row-span-2">
                     {renderCard(leftCard)}
                 </div>
 
-                <div className="space-y-4 xl:col-span-8">
+                <div className="xl:col-span-8">
                     {renderCard(topRightCard)}
+                </div>
 
-                    <div className="grid gap-4 lg:grid-cols-2">
-                        {renderCard(bottomLeftCard)}
+                <div className="grid gap-4 lg:grid-cols-2 xl:col-span-8">
+                    {renderCard(bottomLeftCard)}
 
-                        <div className="grid gap-4">
-                            {renderCard(bottomRightTopCard)}
-                            {renderCard(bottomRightBottomCard)}
-                        </div>
+                    <div className="grid gap-4">
+                        {renderCard(bottomRightTopCard)}
+                        {renderCard(bottomRightBottomCard)}
                     </div>
                 </div>
             </section>
