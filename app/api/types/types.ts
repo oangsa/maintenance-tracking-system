@@ -67,3 +67,15 @@ export type {
 } from "../types/repairRequestCountGroupByStatus.type";
 
 export type { IApiErrorBody } from "../types/core/error.types";
+
+export type {
+    IPart,
+    IPartForCreate,
+    IPartForUpdate,
+} from "../types/part.types";
+
+export type {
+    IProductType,
+    IProductTypeForCreate,
+    IProductTypeForUpdate,
+} from "../types/productType.types";
