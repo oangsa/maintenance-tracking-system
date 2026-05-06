@@ -36,6 +36,12 @@ export default [
             route("manager/repair-requests/:id", "routes/Manager/RepairRequests/manager.repair-requests.$id.tsx"),
 
             // End Region: Manager routes
+
+            // Parts
+            route("master/parts", "routes/Master/Parts/master.parts.tsx"),
+            route("master/parts/new", "routes/Master/Parts/master.parts.new.tsx"),
+            route("master/parts/:id/edit", "routes/Master/Parts/master.parts.$id.edit.tsx"),
+            route("master/parts/:id", "routes/Master/Parts/master.parts.$id.tsx"),
         ]),
         route("auth/login", "routes/login.tsx"),
     ] satisfies RouteConfig;

@@ -17,6 +17,7 @@ export const LOOKUP_ORDER_BY = {
     repairRequestItemStatus: "id asc",
     repairStatus: "order_sequence asc",
     part: "code asc",
+    productType: "code asc",
 } as const;
 
 export const LOOKUP_SEARCH_FIELDS: Record<keyof typeof LOOKUP_ORDER_BY, string> = {
@@ -26,6 +27,7 @@ export const LOOKUP_SEARCH_FIELDS: Record<keyof typeof LOOKUP_ORDER_BY, string> 
     repairRequestItemStatus: "code,name",
     repairStatus: "code,name",
     part: "code,name",
+    productType: "code,name",
 };
 
 type TLookupKey = keyof typeof LOOKUP_ORDER_BY;

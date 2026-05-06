@@ -157,12 +157,10 @@ const defaultNavSections: INavSection[] = [
             { label: "Users", path: "/master/users", icon: <FiUsers size={18} /> },
             { label: "Departments", path: "/master/departments", icon: <FiLayers size={18} /> },
             { label: "Repair Request Item Statuses", path: "/master/repair-request-item-status", icon: <FiFileText size={18} /> },
+            { label: "Parts", path: "/master/parts", icon: <FiTool size={18} /> },
         ],
     },
-    {
-        label: "Reports",
-        items: [],
-    }
+   
 ];
 
 function flattenNavItems(navSections: INavSection[]): INavItem[]

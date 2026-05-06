@@ -73,3 +73,9 @@ export type {
     IPartForCreate,
     IPartForUpdate,
 } from "../types/part.types";
+
+export type {
+    IProductType,
+    IProductTypeForCreate,
+    IProductTypeForUpdate,
+} from "../types/productType.types";

@@ -90,6 +90,19 @@ const REPAIR_REQUEST_ITEM_STATUS_FORM_ITEM = {
     SECTION_KEY: "repair-request-item-status-fields",
 }
 
+const PART_FORM_ITEM = {
+    CODE_LABEL: "Code",
+    CODE_PLACEHOLDER: "Enter part code",
+    NAME_LABEL: "Name",
+    NAME_PLACEHOLDER: "Enter part name",
+    SECTION_KEY: "part-fields",
+} as const;
+
+const PRODUCT_TYPE_FORM_ITEM = {
+    PRODUCT_TYPE_LABEL: "Product Type",
+    PRODUCT_TYPE_PLACEHOLDER: "Select product type",
+} as const;
+
 export {
     FORM_LAYOUT,
 	FORM_FIELD_SPAN,
@@ -99,4 +112,6 @@ export {
     REPAIR_REQUEST_FORM_ITEM,
     USER_FORM_ITEM,
     REPAIR_REQUEST_ITEM_STATUS_FORM_ITEM,
+    PART_FORM_ITEM,
+    PRODUCT_TYPE_FORM_ITEM,
 };

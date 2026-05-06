@@ -42,5 +42,15 @@ export const LOOKUP_COLUMNS = {
             label: "Total Stock",
         }
     ],
+    productType: [
+        {
+            key: "code",
+            label: "Code",
+        },
+        {
+            key: "name",
+            label: "Name",
+        },
+    ],
 } as const;
 
