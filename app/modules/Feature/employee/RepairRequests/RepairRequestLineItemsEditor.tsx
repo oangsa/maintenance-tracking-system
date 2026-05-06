@@ -86,7 +86,7 @@ export default function RepairRequestLineItemsEditor({ disabled = false, itemIss
             ...buildLookupPayload("product", {
                 limit: 1,
                 page: 1,
-                search: "",
+                searchTerm: "",
             }),
             search: [
                 {

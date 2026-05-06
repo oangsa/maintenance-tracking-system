@@ -1,10 +1,11 @@
-import type { ISearchRequest } from "~/api/types/types";
+import type { ISearchCondition, ISearchRequest } from "~/api/types/types";
 
 export interface ILookupFetchParams
 {
-    search: string;
+    searchTerm: string;
     page: number;
     limit: number;
+    search?: ISearchCondition[];
     sortBy?: string;
     sortDir?: "asc" | "desc";
 }
@@ -44,10 +45,11 @@ export function buildLookupPayload(lookupKey: TLookupKey, params: ILookupFetchPa
         orderBy: buildLookupOrderBy(lookupKey, params),
         pageNumber: params.page,
         pageSize: params.limit,
-        searchTerm: params.search
+        search: params.search,
+        searchTerm: params.searchTerm
             ? {
                 name: LOOKUP_SEARCH_FIELDS[lookupKey],
-                value: params.search,
+                value: params.searchTerm,
             }
             : undefined,
     };

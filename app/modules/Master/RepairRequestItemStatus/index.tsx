@@ -27,7 +27,7 @@ export default function RepairRequestItemStatusPage()
         const res = await searchRepairRequestItemStatus(buildLookupPayload("repairRequestItemStatus", {
             limit: params.limit,
             page: params.page,
-            search: String(params.searchTerm ?? ""),
+            searchTerm: String(params.searchTerm ?? ""),
             sortBy: params.sortBy,
             sortDir: params.sortDir,
         }));

@@ -468,6 +468,8 @@ Lookup guidance:
 - use `LookupField` for form lookup controls and let it open `ListPickerModal`
 - place reusable lookup definitions in `app/components/Common/LookupField/lookups/`
 - use `LOOKUP_COLUMNS`, `LOOKUP_ORDER_BY`, and `buildLookupPayload()` to keep lookup behavior consistent
+- remember that lookup modal `params.search` is the quick-search text and is converted into backend `searchTerm` by `buildLookupPayload()`
+- if a lookup needs advanced filters, spread `buildLookupPayload()` first and then add backend `search[]` conditions explicitly
 - show business labels such as `code` and `name`, not only ids
 
 Line-item guidance:

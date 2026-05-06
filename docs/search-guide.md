@@ -21,6 +21,12 @@ Current lookup pattern:
 - lookup columns can be shared from `app/constants/lookupColumn.constants.ts`
 - lookup request payloads should use `buildLookupPayload("<lookupKey>", params)` for consistent `orderBy` and `searchTerm` behavior
 
+Important:
+
+- the `search` field in lookup picker params such as `params.search` is UI input text only
+- `buildLookupPayload()` maps that UI text to backend `searchTerm`, not backend `search[]`
+- if a lookup table later needs advanced filters, keep using `buildLookupPayload()` for the quick keyword box and then add backend `search[]` conditions on top of the returned payload
+
 Current repair-request examples:
 
 - the employee list always adds `requester_id EQUAL currentUser.id`
@@ -293,6 +299,62 @@ For lookup endpoints used by pickers, prefer the centralized defaults in `app/co
 - `buildLookupPayload()` to compose a consistent request body from picker params
 
 This prevents each module from repeating ad-hoc `orderBy` and `searchTerm` values.
+
+### Lookup Table Quick Search vs Advanced `search`
+
+Lookup tables currently receive a simple `params.search` string from `ListPickerModal`.
+
+That value is a quick-search input and becomes backend `searchTerm` through `buildLookupPayload()`.
+
+Current pattern:
+
+```ts
+const payload = buildLookupPayload("product", params);
+```
+
+This produces a request body like:
+
+```json
+{
+  "pageNumber": 1,
+  "pageSize": 10,
+  "orderBy": "code asc",
+  "searchTerm": {
+    "name": "code,name",
+    "value": "lap"
+  }
+}
+```
+
+If the lookup needs advanced filters in the future, build on top of that payload instead of replacing it:
+
+```ts
+const payload = {
+    ...buildLookupPayload("product", params),
+    search: [
+        {
+            condition: "EQUAL",
+            name: "product_type_id",
+            value: String(productTypeId),
+        },
+    ],
+};
+```
+
+That means:
+
+- `params.search` still powers backend `searchTerm`
+- backend `search[]` remains available for exact or structured lookup filters
+- the final request behaves as:
+
+```text
+(`search` filters) AND (`searchTerm` keyword match)
+```
+
+Use this pattern when a lookup table needs both:
+
+- a simple keyword box in the modal header
+- additional hidden filters such as department, status, type, or owner restrictions
 
 ## Field Name Reference
 

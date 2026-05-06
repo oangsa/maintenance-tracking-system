@@ -30,7 +30,7 @@ async function loadEmployeeLineItems(repairRequestId: number): Promise<IRepairRe
         const response = await searchRepairRequestItems(repairRequestId, buildLookupPayload("repairRequestItem", {
             limit: REPAIR_REQUEST_ITEMS_PAGE_SIZE,
             page: currentPage,
-            search: "",
+            searchTerm: "",
         }));
 
         lineItems.push(...response.data.map((item) => ({
