@@ -6,6 +6,8 @@ import {
     Trash2,
 } from "lucide-react"
 import ListPickerModal from "../ListPickerModal"
+import type { ILookupDefinition } from "../LookupField"
+import type { IFetchParams, IFetchResult, IPickerColumn } from "../ListPickerModal"
 import { Button } from "~/components/ui/button"
 import {
     Table,
@@ -32,34 +34,9 @@ export interface ILineItemRowHandlers
     remove: () => void;
 }
 
-export interface ILineItemPickerColumn<T = Record<string, unknown>>
-{
-    key: string;
-    label: string;
-    align?: "left" | "right" | "center";
-    render?: (value: unknown, row: T) => React.ReactNode;
-    style?: React.CSSProperties;
-}
-
-export interface ILineItemPickerFetchParams
-{
-    search: string;
-    page: number;
-    limit: number;
-    sortBy?: string;
-    sortDir?: "asc" | "desc";
-}
-
-export interface ILineItemPickerFetchResult<T = Record<string, unknown>>
-{
-    data: T[];
-    total: number;
-    totalPages: number;
-    pageItemCount?: number;
-    currentPage?: number;
-    hasNext?: boolean;
-    hasPrevious?: boolean;
-}
+export type ILineItemPickerColumn<T = Record<string, unknown>> = IPickerColumn<T>
+export type ILineItemPickerFetchParams = IFetchParams
+export type ILineItemPickerFetchResult<T = Record<string, unknown>> = IFetchResult<T>
 
 export interface ILineItemColumnRenderContext<TItem extends ILineItemValue = ILineItemValue>
 {
@@ -83,13 +60,7 @@ export interface ILineItemColumnRenderContext<TItem extends ILineItemValue = ILi
 
 export interface ILineItemPickerConfig<TItem extends ILineItemValue = ILineItemValue, TPickerRow extends Record<string, unknown> = Record<string, unknown>>
 {
-    columns: ILineItemPickerColumn<TPickerRow>[];
-    fetchData: (params: ILineItemPickerFetchParams) => Promise<ILineItemPickerFetchResult<TPickerRow>>;
-    title?: string;
-    searchPlaceholder?: string;
-    itemName?: string;
-    emptySearch?: string;
-    emptyDefault?: string;
+    definition: ILookupDefinition<TPickerRow>;
     getInitialSearch?: (context: ILineItemColumnRenderContext<TItem>) => string;
     onSelect: (row: TPickerRow, context: ILineItemColumnRenderContext<TItem>) => void;
 }
@@ -654,21 +625,21 @@ export default function LineItemsEditor<TItem extends ILineItemValue = ILineItem
 
             {activePicker && (
                 <ListPickerModal<TPickerRow>
-                    columns={activePicker.config.columns}
-                    emptyDefault={activePicker.config.emptyDefault}
-                    emptySearch={activePicker.config.emptySearch}
-                    fetchData={activePicker.config.fetchData}
+                    columns={activePicker.config.definition.columns}
+                    emptyDefault={activePicker.config.definition.emptyDefault}
+                    emptySearch={activePicker.config.definition.emptySearch}
+                    fetchData={activePicker.config.definition.fetchData}
                     initialSearch={activePicker.config.getInitialSearch?.(activePicker.context) ?? ""}
                     isOpen={activePicker !== null}
-                    itemName={activePicker.config.itemName ?? itemLabel}
+                    itemName={activePicker.config.definition.itemName ?? itemLabel}
                     onClose={() => setActivePicker(null)}
                     onSelect={(row) =>
                     {
                         activePicker.config.onSelect(row, activePicker.context)
                         setActivePicker(null)
                     }}
-                    searchPlaceholder={activePicker.config.searchPlaceholder ?? "Search..."}
-                    title={activePicker.config.title ?? `Select ${itemLabel}`}
+                    searchPlaceholder={activePicker.config.definition.searchPlaceholder ?? "Search..."}
+                    title={activePicker.config.definition.title ?? `Select ${itemLabel}`}
                 />
             )}
         </div>
