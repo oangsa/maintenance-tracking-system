@@ -33,15 +33,15 @@ async function loadManagerLineItems(repairRequestId: number, currentUserDepartme
             ...buildLookupPayload("repairRequestItem", {
                 limit: REPAIR_REQUEST_ITEMS_PAGE_SIZE,
                 page: currentPage,
-                search: "",
+                searchTerm: "",
+                search: [
+                    {
+                        condition: SEARCH_OPERATOR.EQUAL,
+                        name: MANAGER_ITEM_SEARCH_FIELD,
+                        value: String(currentUserDepartmentId),
+                    },
+                ],
             }),
-            search: [
-                {
-                    condition: SEARCH_OPERATOR.EQUAL,
-                    name: MANAGER_ITEM_SEARCH_FIELD,
-                    value: String(currentUserDepartmentId),
-                },
-            ],
         });
 
         lineItems.push(...response.data.map((item) => ({

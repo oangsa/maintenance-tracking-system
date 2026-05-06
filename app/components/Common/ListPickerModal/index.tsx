@@ -32,6 +32,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "~/components/ui/select";
+import type { ISearchCondition } from "~/api/types/types";
 import { cn } from "~/lib/utils";
 
 export interface IPickerColumn<T = Record<string, unknown>>
@@ -45,9 +46,10 @@ export interface IPickerColumn<T = Record<string, unknown>>
 
 export interface IFetchParams
 {
-    search: string;
+    searchTerm: string;
     page: number;
     limit: number;
+    search?: ISearchCondition[];
     sortBy?: string;
     sortDir?: "asc" | "desc";
 }
@@ -100,7 +102,7 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
     const [hasPrevious, setHasPrevious] = React.useState(false);
     const [loading, setLoading] = React.useState(false);
     const [searchInput, setSearchInput] = React.useState("");
-    const [search, setSearch] = React.useState("");
+    const [searchTerm, setSearchTerm] = React.useState("");
     const [page, setPage] = React.useState(1);
     const [sortBy, setSortBy] = React.useState(columns[0]?.key || "id");
     const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
@@ -112,7 +114,7 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
         {
             const v = String(initialSearch ?? "").trim();
             setSearchInput(v);
-            setSearch(v);
+            setSearchTerm(v);
             setPage(1);
         }
     }, [isOpen, initialSearch]);
@@ -121,7 +123,7 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
     {
         const t = setTimeout(() =>
         {
-            setSearch(searchInput);
+            setSearchTerm(searchInput);
             setPage(1);
         }, 300);
         return () => clearTimeout(t);
@@ -146,7 +148,7 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
         if (!isOpen || !fetchData) return;
         let cancelled = false;
         setLoading(true);
-        fetchData({ search, page, limit: pageLimit, sortBy, sortDir })
+        fetchData({ searchTerm, page, limit: pageLimit, sortBy, sortDir })
             .then((res) =>
             {
                 if (cancelled) return;
@@ -194,7 +196,7 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
                 if (!cancelled) setLoading(false);
             });
         return () => { cancelled = true; };
-    }, [isOpen, fetchData, search, page, pageLimit, sortBy, sortDir]);
+    }, [isOpen, fetchData, searchTerm, page, pageLimit, sortBy, sortDir]);
 
     const handleSelect = (row: T) =>
     {
@@ -328,7 +330,7 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
                                                     colSpan={colCount}
                                                     className="py-8 text-center text-muted-foreground"
                                                 >
-                                                    {search ? emptySearch : emptyDefault}
+                                                    {searchTerm ? emptySearch : emptyDefault}
                                                 </TableCell>
                                             </TableRow>
                                         )}

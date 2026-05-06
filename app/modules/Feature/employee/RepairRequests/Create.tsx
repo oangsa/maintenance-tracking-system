@@ -46,7 +46,7 @@ export default function CreateRepairRequestPage()
                     ...buildLookupPayload("repairStatus", {
                         limit: 100,
                         page: 1,
-                        search: "",
+                        searchTerm: "",
                     }),
                 });
                 const initialStatus = resolveInitialStatus(response.data);
