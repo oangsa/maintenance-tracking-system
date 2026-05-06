@@ -26,8 +26,8 @@ What to implement
 - The employee list page should show only Work Orders that belong to the current user through the active task assignment relationship.
 - Treat the ownership rule as current user id = active `work_task_assignment.assigneeId` for the Work Task that belongs to the Work Order.
 - When the employee opens one Work Order, the detail page should show:
-    - Work Order data
-    - the single Work Task as the execution description
+    - Work Order data (PHI)
+    - the single Work Task as the execution description (PHI)
     - the Work Order Part area where the employee can add or manage ordered/used parts inside that Work Order
 - Keep the department-aware part lookup logic close to this module or form.
 - Use the selected Work Order -> Repair Request Item chain to determine the department context when filtering selectable parts.

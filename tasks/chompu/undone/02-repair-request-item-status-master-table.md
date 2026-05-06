@@ -1,4 +1,4 @@
-# Task 02: Repair Request Item Status Master Table Alignment
+# Task 02: Repair Request Status Master Table Alignment
 
 Owner
 - Chompu
@@ -7,12 +7,12 @@ Main dependency
 - None.
 
 Endpoints in scope
-- `POST /api/v1/repair-request-item-status/search`
-- `POST /api/v1/repair-request-item-status`
-- `GET /api/v1/repair-request-item-status/{id}`
-- `PUT /api/v1/repair-request-item-status/{id}`
-- `DELETE /api/v1/repair-request-item-status/{id}`
-- `DELETE /api/v1/repair-request-item-status/collection`
+- `POST /api/v1/repair-request-status/search`
+- `POST /api/v1/repair-request-status`
+- `GET /api/v1/repair-request-status/{id}`
+- `PUT /api/v1/repair-request-status/{id}`
+- `DELETE /api/v1/repair-request-status/{id}`
+- `DELETE /api/v1/repair-request-status/collection`
 
 Why
 - Repair Request Item Status is the current backend endpoint that matches the Item Status master-data area.
