@@ -349,7 +349,10 @@ Use this folder for repair-request helpers shared by both employee and manager p
 - list, create, and detail only
 - list page always scopes results to the current requester
 - create page loads the current user and the initial repair status before rendering the form
-- form reuses `Common/Form` for request metadata and renders `LineItemsEditor` for requested items
+- form reuses `Common/Form` for request metadata and renders a dedicated `RepairRequestLineItemsEditor.tsx` wrapper for requested items
+- the line-item wrapper keeps row-level state such as product-code resolution messages and loading flags out of `form.tsx`
+- editable line-item columns live in `hooks/useLineItemColumn.tsx`
+- product lookup inside line items now uses the same shared lookup-definition flow as normal forms through `app/components/Common/LookupField/lookups/product.lookup.ts`
 - detail page loads submitted items through `hooks/useLineItem.ts`
 
 ### `app/modules/Feature/manager/RepairRequests`

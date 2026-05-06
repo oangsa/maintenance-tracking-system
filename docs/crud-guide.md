@@ -342,6 +342,9 @@ Recommended structure:
 - use `buildLookupPayload()` plus lookup constants from `app/constants/lookupQuery.constants.ts` for consistent lookup search payloads
 - keep shared field rendering and styles in `app/components/Common/Form`
 - keep submit state, validation mapping, and line-item orchestration inside `form.tsx`
+- when a form has complex line-item behavior, wrap `LineItemsEditor` in a feature component such as `RepairRequestLineItemsEditor.tsx` instead of keeping all line-item state and callbacks inline in `form.tsx`
+- keep editable line-item column definitions in a dedicated hook such as `hooks/useLineItemColumn.tsx`
+- when a line-item picker opens a lookup table, use the same shared lookup-definition pattern as normal forms by passing a reusable definition from `app/components/Common/LookupField/lookups/` into `LineItemsEditor`
 
 Typical props shape:
 
@@ -471,6 +474,9 @@ Line-item guidance:
 
 - use `LineItemsEditor` for editable row collections
 - provide the line-item columns from the feature module or a shared helper folder
+- for editable line-item forms, prefer a small wrapper component around `LineItemsEditor` plus a dedicated `hooks/useLineItemColumn.tsx` hook
+- keep line-item row messages, code-resolution state, and item-level callbacks in the wrapper component, not in `form.tsx`
+- when a line-item row needs a lookup modal, define the reusable lookup in `app/components/Common/LookupField/lookups/` and reference that definition from the line-item column config
 - use the read-only mode for detail pages when the collection should not be edited
 - if the detail page loads line items from `/api/v1/repair-requests/{id}/items/search`, keep that request and its loading state in `hooks/useLineItem.ts`
 
