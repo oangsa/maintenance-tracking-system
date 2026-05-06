@@ -31,16 +31,20 @@ const USER_FIELD_FILTER = {
 const REPAIR_REQUEST_FIELD_FILTER = {
     FIELD_KEY: {
         PRIORITY: "priority",
+        STATUS: "status",
     },
     LABEL: {
         PRIORITY: "Priority",
+        STATUS: "Status",
     },
     PARAM_KEY: {
         PRIORITY: "filterPriority",
+        STATUS: "filterStatus",
     },
     SEARCH_FIELD: {
         PRIORITY: "priority",
         REQUESTER_ID: "requester_id",
+        STATUS: "current_status_code",
     },
     SEARCH_TERM: "request_no",
 } as const;
