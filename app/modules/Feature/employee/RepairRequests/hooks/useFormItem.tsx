@@ -1,20 +1,15 @@
 import React from "react";
 import type { IFormSection } from "~/components/Common/Form";
 import { formStyleClassNames } from "~/components/Common/Form/styles";
-import LineItemsEditor, { type ILineItemColumn } from "~/components/Common/LineItemsEditor";
 import { FORM_FIELD_SPAN, FORM_SECTION_GUTTER, FORM_TYPE, PRIORITY_OPTIONS, REPAIR_REQUEST_FORM_ITEM } from "~/constants";
 import { formatTitleCase } from "~/lib/formatters";
-import { createEmptyRepairRequestLineItem, type IRepairRequestFormLineItem, type IRepairRequestFormValues } from "./helpers";
+import type { IRepairRequestFormValues } from "./helpers";
 
-interface IUseFormItemProps<TPickerRow extends Record<string, unknown>>
+interface IUseFormItemProps
 {
     mode: "create" | "edit";
     departmentLabel: string;
-    itemIssues: string[];
-    items: IRepairRequestFormLineItem[];
-    itemsError?: string;
-    lineItemColumns: ILineItemColumn<IRepairRequestFormLineItem, TPickerRow>[];
-    onItemsChange: (items: IRepairRequestFormLineItem[]) => void;
+    lineItemsEditor: React.ReactNode;
     requesterLabel: string;
 }
 
@@ -23,16 +18,7 @@ interface IUseFormItemResult
     formItems: IFormSection<IRepairRequestFormValues>[];
 }
 
-export function useFormItem<TPickerRow extends Record<string, unknown>>({
-    mode,
-    departmentLabel,
-    itemIssues,
-    items,
-    itemsError,
-    lineItemColumns,
-    onItemsChange,
-    requesterLabel,
-}: IUseFormItemProps<TPickerRow>): IUseFormItemResult
+export function useFormItem({ mode, departmentLabel, lineItemsEditor, requesterLabel }: IUseFormItemProps): IUseFormItemResult
 {
     const repairRequestPriorityOptions = React.useMemo(() => PRIORITY_OPTIONS.map((priorityOption) => ({
         label: formatTitleCase(priorityOption),
@@ -99,36 +85,13 @@ export function useFormItem<TPickerRow extends Record<string, unknown>>({
                     containerClassName: formStyleClassNames.lineItemSection,
                     key: "line-items",
                     span: FORM_FIELD_SPAN.FULL,
-                    render: (context) => (
-                        <>
-                            <LineItemsEditor<IRepairRequestFormLineItem, TPickerRow>
-                                addButtonLabel={REPAIR_REQUEST_FORM_ITEM.ADD_PRODUCT}
-                                columns={lineItemColumns}
-                                createEmptyItem={createEmptyRepairRequestLineItem}
-                                disabled={context.disabled}
-                                emptyMessage={REPAIR_REQUEST_FORM_ITEM.EMPTY_ITEMS}
-                                itemLabel={REPAIR_REQUEST_FORM_ITEM.PRODUCT_ITEM_LABEL}
-                                onChange={onItemsChange}
-                                title={REPAIR_REQUEST_FORM_ITEM.ITEMS_TITLE}
-                                value={items}
-                            />
-
-                            {itemsError && <div className="form-error">{itemsError}</div>}
-                            {itemIssues.length > 0 && (
-                                <div className={formStyleClassNames.lineItemErrors}>
-                                    {itemIssues.map((issue) => (
-                                        <p key={issue}>{issue}</p>
-                                    ))}
-                                </div>
-                            )}
-                        </>
-                    ),
+                    render: () => lineItemsEditor,
                     type: FORM_TYPE.CUSTOM,
                 },
             ],
             key: REPAIR_REQUEST_FORM_ITEM.SUMMARY_SECTION_KEY,
         },
-    ], [departmentLabel, itemIssues, items, itemsError, lineItemColumns, mode, onItemsChange, repairRequestPriorityOptions, requesterLabel]);
+    ], [departmentLabel, lineItemsEditor, mode, repairRequestPriorityOptions, requesterLabel]);
 
     return { formItems };
 }
