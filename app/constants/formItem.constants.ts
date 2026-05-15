@@ -103,6 +103,14 @@ const PRODUCT_TYPE_FORM_ITEM = {
     PRODUCT_TYPE_PLACEHOLDER: "Select product type",
 } as const;
 
+const REPAIR_STATUS_FORM_ITEM = {
+    CODE_LABEL: "Code",
+    CODE_PLACEHOLDER: "Enter repair status code",
+    NAME_LABEL: "Name",
+    NAME_PLACEHOLDER: "Enter repair status name",
+    SECTION_KEY: "repair-status-fields",
+} as const;
+
 export {
     FORM_LAYOUT,
 	FORM_FIELD_SPAN,
@@ -114,4 +122,5 @@ export {
     REPAIR_REQUEST_ITEM_STATUS_FORM_ITEM,
     PART_FORM_ITEM,
     PRODUCT_TYPE_FORM_ITEM,
+    REPAIR_STATUS_FORM_ITEM,
 };
