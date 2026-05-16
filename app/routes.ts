@@ -28,6 +28,12 @@ export default [
             route("master/repair-request-item-status/:id/edit", "routes/Master/RepairRequestItemStatus/master.repairRequestItemStatus.$id.edit.tsx"),
             route("master/repair-request-item-status/:id", "routes/Master/RepairRequestItemStatus/master.repairRequestItemStatus.$id.tsx"),
 
+            // repair statuses
+            route("master/repair-statuses", "routes/Master/RepairStatuses/master.repair-statuses.tsx"),
+            route("master/repair-statuses/new", "routes/Master/RepairStatuses/master.repair-statuses.new.tsx"),
+            route("master/repair-statuses/:id/edit", "routes/Master/RepairStatuses/master.repair-statuses.$id.edit.tsx"),
+            route("master/repair-statuses/:id", "routes/Master/RepairStatuses/master.repair-statuses.$id.tsx"),
+
             // End Region: Master routes
 
             // Region: Manager routes

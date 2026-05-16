@@ -34,7 +34,11 @@ export type {
     IProductForUpdate,
 } from "../types/product.types";
 
-export type { IRepairStatus } from "../types/repairStatus.types";
+export type { 
+    IRepairStatus,
+    IRepairStatusForCreate,
+    IRepairStatusForUpdate
+} from "../types/repairStatus.types";
 
 export type {
     IRepairRequest,
