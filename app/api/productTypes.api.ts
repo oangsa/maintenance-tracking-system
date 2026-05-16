@@ -2,10 +2,10 @@ import { http, httpPaginated } from "./http";
 import type {
     IDeleteCollectionRequest,
     IPagedResult,
+    ISearchRequest,
     IProductType,
     IProductTypeForCreate,
     IProductTypeForUpdate,
-    ISearchRequest,
 } from "./types/types";
 
 const PREFIX = "/api/v1/product-type";
@@ -18,11 +18,11 @@ export async function searchProductTypesRequest(body: ISearchRequest): Promise<I
     });
 }
 
-export async function createProductTypeRequest(body: IProductTypeForCreate): Promise<IProductType>
+export async function createProductTypeRequest(data: IProductTypeForCreate): Promise<IProductType>
 {
     return http<IProductType>(PREFIX, {
         method: "POST",
-        body: JSON.stringify(body),
+        body: JSON.stringify(data),
     });
 }
 
@@ -31,11 +31,11 @@ export async function getProductTypeByIdRequest(id: number): Promise<IProductTyp
     return http<IProductType>(`${PREFIX}/${id}`);
 }
 
-export async function updateProductTypeRequest(id: number, body: IProductTypeForUpdate): Promise<IProductType>
+export async function updateProductTypeRequest(id: number, data: IProductTypeForUpdate): Promise<IProductType>
 {
     return http<IProductType>(`${PREFIX}/${id}`, {
         method: "PUT",
-        body: JSON.stringify(body),
+        body: JSON.stringify(data),
     });
 }
 

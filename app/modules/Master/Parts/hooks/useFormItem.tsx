@@ -1,7 +1,7 @@
 import React from "react";
 import type { IFormSection } from "~/components/Common/Form";
 import LookupField from "~/components/Common/LookupField";
-import { ProductTypeLookupDefinition, type IProductTypeLookupRow } from "~/components/Common/LookupField/lookups/productType.lookup";
+import { productTypeLookup, type IProductTypeLookupRow } from "~/components/Common/LookupField/lookups/productType.lookup";
 import { PART_FORM_ITEM, PRODUCT_TYPE_FORM_ITEM, FORM_FIELD_SPAN, FORM_SECTION_GUTTER, FORM_TYPE } from "~/constants";
 import { formatJoinedLabel } from "~/lib/formatters";
 import type { IPartFormValues } from "./helpers";
@@ -60,7 +60,7 @@ export function useFormItem({ mode }: IUseFormItemProps): IUseFormItemResult
                         return (
                             <LookupField<IProductTypeLookupRow>
                                 controlId="productTypeLookupDisplay"
-                                definition={ProductTypeLookupDefinition}
+                                definition={productTypeLookup}
                                 disabled={context.disabled}
                                 displayValue={formatJoinedLabel([context.values.productTypeCode, context.values.productTypeName])}
                                 hasError={Boolean(context.errors.productTypeId)}

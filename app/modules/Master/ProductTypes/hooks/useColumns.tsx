@@ -1,12 +1,12 @@
-import React from "react";
+import { formatDateTime } from "@/lib/formatters";
+import { useMemo } from "react";
 import type { IProductType } from "~/api/types/types";
-import { formatDateTime } from "~/lib/formatters";
 
 type IProductTypeTableRow = IProductType & Record<string, unknown>;
 
-function useColumns()
+export default function useColumns()
 {
-    return React.useMemo(() => [
+    return useMemo(() => [
         {
             key: "code",
             label: "Code",
@@ -18,8 +18,13 @@ function useColumns()
             render: (value: unknown, row: IProductTypeTableRow) => String(value ?? row.name),
         },
         {
-            key: "departmentName",
-            label: "Department",
+            key: "department_code",
+            label: "Department Code",
+            render: (value: unknown, row: IProductTypeTableRow) => String(value ?? row.departmentCode),
+        },
+        {
+            key: "department_name",
+            label: "Department Name",
             render: (value: unknown, row: IProductTypeTableRow) => String(value ?? row.departmentName),
         },
         {
@@ -27,8 +32,6 @@ function useColumns()
             label: "Updated At",
             render: (value: unknown, row: IProductTypeTableRow) => formatDateTime(row.updatedAt as string | null | undefined),
         },
+        
     ], []);
 }
-
-export default useColumns;
-export type { IProductTypeTableRow };       

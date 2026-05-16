@@ -22,6 +22,12 @@ export default [
             route("master/users/:id/edit", "routes/Master/Users/master.users.$id.edit.tsx"),
             route("master/users/:id", "routes/Master/Users/master.users.$id.tsx"),
 
+            // product types
+            route("master/product-types", "routes/Master/ProductTypes/master.product-types.tsx"),
+            route("master/product-types/new", "routes/Master/ProductTypes/master.product-types.new.tsx"),
+            route("master/product-types/:id/edit", "routes/Master/ProductTypes/master.product-types.$id.edit.tsx"),
+            route("master/product-types/:id", "routes/Master/ProductTypes/master.product-types.$id.tsx"),
+
             // repair request item status
             route("master/repair-request-item-status", "routes/Master/RepairRequestItemStatus/master.repairRequestItemStatus.tsx"),
             route("master/repair-request-item-status/new", "routes/Master/RepairRequestItemStatus/master.repairRequestItemStatus.new.tsx"),
