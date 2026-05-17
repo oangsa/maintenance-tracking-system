@@ -21,8 +21,8 @@ function mapProductTypeToFormValues(productType: IProductType): IProductTypeForm
         name: productType.name ?? "",
         description: productType.description ?? "",
         departmentId: Number.isFinite(productType.departmentId) ? String(productType.departmentId) : "",
-        departmentCode: productType.department?.code ?? "",
-        departmentName: productType.department?.name ?? "",
+        departmentCode: productType.departmentCode ?? "",
+        departmentName: productType.departmentName ?? "",
     };
 }
 

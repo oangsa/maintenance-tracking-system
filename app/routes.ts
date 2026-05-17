@@ -28,6 +28,12 @@ export default [
             route("master/product-types/:id/edit", "routes/Master/ProductTypes/master.product-types.$id.edit.tsx"),
             route("master/product-types/:id", "routes/Master/ProductTypes/master.product-types.$id.tsx"),
 
+            // products
+            route("master/products", "routes/Master/Products/master.products.tsx"),
+            route("master/products/new", "routes/Master/Products/master.products.new.tsx"),
+            route("master/products/:id/edit", "routes/Master/Products/master.products.$id.edit.tsx"),
+            route("master/products/:id", "routes/Master/Products/master.products.$id.tsx"),
+
             // repair request item status
             route("master/repair-request-item-status", "routes/Master/RepairRequestItemStatus/master.repairRequestItemStatus.tsx"),
             route("master/repair-request-item-status/new", "routes/Master/RepairRequestItemStatus/master.repairRequestItemStatus.new.tsx"),

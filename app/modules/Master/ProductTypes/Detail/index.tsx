@@ -47,7 +47,7 @@ export default function ProductTypeDetailPage()
         return (
             <>
                 <Link
-                    className={cn(buttonVariants({ variant: "outline" }), "gap-1.5 !text-foreground hover:!text-foreground")}
+                    className={cn(buttonVariants({ variant: "outline" }), "gap-1.5 text-foreground! hover:text-foreground!")}
                     to={`/master/product-types/${productType.id}/edit`}
                 >
                     Edit Product Type
@@ -68,8 +68,8 @@ export default function ProductTypeDetailPage()
                     { label: "Code", value: productType.code ?? "-" },
                     { label: "Name", value: productType.name ?? "-" },
                     { label: "Description", value: productType.description ?? "-" },
-                    { label: "Department Code", value: productType.department?.code ?? "-" },
-                    { label: "Department Name", value: productType.department?.name ?? "-" },
+                    { label: "Department Code", value: productType.departmentCode ?? "-" },
+                    { label: "Department Name", value: productType.departmentName ?? "-" },
                 ],
             },
             {
@@ -77,7 +77,7 @@ export default function ProductTypeDetailPage()
                 fields: [
                     { label: "Created At", value: formatDateTime(productType.createdAt) },
                     { label: "Updated At", value: formatDateTime(productType.updatedAt) },
-                    { label: "Department", value: formatDepartmentLabel(productType.department?.code, productType.department?.name) },
+                    { label: "Department", value: formatDepartmentLabel(productType.departmentCode, productType.departmentName) },
                 ],
             },
         ];

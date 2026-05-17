@@ -31,7 +31,7 @@ async function fetchProductTypeLookupData(params: IFetchParams): Promise<IFetchR
     };
 }
 
-export const productTypeLookup: ILookupDefinition<IProductTypeLookupRow> = {
+export const ProductTypeLookupDefinition: ILookupDefinition<IProductTypeLookupRow> = {
     columns: ProductTypeLookupColumns,
     emptyDefault: "No product types found.",
     emptySearch: "No matching product types found.",

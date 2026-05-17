@@ -158,6 +158,7 @@ const defaultNavSections: INavSection[] = [
             { label: "Users", path: "/master/users", icon: <FiUsers size={18} /> },
             { label: "Departments", path: "/master/departments", icon: <FiLayers size={18} /> },
             { label: "Product Types", path: "/master/product-types", icon: <FiBox size={18} /> },
+            { label: "Products", path: "/master/products", icon: <FiBox size={18} /> },
             { label: "Repair Request Item Statuses", path: "/master/repair-request-item-status", icon: <FiFileText size={18} /> },
             { label: "Parts", path: "/master/parts", icon: <FiTool size={18} /> },
         ],
