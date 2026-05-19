@@ -52,5 +52,33 @@ export const LOOKUP_COLUMNS = {
             label: "Name",
         },
     ],
+    repairRequestItem: [
+        {
+            key: "requestNo",
+            label: "Request No.",
+        },
+        {
+            key: "productName",
+            label: "Product",
+        },
+        {
+            key: "description",
+            label: "Description",
+        },
+    ],
+    repairStatus: [
+        {
+            key: "code",
+            label: "Code",
+        },
+        {
+            key: "name",
+            label: "Name",
+        },
+        {
+            key: "orderSequence",
+            label: "Order Sequence",
+        },
+    ],
 } as const;
 

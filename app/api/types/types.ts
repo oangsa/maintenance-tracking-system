@@ -64,6 +64,11 @@ export type {
 
 export type {
     IWorkOrder,
+    IWorkOrderForCreate,
+    IWorkOrderForUpdate,
+    IRepairRequestDisplay,
+    IRepairRequestItemDisplay,
+    IRepairStatusDisplay,
 } from "../types/workOrder.types";
 
 export type {
