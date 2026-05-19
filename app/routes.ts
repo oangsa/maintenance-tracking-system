@@ -9,8 +9,8 @@ export default [
             route("repair-requests/new", "routes/Main/RepairRequests/repair-requests.new.tsx"),
             route("repair-requests/:id", "routes/Main/RepairRequests/repair-requests.$id.tsx"),
 
-            route("employee/work-orders", "routes/Main/WorkOrders/work-orders.tsx"),
-            route("employee/work-orders/:id", "routes/Main/WorkOrders/work-orders.$id.tsx"),
+            route("work-orders", "routes/Main/WorkOrders/work-orders.tsx"),
+            route("work-orders/:id", "routes/Main/WorkOrders/work-orders.$id.tsx"),
 
             // Region: Master routes
             // departments
