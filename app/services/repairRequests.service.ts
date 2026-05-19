@@ -9,7 +9,8 @@ import {
     searchRepairRequestWorkOrdersRequest,
     searchRepairRequestsRequest,
     updateRepairRequestRequest,
-    getRepairRequestCountGroupByStatusRequest
+    getRepairRequestCountGroupByStatusRequest,
+    searchAllRepairRequestItemsRequest
 } from "../api/repairRequests.api";
 import type {
     IDeleteCollectionRequest,
@@ -78,4 +79,9 @@ export async function deleteRepairRequests(body: IDeleteCollectionRequest): Prom
 export async function getRepairRequestCountGroupByStatus(params: ISearchRequest): Promise<IPagedResult<IRepairRequestCountGroupByStatus>>
 {
     return getRepairRequestCountGroupByStatusRequest(params);
+}
+
+export async function searchAllRepairRequestItems(body: ISearchRequest): Promise<IPagedResult<IRepairRequestItem>>
+{
+    return searchAllRepairRequestItemsRequest(body);
 }

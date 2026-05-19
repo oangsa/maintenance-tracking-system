@@ -9,6 +9,9 @@ export default [
             route("repair-requests/new", "routes/Main/RepairRequests/repair-requests.new.tsx"),
             route("repair-requests/:id", "routes/Main/RepairRequests/repair-requests.$id.tsx"),
 
+            route("employee/work-orders", "routes/Main/WorkOrders/work-orders.tsx"),
+            route("employee/work-orders/:id", "routes/Main/WorkOrders/work-orders.$id.tsx"),
+
             // Region: Master routes
             // departments
             route("master/departments", "routes/Master/Departments/master.departments.tsx"),
@@ -40,6 +43,12 @@ export default [
             // repair requests
             route("manager/repair-requests", "routes/Manager/RepairRequests/manager.repair-requests.tsx"),
             route("manager/repair-requests/:id", "routes/Manager/RepairRequests/manager.repair-requests.$id.tsx"),
+
+            // work orders
+            route("manager/work-orders", "routes/Manager/WorkOrders/manager.work-orders.tsx"),
+            route("manager/work-orders/new", "routes/Manager/WorkOrders/manager.work-orders.new.tsx"),
+            route("manager/work-orders/:id/edit", "routes/Manager/WorkOrders/manager.work-orders.$id.edit.tsx"),
+            route("manager/work-orders/:id", "routes/Manager/WorkOrders/manager.work-orders.$id.tsx"),
 
             // End Region: Manager routes
 

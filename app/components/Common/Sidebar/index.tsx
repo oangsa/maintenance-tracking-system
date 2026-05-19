@@ -143,12 +143,14 @@ const defaultNavSections: INavSection[] = [
         items: [
             { label: "Home", path: "/", icon: <FiHome size={18} /> },
             { label: "Repair Requests", path: "/repair-requests", icon: <FiClipboard size={18} /> },
+            { label: "Work Orders", path: "/work-orders", icon: <FiTool size={18} /> },
         ],
     },
     {
         label: "Manager",
         items: [
             { label: "Repair Requests", path: "/manager/repair-requests", icon: <FiClipboard size={18} /> },
+            { label: "Work Orders", path: "/manager/work-orders", icon: <FiTool size={18} /> },
         ],
     },
     {
