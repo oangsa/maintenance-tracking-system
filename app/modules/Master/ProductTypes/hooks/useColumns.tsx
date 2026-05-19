@@ -2,7 +2,7 @@ import { formatDateTime } from "@/lib/formatters";
 import { useMemo } from "react";
 import type { IProductType } from "~/api/types/types";
 
-type IProductTypeTableRow = IProductType & Record<string, unknown>;
+export type IProductTypeTableRow = IProductType & Record<string, unknown>;
 
 export default function useColumns()
 {
