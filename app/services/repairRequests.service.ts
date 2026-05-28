@@ -10,7 +10,8 @@ import {
     searchRepairRequestsRequest,
     updateRepairRequestRequest,
     getRepairRequestCountGroupByStatusRequest,
-    searchAllRepairRequestItemsRequest
+    searchAllRepairRequestItemsRequest,
+    getMonthlyRepairTrendByProductTypeReportRequest
 } from "../api/repairRequests.api";
 import type {
     IDeleteCollectionRequest,
@@ -23,7 +24,8 @@ import type {
     IRepairRequestStatusLog,
     ISearchRequest,
     IWorkOrder,
-    IRepairRequestCountGroupByStatus
+    IRepairRequestCountGroupByStatus,
+    IMonthlyRepairTrendByProductTypeReport
 } from "../api/types/types";
 
 export async function searchRepairRequests(params: ISearchRequest): Promise<IPagedResult<IRepairRequest>>
@@ -84,4 +86,9 @@ export async function getRepairRequestCountGroupByStatus(params: ISearchRequest)
 export async function searchAllRepairRequestItems(body: ISearchRequest): Promise<IPagedResult<IRepairRequestItem>>
 {
     return searchAllRepairRequestItemsRequest(body);
+}
+
+export async function getMonthlyRepairTrendByProductTypeReport(params: ISearchRequest): Promise<IPagedResult<IMonthlyRepairTrendByProductTypeReport>>
+{
+    return getMonthlyRepairTrendByProductTypeReportRequest(params);
 }
