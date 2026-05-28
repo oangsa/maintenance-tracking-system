@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ChartConfig } from "@/components/ui/chart";
 import { MONTHS_OPTIONS } from "@/constants/common.constants";
+import { getMonthlyRepairTrendByProductTypeReport } from "~/services/repairRequests.service";
+import type { ISearchConditionOperator } from "~/api/types/types";
 
 export interface IMonthlyRepairTrendItem
 {
@@ -29,32 +31,11 @@ export interface IUseMonthlyRepairTrendResult
     selectedMonth: string;
     selectedYear: string;
     yearOptions: IMonthlyRepairTrendYearOption[];
+    loading: boolean;
+    error: string | null;
     onMonthChange: (value: string | null) => void;
     onYearChange: (value: string | null) => void;
 }
-
-const mockMonthlyRepairTrendByMonthYear: Record<string, IMonthlyRepairTrendItem[]> = {
-    "2026-01": [
-        { productTypeName: "Laptop", value: 12 },
-        { productTypeName: "Desktop", value: 8 },
-        { productTypeName: "Printer", value: 5 },
-    ],
-    "2026-02": [
-        { productTypeName: "Laptop", value: 10 },
-        { productTypeName: "Desktop", value: 9 },
-        { productTypeName: "Printer", value: 4 },
-    ],
-    "2026-03": [
-        { productTypeName: "Laptop", value: 14 },
-        { productTypeName: "Desktop", value: 6 },
-        { productTypeName: "Printer", value: 7 },
-    ],
-    "2026-04": [
-        { productTypeName: "Laptop", value: 11 },
-        { productTypeName: "Desktop", value: 7 },
-        { productTypeName: "Printer", value: 6 },
-    ],
-};
 
 function toTwoDigits(value: number): string
 {
@@ -93,6 +74,10 @@ export function useMonthlyRepairTrend(): IUseMonthlyRepairTrendResult
     const defaultYear = String(currentDate.getFullYear());
     const [selectedMonth, setSelectedMonth] = useState<string>(defaultMonth);
     const [selectedYear, setSelectedYear] = useState<string>(defaultYear);
+    const [data, setData] = useState<IMonthlyRepairTrendItem[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+
     const filters = useMemo<IMonthlyRepairTrendFilters>(() =>
     {
         return buildDateRange(selectedMonth, selectedYear);
@@ -103,17 +88,67 @@ export function useMonthlyRepairTrend(): IUseMonthlyRepairTrendResult
         return buildYearOptions(Number(defaultYear), 8);
     }, [defaultYear]);
 
-    const data = useMemo<IMonthlyRepairTrendItem[]>(() =>
+    useEffect(() =>
     {
-        const monthYearKey = `${selectedYear}-${toTwoDigits(Number(selectedMonth))}`;
-        const monthlyData = mockMonthlyRepairTrendByMonthYear[monthYearKey] ?? [
-            { productTypeName: "Laptop", value: 0 },
-            { productTypeName: "Desktop", value: 0 },
-            { productTypeName: "Printer", value: 0 },
-        ];
+        let isMounted = true;
 
-        return monthlyData;
-    }, [selectedMonth, selectedYear]);
+        async function fetchData()
+        {
+            if (!filters.startDate || !filters.endDate)
+            {
+                return;
+            }
+
+            setLoading(true);
+            setError(null);
+
+            try
+            {
+                const response = await getMonthlyRepairTrendByProductTypeReport({
+                    pageNumber: 1,
+                    pageSize: 100,
+                    search: [
+                        {
+                            name: "requested_at",
+                            condition: "GREATEROREQUAL" as ISearchConditionOperator,
+                            value: `${filters.startDate}T00:00:00.000Z`,
+                        },
+                        {
+                            name: "requested_at",
+                            condition: "LESSEROREQUAL" as ISearchConditionOperator,
+                            value: `${filters.endDate}T23:59:59.999Z`,
+                        },
+                    ],
+                });
+
+                if (isMounted)
+                {
+                    setData(response.data);
+                }
+            }
+            catch (err: any)
+            {
+                if (isMounted)
+                {
+                    setError(err.message || "Failed to load monthly trend");
+                }
+            }
+            finally
+            {
+                if (isMounted)
+                {
+                    setLoading(false);
+                }
+            }
+        }
+
+        fetchData();
+
+        return () =>
+        {
+            isMounted = false;
+        };
+    }, [filters.startDate, filters.endDate]);
 
     const config = useMemo<ChartConfig>(() =>
     {
@@ -157,6 +192,8 @@ export function useMonthlyRepairTrend(): IUseMonthlyRepairTrendResult
         selectedMonth,
         selectedYear,
         yearOptions,
+        loading,
+        error,
         onMonthChange,
         onYearChange,
     };

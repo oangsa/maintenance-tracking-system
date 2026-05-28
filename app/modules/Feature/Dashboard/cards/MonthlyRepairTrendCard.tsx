@@ -72,6 +72,8 @@ export default function MonthlyRepairTrendCard({
     const {
         data: monthlyRepairTrendData,
         config: monthlyRepairTrendChartConfig,
+        loading,
+        error,
     } = resolvedTrendState;
 
     return (
@@ -80,40 +82,54 @@ export default function MonthlyRepairTrendCard({
                 <MonthlyRepairTrendFilters trendState={resolvedTrendState} />
             )}
 
-            <ChartContainer
-                className="h-[18rem] w-full"
-                config={monthlyRepairTrendChartConfig}
-            >
-                <ComposedChart
-                    accessibilityLayer
-                    data={monthlyRepairTrendData}
-                    margin={{ top: 4, right: 12, bottom: 4, left: 4 }}
+            {error ? (
+                <div className="flex h-[18rem] w-full items-center justify-center rounded-md border border-destructive/50 bg-destructive/10 text-sm text-destructive">
+                    {error}
+                </div>
+            ) : loading ? (
+                <div className="flex h-[18rem] w-full items-center justify-center text-sm text-muted-foreground">
+                    Loading...
+                </div>
+            ) : monthlyRepairTrendData.length === 0 ? (
+                <div className="flex h-[18rem] w-full items-center justify-center text-sm text-muted-foreground">
+                    No data available for the selected period.
+                </div>
+            ) : (
+                <ChartContainer
+                    className="h-[18rem] w-full"
+                    config={monthlyRepairTrendChartConfig}
                 >
-                    <CartesianGrid vertical={false} />
-                    <XAxis
-                        axisLine={false}
-                        dataKey="productTypeName"
-                        tickLine={false}
-                    />
-                    <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar
-                        dataKey="value"
-                        fill="var(--color-value)"
-                        radius={[8, 8, 0, 0]}
-                    />
-                    <Line
-                        dataKey="value"
-                        dot={{
-                            fill: "var(--color-trend)",
-                            r: 4,
-                        }}
-                        stroke="var(--color-trend)"
-                        strokeWidth={2}
-                        type="monotone"
-                    />
-                </ComposedChart>
-            </ChartContainer>
+                    <ComposedChart
+                        accessibilityLayer
+                        data={monthlyRepairTrendData}
+                        margin={{ top: 4, right: 12, bottom: 4, left: 4 }}
+                    >
+                        <CartesianGrid vertical={false} />
+                        <XAxis
+                            axisLine={false}
+                            dataKey="productTypeName"
+                            tickLine={false}
+                        />
+                        <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar
+                            dataKey="value"
+                            fill="var(--color-value)"
+                            radius={[8, 8, 0, 0]}
+                        />
+                        <Line
+                            dataKey="value"
+                            dot={{
+                                fill: "var(--color-trend)",
+                                r: 4,
+                            }}
+                            stroke="var(--color-trend)"
+                            strokeWidth={2}
+                            type="monotone"
+                        />
+                    </ComposedChart>
+                </ChartContainer>
+            )}
         </div>
     );
 }
