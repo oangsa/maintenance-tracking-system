@@ -90,5 +90,11 @@ export type {
 } from "../types/productType.types";
 
 export type {
+    IInventoryMove,
+    IInventoryMoveItem,
+    IInventoryMoveForCreate,
+} from "./inventoryMove.types";
+
+export type {
     IMonthlyRepairTrendByProductTypeReport
 } from "../types/monthlyRepairTrendByProductTypeReport.type";
