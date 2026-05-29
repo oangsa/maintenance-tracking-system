@@ -6,11 +6,28 @@ import Detail from "~/components/Maintain/Detail";
 import { Button } from "~/components/ui/button";
 import { formatDateTime } from "~/lib/formatters";
 import { deleteInventoryMove, getInventoryMoveById, reverseInventoryMove } from "~/services/inventoryMoves.service";
-import type { IInventoryMove, IInventoryMoveItem } from "~/api/types/types";
+import type { IInventoryMove, IInventoryMoveForCreate, IInventoryMoveItem } from "~/api/types/types";
 
 interface IConfirmState
 {
     isOpen: boolean;
+}
+
+interface IReverseConfirmState extends IConfirmState
+{
+    payload: IInventoryMoveForReverseRequest | null;
+}
+
+interface IInventoryMoveForReverseRequest extends IInventoryMoveForCreate
+{
+    reason: string;
+    remark?: string;
+}
+
+interface IInventoryMoveWithContractFields extends IInventoryMove
+{
+    reason?: string | null;
+    remarks?: string | null;
 }
 
 export default function ManagerInventoryMovesDetailPage()
@@ -20,7 +37,45 @@ export default function ManagerInventoryMovesDetailPage()
 
     const [pageError, setPageError] = React.useState("");
     const [deleteConfirmState, setDeleteConfirmState] = React.useState<IConfirmState>({ isOpen: false });
-    const [reverseConfirmState, setReverseConfirmState] = React.useState<IConfirmState>({ isOpen: false });
+    const [reverseConfirmState, setReverseConfirmState] = React.useState<IReverseConfirmState>({
+        isOpen: false,
+        payload: null,
+    });
+
+    function getInventoryMoveItems(inventoryMove: IInventoryMove): IInventoryMoveItem[]
+    {
+        const inventoryMoveWithLegacyItems = inventoryMove as IInventoryMove & {
+            inventoryMoveItems?: IInventoryMoveItem[];
+        };
+
+        return (inventoryMoveWithLegacyItems.inventoryMoveItems || inventoryMove.items || []) as IInventoryMoveItem[];
+    }
+
+    function buildReversePayload(inventoryMove: IInventoryMove): IInventoryMoveForReverseRequest | null
+    {
+        const sourceItems = getInventoryMoveItems(inventoryMove);
+        const inventoryMoveWithReason = inventoryMove as IInventoryMoveWithContractFields;
+        const reasonValue = (
+            inventoryMoveWithReason.reason
+            || inventoryMoveWithReason.remarks
+            || "adjust"
+        ).trim();
+
+        if (!sourceItems.length)
+        {
+            return null;
+        }
+
+        return {
+            reason: reasonValue || "adjust",
+            remark: inventoryMove.remark ?? "",
+            inventoryMoveItems: sourceItems.map((item) => ({
+                partId: item.partId,
+                quantityIn: item.quantityOut ?? null,
+                quantityOut: item.quantityIn ?? null,
+            })),
+        };
+    }
 
     async function confirmDelete()
     {
@@ -53,23 +108,51 @@ export default function ManagerInventoryMovesDetailPage()
             return;
         }
 
+        if (!reverseConfirmState.payload)
+        {
+            setPageError("Unable to reverse because transaction items are missing.");
+
+            return;
+        }
+
         try
         {
-            await reverseInventoryMove(parsedId);
+            await reverseInventoryMove(parsedId, reverseConfirmState.payload);
             navigate("/manager/inventory-moves", { replace: true });
         }
         catch (error)
         {
             setPageError((error as Error).message || "Unable to reverse the selected transaction.");
-            setReverseConfirmState({ isOpen: false });
+            setReverseConfirmState({
+                isOpen: false,
+                payload: null,
+            });
         }
+    }
+
+    function handleOpenReverseConfirm(inventoryMove: IInventoryMove)
+    {
+        const reversePayload = buildReversePayload(inventoryMove);
+
+        if (!reversePayload)
+        {
+            setPageError("Unable to reverse because this transaction has no items.");
+
+            return;
+        }
+
+        setPageError("");
+        setReverseConfirmState({
+            isOpen: true,
+            payload: reversePayload,
+        });
     }
 
     function ActionButtons(inventoryMove: IInventoryMove)
     {
         return (
             <>
-                <Button variant="outline" onClick={() => setReverseConfirmState({ isOpen: true })} type="button">
+                <Button variant="outline" onClick={() => handleOpenReverseConfirm(inventoryMove)} type="button">
                     Reverse Transaction
                 </Button>
                 <Button variant="destructive" onClick={() => setDeleteConfirmState({ isOpen: true })} type="button">
@@ -81,7 +164,7 @@ export default function ManagerInventoryMovesDetailPage()
 
     function sectionBuilder(inventoryMove: IInventoryMove): IDetailSection[]
     {
-        const itemsList = (inventoryMove.items || []) as IInventoryMoveItem[];
+        const itemsList = getInventoryMoveItems(inventoryMove);
 
         return [
             {
@@ -131,7 +214,12 @@ export default function ManagerInventoryMovesDetailPage()
                 confirmText="Confirm Reverse"
                 isOpen={reverseConfirmState.isOpen}
                 message="Are you sure you want to reverse this transaction? This action will generate a new compensating inventory move to correct the stock levels."
-                onClose={() => setReverseConfirmState({ isOpen: false })}
+                onClose={() =>
+                    setReverseConfirmState({
+                        isOpen: false,
+                        payload: null,
+                    })
+                }
                 onConfirm={confirmReverse}
                 title="Reverse Transaction"
             />

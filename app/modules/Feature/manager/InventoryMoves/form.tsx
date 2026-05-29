@@ -5,6 +5,7 @@ import CommonForm, { FormActions } from "~/components/Common/Form";
 import { useManagedForm } from "~/components/Common/Form/useManagedForm";
 import { InventoryMoveFormSchema } from "~/schemas/inventoryMoveFormSchema";
 import type { IInventoryMoveFormValues } from "~/schemas/inventoryMoveFormSchema";
+import InventoryMoveLineItemsEditor from "./InventoryMoveLineItemsEditor";
 import { useFormItem } from "./hooks/useFormItem";
 
 interface IInventoryMoveFormProps {
@@ -47,10 +48,22 @@ export default function InventoryMoveForm({
         resolver: zodResolver(InventoryMoveFormSchema),
     });
 
+    const handleItemsChange = React.useCallback((nextItems: IInventoryMoveFormValues["items"]) =>
+    {
+        setFieldValue("items", nextItems);
+    }, [setFieldValue]);
+
+    const lineItemsEditor = React.useMemo(() => (
+        <InventoryMoveLineItemsEditor
+            disabled={submitting}
+            items={values.items}
+            onChange={handleItemsChange}
+        />
+    ), [handleItemsChange, submitting, values.items]);
+
     const { formItems } = useFormItem({
+        lineItemsEditor,
         mode,
-        values,
-        setFieldValue,
     });
 
     return (

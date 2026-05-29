@@ -30,9 +30,9 @@ export async function getInventoryMoveById(id: number): Promise<IInventoryMove>
     return getInventoryMoveByIdRequest(id);
 }
 
-export async function reverseInventoryMove(id: number): Promise<IInventoryMove>
+export async function reverseInventoryMove(id: number, body: IInventoryMoveForCreate): Promise<IInventoryMove>
 {
-    return reverseInventoryMoveRequest(id);
+    return reverseInventoryMoveRequest(id, body);
 }
 
 export async function deleteInventoryMove(id: number): Promise<void>
