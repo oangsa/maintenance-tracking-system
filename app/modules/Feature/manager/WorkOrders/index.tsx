@@ -45,7 +45,7 @@ export default function ManagerWorkOrdersListPage()
     const fetchData = React.useCallback(async (params: IFetchParams): Promise<IFetchResult<IWorkOrderTableRow>> =>
     {
 
-        const searchConditions = buildFilterSearch(params.search, currentUserDepartmentId);
+        const searchConditions = buildFilterSearch(params.search);
 
         const response = await searchWorkOrders({
             deleted: false,
@@ -111,8 +111,3 @@ export default function ManagerWorkOrdersListPage()
         />
     );
 }
-
-
-
-
-

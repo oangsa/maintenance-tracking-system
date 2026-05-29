@@ -3,7 +3,6 @@ import type { IDetailSection } from "~/components/Common/DetailSections";
 import Detail from "~/components/Maintain/Detail";
 import { formatDateTime } from "~/lib/formatters";
 import { getWorkOrderById } from "~/services/workOrders.service";
-import type { IWorkOrder } from "~/api/types/types"; 
 
 export default function EmployeeWorkOrdersDetailPage()
 {
@@ -21,8 +20,21 @@ export default function EmployeeWorkOrdersDetailPage()
                     { label: "Scheduled Start", value: workOrder.scheduledStart ? formatDateTime(workOrder.scheduledStart) : "-" },
                     { label: "Scheduled End", value: workOrder.scheduledEnd ? formatDateTime(workOrder.scheduledEnd) : "-" },
                 ],
-             },
-             {
+            },
+            {
+                title: "Work Task Detail",
+                fields: [
+                    { label: "Task Id", value: workOrder.workTaskId ?? "-" },
+                    { label: "Task Description", value: workOrder.workTaskDescription ?? "-" },
+                    { label: "Current Assignee", value: workOrder.workTaskAssigneeName ?? "-" },
+                    { label: "Assigned By", value: workOrder.workTaskAssignedByName ?? "-" },
+                    { label: "Assigned At", value: formatDateTime(workOrder.workTaskAssignmentAssignedAt) },
+                    { label: "Started At", value: formatDateTime(workOrder.workTaskStartedAt) },
+                    { label: "Ended At", value: formatDateTime(workOrder.workTaskEndedAt) },
+                    { label: "Note", value: workOrder.workTaskNote ?? "-" },
+                ],
+            },
+            {
                 title: "Common Information",
                 fields: [
                     { label: "Created At", value: formatDateTime(workOrder.createdAt) },
@@ -30,7 +42,8 @@ export default function EmployeeWorkOrdersDetailPage()
                     { label: "Created By", value: workOrder.createdBy ?? "-" },
                     { label: "Updated By", value: workOrder.updatedBy ?? "-" },
                 ],
-            }
+            },
+
         ];
     }
 

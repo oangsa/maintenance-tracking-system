@@ -34,18 +34,9 @@ function buildFilterParams(filters: IWorkOrderFilterValues): Record<string, stri
     };
 }
 
-function buildFilterSearch(filters: Record<string, string> | undefined, departmentId?: number | null): ISearchCondition[]
+function buildFilterSearch(filters: Record<string, string> | undefined): ISearchCondition[]
 {
     const searchFilters: ISearchCondition[] = [];
-
-    if (typeof departmentId === "number")
-    {
-        searchFilters.push({
-            condition: SEARCH_OPERATOR.EQUAL,
-            name: WORK_ORDER_FIELD_FILTER.SEARCH_FIELD.DEPARTMENT,
-            value: String(departmentId),
-        });
-    }
 
     if (filters?.statusId?.trim())
     {
@@ -67,7 +58,7 @@ function normalizeFilters(filters: Record<string, string>): IWorkOrderFilterValu
 
 async function getStatusFilterValue(): Promise<IStatusOption[]>
 {
-    try 
+    try
     {
         const response = await searchRepairStatuses({
             pageNumber: 1,
@@ -76,22 +67,22 @@ async function getStatusFilterValue(): Promise<IStatusOption[]>
 
         console.log(" Raw API Response (Status):", response);
 
-        const list = 
+        const list =
             Array.isArray(response) ? response :
             Array.isArray(response?.data) ? response.data :
             Array.isArray((response as any)?.data?.items) ? (response as any).data.items : [];
 
-        if (list.length > 0) 
+        if (list.length > 0)
         {
             return list.map((status: any) => ({
                 label: status.name || "Unknown",
-                value: String(status.id), 
+                value: String(status.id),
             }));
         }
 
         return [];
-    } 
-    catch (error) 
+    }
+    catch (error)
     {
         console.error("Failed to load status options:", error);
     }
@@ -167,4 +158,3 @@ export default function useFieldFilter({ searchParams }: IUseFieldFilterProps)
 }
 
 export type { IWorkOrderFilterValues };
-
