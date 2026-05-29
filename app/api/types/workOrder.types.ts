@@ -1,6 +1,7 @@
 import type { IProduct } from "./types";
 export interface IWorkOrder
 {
+    
     id: number;
     repairRequestItemId: number;
     scheduledStart: string;
@@ -12,9 +13,12 @@ export interface IWorkOrder
     updatedAt: string | null;
     createdBy: string | null;
     updatedBy: string | null;
-
-    repairRequestItem?: IRepairRequestItemDisplay;
-    status?: IRepairStatusDisplay;
+    repairRequestItemDescription: string;
+    repairRequestItemRepairStatusId: number;
+    repairRequestItemRepairStatusCode: string;
+    repairRequestItemRepairStatusName: string;
+    repairRequestItemProductName: string;
+    repairRequestRequestNo: string;
 }
 
 export interface IWorkOrderForCreate
@@ -34,18 +38,7 @@ export interface IWorkOrderForUpdate
     statusId: number;
 }
 
-export interface IRepairRequestDisplay
-{
-    requestNo: string;
-}
 
-export interface IRepairRequestItemDisplay
-{
-    id: number;
-    description: string;
-    product?: Pick<IProduct, "code" | "name">;
-    repairRequest?: IRepairRequestDisplay;
-}
 
 export interface IRepairStatusDisplay
 {

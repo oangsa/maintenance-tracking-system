@@ -88,7 +88,7 @@ export default function EmployeeWorkOrdersListPage()
 
     return (
         <Table<IWorkOrderTableRow>
-            basePath="/employee/work-orders"
+            basePath="/work-orders"
             columns={readOnlyColumns}
             currentPageValue={currentPage}            
             fetchData={fetchData}

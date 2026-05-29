@@ -41,7 +41,6 @@ export function useFormItem({
                     lookupKey: "repairRequestItem",
                     name: "repairRequestItemId",
                     required: true,
-                    disabled: mode === "edit",
                     renderControl: (context) =>
                     {
                         return (
@@ -49,7 +48,7 @@ export function useFormItem({
                                 clearButtonLabel={WORK_ORDER_FORM_ITEM.REPAIR_REQUEST_ITEM_CLEAR}
                                 controlId="itemLookupDisplay"
                                 definition={RepairRequestItemLookupDefinition}
-                                disabled={context.disabled || mode === "edit"}
+                                disabled={context.disabled}
                                 displayValue={context.values.repairRequestItemDescription || "-"}
                                 hasError={Boolean(context.errors.repairRequestItemId)}
                                 lookupButtonLabel={WORK_ORDER_FORM_ITEM.REPAIR_REQUEST_ITEM_LOOKUP}
@@ -92,9 +91,11 @@ export function useFormItem({
                     controlId: "statusLookupDisplay",
                     key: "status",
                     label: WORK_ORDER_FORM_ITEM.STATUS_LABEL,
-                    lookupKey: "status",
-                    name: "statusId",
-                    required: true,
+                    name: "statusName",
+                    required: false,
+                    disabled: true,
+                    
+                    
                     renderControl: (context) =>
                     {
                         return (
@@ -114,7 +115,7 @@ export function useFormItem({
                         );
                     },
                     span: FORM_FIELD_SPAN.HALF,
-                    type: FORM_TYPE.LOOKUP,
+                    type: FORM_TYPE.TEXT,
                 },
             ],
             key: WORK_ORDER_FORM_ITEM.SECTION_KEY,

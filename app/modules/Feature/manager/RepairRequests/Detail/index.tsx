@@ -1,6 +1,6 @@
 import React from "react";
 import { FiFileText } from "react-icons/fi";
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router";
 import LineItemsEditor from "~/components/Common/LineItemsEditor";
 import type { IDetailSection } from "~/components/Common/DetailSections";
 import Loading from "~/components/Common/Loading";
@@ -13,12 +13,6 @@ import { createRepairRequestDetailLineItemColumns } from "../../../RepairRequest
 import { formatDateTime, formatRequesterLabel, formatTitleCase } from "~/lib/formatters";
 import useLineItem from "../hooks/useLineItem";
 
-function handleAssignWorkOrder(repairRequestItemId: number)
-{
-    void repairRequestItemId;
-
-    // TODO: Assign a work order for the selected repair request item when the manager work-order flow is available.
-}
 
 interface IManagerRepairRequestItemsSectionProps
 {
@@ -31,6 +25,8 @@ function ManagerRepairRequestItemsSection({
     repairRequestId,
 }: IManagerRepairRequestItemsSectionProps)
 {
+    const navigate = useNavigate();
+
     const {
         emptyMessage,
         itemsError,
@@ -42,12 +38,27 @@ function ManagerRepairRequestItemsSection({
     });
 
     const lineItemColumns = React.useMemo(() => createRepairRequestDetailLineItemColumns({
-        renderAction: (item) => (
-            <Button onClick={() => handleAssignWorkOrder(Number(item.id))} type="button" variant="outline">
-                Assign Work Order
-            </Button>
-        ),
-    }), []);
+        renderAction: (item) => {
+            const statusCode = item?.repairStatusCode || "";
+            const hasWorkOrder = item?.workOrderId != null || item?.work_order_id != null;
+            
+            const isAlreadyAssigned = hasWorkOrder || (statusCode !== "PENDING" && statusCode !== "REQUESTED" && statusCode !== "");
+            if (isAlreadyAssigned) {
+                return null; 
+            }
+            return (
+                <Button 
+                    onClick={() => navigate(`/manager/work-orders/new?repairRequestItemId=${item.id}`)} 
+                    type="button" 
+                    variant="outline"
+                >
+                    Assign Work Order
+                </Button>
+            );
+        
+        }
+    }), [navigate]);
+        
 
     if (loadingItems)
     {
@@ -80,12 +91,8 @@ function ManagerRepairRequestItemsSection({
 export default function RepairRequestManagerDetailPage()
 {
     const params = useParams();
+    const navigate = useNavigate();
     const { currentUser, isLoadingUser, userError } = useUserContext();
-
-    function handleViewWorkOrder()
-    {
-        // TODO: Open the related work order flow when the manager work-order module is available.
-    }
 
     if (isLoadingUser && currentUser === null)
     {
@@ -141,14 +148,30 @@ export default function RepairRequestManagerDetailPage()
         ];
     }
 
+    function ActionButtons(repairRequest: Awaited<ReturnType<typeof getRepairRequestById>>)
+    {
+        function handleViewWorkOrder()
+        {
+            const targetWorkOrderId = (repairRequest as any).workOrderId || (repairRequest as any).workOrder?.id;
+
+            if (targetWorkOrderId) {
+                navigate(`/manager/work-orders/${targetWorkOrderId}`);
+            } else {
+                navigate(`/manager/work-orders?searchTerm=${repairRequest.requestNo}`);
+            }
+        }
+
+        return (
+            <Button className="gap-1.5" onClick={handleViewWorkOrder} type="button" variant="outline">
+                <FiFileText size={14} />
+                View Work Order
+            </Button>
+        );
+    }
+
     return (
         <Detail
-            actions={(
-                <Button className="gap-1.5" onClick={handleViewWorkOrder} type="button" variant="outline">
-                    <FiFileText size={14} />
-                    View Work Order
-                </Button>
-            )}
+            actions={ActionButtons}
             backHref="/manager/repair-requests"
             backLabel="Back to Repair Requests"
             buildSections={sectionBuilder}

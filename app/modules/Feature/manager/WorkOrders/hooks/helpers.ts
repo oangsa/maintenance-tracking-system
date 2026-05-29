@@ -21,9 +21,9 @@ function createEmptyWorkOrderFormValues(): IWorkOrderFormValues
         scheduledStart: "",
         scheduledEnd: "",
         orderSequence: "1",
-        statusId: "",
-        statusCode: "",
-        statusName: "",
+        statusId: "1", 
+        statusCode: "PENDING",
+        statusName: "Pending / Waiting for review",
     };
 }
 
@@ -31,13 +31,13 @@ function mapWorkOrderToFormValues(workOrder: IWorkOrder): IWorkOrderFormValues
 {
     return {
         repairRequestItemId: String(workOrder.repairRequestItemId),
-        repairRequestItemDescription: workOrder.repairRequestItem?.description ?? "",
+        repairRequestItemDescription: workOrder.repairRequestItemDescription ?? "",
         scheduledStart: workOrder.scheduledStart ? new Date(workOrder.scheduledStart).toISOString().split('T')[0] : "",
         scheduledEnd: workOrder.scheduledEnd ? new Date(workOrder.scheduledEnd).toISOString().split('T')[0] : "",
         orderSequence: String(workOrder.orderSequence),
-        statusId: String(workOrder.statusId),
-        statusCode: workOrder.status?.code ?? "",
-        statusName: workOrder.status?.name ?? "",
+        statusId: String(workOrder.repairRequestItemRepairStatusId),
+        statusCode: workOrder.repairRequestItemRepairStatusCode ?? "",
+        statusName: workOrder.repairRequestItemRepairStatusName ?? "",
     };
 }
 

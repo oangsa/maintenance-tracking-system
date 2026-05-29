@@ -9,14 +9,14 @@ function useColumns()
 {
     return React.useMemo<IColumn<IWorkOrderTableRow>[]>(() => [
         {
-            key: "request_no",
+            key: "repair_request_request_no",
             label: "Request No",
-            render: (value: unknown, row: IWorkOrderTableRow) => String(value ?? row.requestNo ?? "-"),
+            render: (value: unknown, row: IWorkOrderTableRow) => String(value ?? row.repairRequestRequestNo ?? "-"),
         },
         {
             key: "product_name",
             label: "Product",
-            render: (value: unknown, row: IWorkOrderTableRow) => row.repairRequestItem?.product?.name ?? "-",
+            render: (value: unknown, row: IWorkOrderTableRow) => row.repairRequestItemProductName?? "-",
             sortable: false,
         },
         {
@@ -37,7 +37,7 @@ function useColumns()
         {
             key: "status_name",
             label: "Status",
-            render: (value: unknown, row: IWorkOrderTableRow) => String(value ?? row.status?.name ?? "-"),
+            render: (value: unknown, row: IWorkOrderTableRow) => String(value ?? row.repairRequestItemRepairStatusName ?? "-"),
             sortable: false,
         },
     ], []);
