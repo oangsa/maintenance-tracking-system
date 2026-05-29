@@ -60,8 +60,8 @@ const WORK_ORDER_FIELD_FILTER = {
         STATUS: "filterStatus",
     },
     SEARCH_FIELD: {
-        DEPARTMENT: "department_id",
-        STATUS: "status_id",
+        DEPARTMENT: "repair_request_item_department_id",
+        STATUS: "repair_request_item_repair_status_id",
     },
     SEARCH_TERM: "work_order_no",
 } as const;

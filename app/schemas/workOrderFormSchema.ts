@@ -4,7 +4,7 @@ export const WorkOrderFormSchema = z.object({
     repairRequestItemId: z.string().trim().min(1, "Repair Request Item is required.").refine((value) => /^\d+$/.test(value), {
         message: "Repair Request Item selection is invalid.",
     }),
-    repairRequestItemDescription: z.string().optional(),
+    repairRequestItemProductName: z.string().optional(),
     
     scheduledStart: z.string().trim().optional(),
     scheduledEnd: z.string().trim().optional(),

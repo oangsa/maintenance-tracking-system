@@ -70,7 +70,7 @@ export default function ManagerWorkOrdersListPage()
             total: response.pagination.totalCount,
             totalPages: response.pagination.totalPages,
         };
-    }, [buildFilterSearch, searchTerm]);
+    }, [buildFilterSearch, currentUserDepartmentId, searchTerm]);
 
     if (isLoadingUser && currentUser === null)
     {
@@ -107,12 +107,8 @@ export default function ManagerWorkOrdersListPage()
             onFilterChange={handleFilterChange}
             onSearchChange={handleSearchChange}
             searchValue={currentSearch}
+            showCreateButton={false}
             title="Work Orders"
         />
     );
 }
-
-
-
-
-

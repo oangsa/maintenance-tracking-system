@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import Create from "~/components/Maintain/Create";
 import { createWorkOrder } from "~/services/workOrders.service";
 import WorkOrderForm from "../form";
@@ -8,12 +8,13 @@ import type { IWorkOrderFormValues } from "~/schemas/workOrderFormSchema";
 export default function ManagerWorkOrdersCreatePage()
 {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     async function handleSubmit(values: IWorkOrderFormValues)
     {
         const safeValues = {
             ...values,
-            repairRequestItemDescription: values.repairRequestItemDescription ?? "",
+            repairRequestItemProductName: values.repairRequestItemProductName ?? "",
             scheduledStart: values.scheduledStart ?? "",
             scheduledEnd: values.scheduledEnd ?? "",
             statusCode: values.statusCode ?? "",
@@ -30,6 +31,20 @@ export default function ManagerWorkOrdersCreatePage()
         navigate("/manager/work-orders");
     }
 
+    const defaultValues = createEmptyWorkOrderFormValues() as IWorkOrderFormValues;
+    const itemIdFromUrl = searchParams.get("repairRequestItemId");
+    const descFromUrl = searchParams.get("desc");
+    const statusCodeFromUrl = searchParams.get("statusCode");
+    const statusIdFromUrl = searchParams.get("statusId");
+    const statusNameFromUrl = searchParams.get("statusName");
+    if (itemIdFromUrl) {
+        defaultValues.repairRequestItemId = itemIdFromUrl;
+        defaultValues.repairRequestItemProductName = descFromUrl || `Item #${itemIdFromUrl}`;
+        defaultValues.statusId = statusIdFromUrl || "";
+        defaultValues.statusCode = statusCodeFromUrl || "";
+        defaultValues.statusName = statusNameFromUrl || "";
+    }
+
     return (
         <Create
             backHref="/manager/work-orders"
@@ -37,7 +52,7 @@ export default function ManagerWorkOrdersCreatePage()
             description="Create a new work order for a repair request item."
             Form={WorkOrderForm}
             formProps={{ mode: "create" } as const}
-            initialValues={createEmptyWorkOrderFormValues() as IWorkOrderFormValues}
+            initialValues={defaultValues}
             onCancel={handleCancel}
             onSubmit={handleSubmit}
             submitErrorMessage="Unable to create the work order."

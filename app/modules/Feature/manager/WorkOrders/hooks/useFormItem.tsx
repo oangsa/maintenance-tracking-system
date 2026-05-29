@@ -41,7 +41,6 @@ export function useFormItem({
                     lookupKey: "repairRequestItem",
                     name: "repairRequestItemId",
                     required: true,
-                    disabled: mode === "edit",
                     renderControl: (context) =>
                     {
                         return (
@@ -50,7 +49,7 @@ export function useFormItem({
                                 controlId="itemLookupDisplay"
                                 definition={RepairRequestItemLookupDefinition}
                                 disabled={context.disabled || mode === "edit"}
-                                displayValue={context.values.repairRequestItemDescription || "-"}
+                                displayValue={context.values.repairRequestItemProductName || "-"}
                                 hasError={Boolean(context.errors.repairRequestItemId)}
                                 lookupButtonLabel={WORK_ORDER_FORM_ITEM.REPAIR_REQUEST_ITEM_LOOKUP}
                                 onClear={onClearItem}
@@ -92,9 +91,10 @@ export function useFormItem({
                     controlId: "statusLookupDisplay",
                     key: "status",
                     label: WORK_ORDER_FORM_ITEM.STATUS_LABEL,
-                    lookupKey: "status",
-                    name: "statusId",
-                    required: true,
+                    lookupKey: "repairStatus",
+                    name: "statusName",
+                    required: false,
+                    disabled: true,
                     renderControl: (context) =>
                     {
                         return (
@@ -102,7 +102,7 @@ export function useFormItem({
                                 clearButtonLabel={WORK_ORDER_FORM_ITEM.STATUS_CLEAR}
                                 controlId="statusLookupDisplay"
                                 definition={RepairStatusLookupDefinition}
-                                disabled={context.disabled}
+                                disabled
                                 displayValue={context.values.statusName || context.values.statusCode || "-"}
                                 hasError={Boolean(context.errors.statusId)}
                                 lookupButtonLabel={WORK_ORDER_FORM_ITEM.STATUS_LOOKUP}
