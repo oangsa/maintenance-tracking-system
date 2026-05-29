@@ -49,7 +49,7 @@ export function useFormItem({
                                 controlId="itemLookupDisplay"
                                 definition={RepairRequestItemLookupDefinition}
                                 disabled={context.disabled || mode === "edit"}
-                                displayValue={context.values.repairRequestItemDescription || "-"}
+                                displayValue={context.values.repairRequestItemProductName || "-"}
                                 hasError={Boolean(context.errors.repairRequestItemId)}
                                 lookupButtonLabel={WORK_ORDER_FORM_ITEM.REPAIR_REQUEST_ITEM_LOOKUP}
                                 onClear={onClearItem}

@@ -39,29 +39,47 @@ function ManagerRepairRequestItemsSection({
 
     const lineItemColumns = React.useMemo(() => createRepairRequestDetailLineItemColumns({
         renderAction: (item: any) => {
+            const existingWorkOrderId = Number(item?.workOrderId);
             const statusStr = String(
                 item?.repairStatus || 
                 item?.repairStatusCode || 
                 item?.repairStatusName || 
                 ""
             ).toUpperCase();
-            
-            if (statusStr.includes("PENDING") || statusStr.includes("REQUESTED")) {
+
+            if (Number.isFinite(existingWorkOrderId) && existingWorkOrderId > 0)
+            {
                 return (
-                    <Button 
+                    <Button
                         onClick={() => {
-                            const productName = item?.productLabel || `${item?.productCode || ""} - ${item?.productName || ""}`;
-                            const descText = encodeURIComponent(productName);
-                            
-                            navigate(`/manager/work-orders/new?repairRequestItemId=${item.id}&desc=${descText}`);
-                        }} 
-                        type="button" 
+                            navigate(`/manager/work-orders/${existingWorkOrderId}/edit`);
+                        }}
+                        type="button"
                         variant="outline"
                     >
-                        Assign Work Order
+                        Update Work Order
                     </Button>
                 );
             }
+
+            if (statusStr.includes("PENDING") || statusStr.includes("REQUESTED"))
+            {
+                return (
+                    <Button
+                        onClick={() => {
+                            const productName = item?.productLabel || `${item?.productCode || ""} - ${item?.productName || ""}`;
+                            const descText = encodeURIComponent(productName);
+
+                            navigate(`/manager/work-orders/new?repairRequestItemId=${item.id}&desc=${descText}`);
+                        }}
+                        type="button"
+                        variant="outline"
+                    >
+                        Create Work Order
+                    </Button>
+                );
+            }
+
             return null;
         }
     }), [navigate]);

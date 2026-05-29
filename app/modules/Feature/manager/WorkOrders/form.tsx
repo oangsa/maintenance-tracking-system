@@ -67,7 +67,7 @@ export default function WorkOrderForm({
     const onSelectItem = React.useCallback((item: IRepairRequestItemLookupRow) =>
     {
         setFieldValue("repairRequestItemId", String(item.id));
-        setFieldValue("repairRequestItemDescription", item.description || "");
+        setFieldValue("repairRequestItemDescription", item.repairRequestItemProductName || item.description || "");
     }, [setFieldValue]);
 
     const onClearStatus = React.useCallback(() =>

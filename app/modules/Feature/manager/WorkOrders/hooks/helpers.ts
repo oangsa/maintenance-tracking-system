@@ -3,7 +3,7 @@ import type { IWorkOrder, IWorkOrderForCreate, IWorkOrderForUpdate } from "~/api
 interface IWorkOrderFormValues
 {
     repairRequestItemId: string;
-    repairRequestItemDescription: string;
+    repairRequestItemProductName: string;
     scheduledStart: string;
     scheduledEnd: string;
     orderSequence: string;
@@ -11,17 +11,17 @@ interface IWorkOrderFormValues
     statusCode: string;
     statusName: string;
 }
-    
+
 
 function createEmptyWorkOrderFormValues(): IWorkOrderFormValues
 {
     return {
         repairRequestItemId: "",
-        repairRequestItemDescription: "",
+        repairRequestItemProductName: "",
         scheduledStart: "",
         scheduledEnd: "",
         orderSequence: "1",
-        statusId: "1", 
+        statusId: "1",
         statusCode: "PENDING",
         statusName: "Pending / Waiting for review",
     };
@@ -31,7 +31,7 @@ function mapWorkOrderToFormValues(workOrder: IWorkOrder): IWorkOrderFormValues
 {
     return {
         repairRequestItemId: String(workOrder.repairRequestItemId),
-        repairRequestItemDescription: workOrder.repairRequestItemDescription ?? "",
+        repairRequestItemProductName: workOrder.repairRequestItemProductName ?? workOrder.repairRequestItemDescription ?? "",
         scheduledStart: workOrder.scheduledStart ? new Date(workOrder.scheduledStart).toISOString().split('T')[0] : "",
         scheduledEnd: workOrder.scheduledEnd ? new Date(workOrder.scheduledEnd).toISOString().split('T')[0] : "",
         orderSequence: String(workOrder.orderSequence),
@@ -46,10 +46,10 @@ function parseNumberField(value: string | undefined): number | undefined
     if (!value) return undefined;
     const trimmed = value.trim();
     if (!trimmed) return undefined;
-    
+
     const parsed = Number(trimmed);
     if (!Number.isFinite(parsed)) return undefined;
-    
+
     return parsed;
 }
 
@@ -102,4 +102,3 @@ export {
 };
 
 export type { IWorkOrderFormValues };
-

@@ -8,6 +8,7 @@ export interface IRepairRequestDetailLineItem extends ILineItemValue
     productLabel?: string | null;
     quantity?: number | string | null;
     repairStatus?: string | null;
+    workOrderId?: number | null;
 }
 
 interface ICreateRepairRequestDetailLineItemColumnsOptions

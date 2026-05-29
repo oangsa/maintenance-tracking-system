@@ -1,11 +1,13 @@
 import React from "react";
 import { buildLookupPayload, SEARCH_OPERATOR } from "~/constants";
-import { searchRepairRequestItems } from "~/services/repairRequests.service";
+import { searchRepairRequestItems, searchRepairRequestWorkOrders } from "~/services/repairRequests.service";
 import { formatProductLabel, formatRepairStatusLabel } from "~/lib/repairRequestUtils";
 import type { IRepairRequestDetailLineItem } from "../../../RepairRequests/detailLineItemColumns";
+import type { IWorkOrder } from "~/api/types/types";
 
 const MANAGER_ITEM_SEARCH_FIELD = "department_id";
 const REPAIR_REQUEST_ITEMS_PAGE_SIZE = 100;
+const WORK_ORDERS_PAGE_SIZE = 100;
 
 interface IUseLineItemProps
 {
@@ -23,9 +25,33 @@ interface IUseLineItemResult
 
 async function loadManagerLineItems(repairRequestId: number, currentUserDepartmentId: number): Promise<IRepairRequestDetailLineItem[]>
 {
+    const workOrderByRepairRequestItemId = new Map<number, IWorkOrder>();
     const lineItems: IRepairRequestDetailLineItem[] = [];
     let currentPage = 1;
     let totalPages = 1;
+
+    while (currentPage <= totalPages)
+    {
+        const response = await searchRepairRequestWorkOrders(repairRequestId, {
+            deleted: false,
+            pageNumber: currentPage,
+            pageSize: WORK_ORDERS_PAGE_SIZE,
+        });
+
+        response.data.forEach((workOrder) =>
+        {
+            if (typeof workOrder.repairRequestItemId === "number" && !workOrderByRepairRequestItemId.has(workOrder.repairRequestItemId))
+            {
+                workOrderByRepairRequestItemId.set(workOrder.repairRequestItemId, workOrder);
+            }
+        });
+
+        totalPages = response.pagination.totalPages;
+        currentPage += 1;
+    }
+
+    currentPage = 1;
+    totalPages = 1;
 
     while (currentPage <= totalPages)
     {
@@ -50,6 +76,7 @@ async function loadManagerLineItems(repairRequestId: number, currentUserDepartme
             productLabel: formatProductLabel(item),
             quantity: item.quantity,
             repairStatus: formatRepairStatusLabel(item),
+            workOrderId: workOrderByRepairRequestItemId.get(item.id)?.id ?? null,
         })));
 
         totalPages = response.pagination.totalPages;
