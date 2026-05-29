@@ -180,13 +180,8 @@ export default function RepairRequestManagerDetailPage()
     {
         function handleViewWorkOrder()
         {
-            const targetWorkOrderId = (repairRequest as any).workOrderId || (repairRequest as any).workOrder?.id;
-
-            if (targetWorkOrderId) {
-                navigate(`/manager/work-orders/${targetWorkOrderId}`);
-            } else {
-                navigate(`/manager/work-orders?searchTerm=${repairRequest.requestNo}`);
-            }
+            const encodedRequestNo = encodeURIComponent(repairRequest.requestNo);
+            navigate(`/manager/work-orders?page=1&search=${encodedRequestNo}`);
         }
 
         return (
