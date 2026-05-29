@@ -1,5 +1,3 @@
-export { defaultNavSections, flattenNavItems };
-export type { INavItem, INavSection, ISidebarProfileProps, IAppSidebarProps, TSidebarActionHandler };
 import React from "react";
 import { Link, useLocation } from "react-router";
 import {
@@ -153,7 +151,7 @@ const defaultNavSections: INavSection[] = [
         items: [
             { label: "Repair Requests", path: "/manager/repair-requests", icon: <FiClipboard size={18} /> },
             { label: "Work Orders", path: "/manager/work-orders", icon: <FiTool size={18} /> },
-            { label: "Inventory Moves", path: "/manager/inventory-moves", icon: <FiLayers size={18} /> }, 
+            { label: "Inventory Moves", path: "/manager/inventory-moves", icon: <FiLayers size={18} /> },
         ],
     },
     {
@@ -168,7 +166,7 @@ const defaultNavSections: INavSection[] = [
             { label: "Products", path: "/master/products", icon: <FiBox size={18} /> },
         ],
     },
-   
+
 ];
 
 function flattenNavItems(navSections: INavSection[]): INavItem[]
