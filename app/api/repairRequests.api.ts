@@ -11,6 +11,7 @@ import type {
     IRepairRequestStatusLog,
     ISearchRequest,
     IWorkOrder,
+    IMonthlyRepairTrendByProductTypeReport,
 } from "./types/types";
 
 const PREFIX = "/api/v1/repair-requests";
@@ -106,4 +107,14 @@ export async function searchAllRepairRequestItemsRequest(body: ISearchRequest): 
         method: "POST",
         body: JSON.stringify(body),
     });
+}
+
+export async function getMonthlyRepairTrendByProductTypeReportRequest(body: ISearchRequest): Promise<IPagedResult<IMonthlyRepairTrendByProductTypeReport>>
+{
+    return httpPaginated<IMonthlyRepairTrendByProductTypeReport>(`${PREFIX}/reports/monthly-product-type/search`,
+        {
+            method: "POST",
+            body: JSON.stringify(body),
+        }
+    );
 }

@@ -88,3 +88,7 @@ export type {
     IProductTypeForCreate,
     IProductTypeForUpdate,
 } from "../types/productType.types";
+
+export type {
+    IMonthlyRepairTrendByProductTypeReport
+} from "../types/monthlyRepairTrendByProductTypeReport.type";
