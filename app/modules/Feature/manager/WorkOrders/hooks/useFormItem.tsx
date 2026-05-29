@@ -48,7 +48,7 @@ export function useFormItem({
                                 clearButtonLabel={WORK_ORDER_FORM_ITEM.REPAIR_REQUEST_ITEM_CLEAR}
                                 controlId="itemLookupDisplay"
                                 definition={RepairRequestItemLookupDefinition}
-                                disabled={context.disabled}
+                                disabled={context.disabled || mode === "edit"}
                                 displayValue={context.values.repairRequestItemDescription || "-"}
                                 hasError={Boolean(context.errors.repairRequestItemId)}
                                 lookupButtonLabel={WORK_ORDER_FORM_ITEM.REPAIR_REQUEST_ITEM_LOOKUP}
@@ -94,8 +94,6 @@ export function useFormItem({
                     name: "statusName",
                     required: false,
                     disabled: true,
-                    
-                    
                     renderControl: (context) =>
                     {
                         return (
