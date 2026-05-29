@@ -49,8 +49,26 @@ const REPAIR_REQUEST_FIELD_FILTER = {
     SEARCH_TERM: "request_no",
 } as const;
 
+const WORK_ORDER_FIELD_FILTER = {
+    FIELD_KEY: {
+        STATUS: "statusId",
+    },
+    LABEL: {
+        STATUS: "Status",
+    },
+    PARAM_KEY: {
+        STATUS: "filterStatus",
+    },
+    SEARCH_FIELD: {
+        DEPARTMENT: "repair_request_item_department_id",
+        STATUS: "repair_request_item_repair_status_id",
+    },
+    SEARCH_TERM: "work_order_no",
+} as const;
+
 export {
     DATA_TABLE_FILTER_TYPE,
     REPAIR_REQUEST_FIELD_FILTER,
+    WORK_ORDER_FIELD_FILTER,
     USER_FIELD_FILTER,
 };

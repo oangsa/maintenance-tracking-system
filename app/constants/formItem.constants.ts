@@ -103,6 +103,33 @@ const PRODUCT_TYPE_FORM_ITEM = {
     PRODUCT_TYPE_PLACEHOLDER: "Select product type",
 } as const;
 
+const REPAIR_STATUS_FORM_ITEM = {
+    CODE_LABEL: "Code",
+    CODE_PLACEHOLDER: "Enter repair status code",
+    NAME_LABEL: "Name",
+    NAME_PLACEHOLDER: "Enter repair status name",
+    SECTION_KEY: "repair-status-fields",
+} as const;
+
+const WORK_ORDER_FORM_ITEM = {
+    REPAIR_REQUEST_ITEM_LABEL: "Repair Request Item",
+    REPAIR_REQUEST_ITEM_PLACEHOLDER: "Select a repair request item",
+    REPAIR_REQUEST_ITEM_LOOKUP: "Select Item",
+    REPAIR_REQUEST_ITEM_CLEAR: "Clear Item",
+    SCHEDULED_START_LABEL: "Scheduled Start",
+    SCHEDULED_START_PLACEHOLDER: "Select start date",
+    SCHEDULED_END_LABEL: "Scheduled End",
+    SCHEDULED_END_PLACEHOLDER: "Select end date",
+    ORDER_SEQUENCE_LABEL: "Order Sequence",
+    ORDER_SEQUENCE_PLACEHOLDER: "e.g. 1",
+    STATUS_LABEL: "Work Order Status",
+    STATUS_PLACEHOLDER: "Select a status",
+    STATUS_LOOKUP: "Select Status",
+    STATUS_CLEAR: "Clear Status",
+    SECTION_KEY: "work-order-fields",
+} as const;
+
+
 export {
     FORM_LAYOUT,
 	FORM_FIELD_SPAN,
@@ -114,4 +141,6 @@ export {
     REPAIR_REQUEST_ITEM_STATUS_FORM_ITEM,
     PART_FORM_ITEM,
     PRODUCT_TYPE_FORM_ITEM,
+    REPAIR_STATUS_FORM_ITEM,
+    WORK_ORDER_FORM_ITEM,
 };

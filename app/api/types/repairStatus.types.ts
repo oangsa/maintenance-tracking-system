@@ -10,3 +10,13 @@ export interface IRepairStatus
     createdBy: string | null;
     updatedBy: string | null;
 }
+
+export interface IRepairStatusForCreate {
+    code: string;
+    name: string;
+}
+
+export interface IRepairStatusForUpdate {
+    code: string;
+    name: string;
+}

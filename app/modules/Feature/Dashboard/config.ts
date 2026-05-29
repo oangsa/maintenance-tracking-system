@@ -63,7 +63,7 @@ const dashboardCardDefinitions: IDashboardCardDefinition[] = [
         description: "List Card",
         component: LatestRepairRequestsCard,
     },
-    // Philaiwan (Just want it to be 3P :))
+    // Philaiwan (Chonpu) (Just want it to be 3P :))
     {
         id: "top-repaired-products",
         zone: "main-right-bottom-right-bottom",

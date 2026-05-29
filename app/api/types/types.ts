@@ -34,7 +34,11 @@ export type {
     IProductForUpdate,
 } from "../types/product.types";
 
-export type { IRepairStatus } from "../types/repairStatus.types";
+export type { 
+    IRepairStatus,
+    IRepairStatusForCreate,
+    IRepairStatusForUpdate
+} from "../types/repairStatus.types";
 
 export type {
     IRepairRequest,
@@ -60,6 +64,11 @@ export type {
 
 export type {
     IWorkOrder,
+    IWorkOrderForCreate,
+    IWorkOrderForUpdate,
+    IRepairRequestDisplay,
+    IRepairRequestItemDisplay,
+    IRepairStatusDisplay,
 } from "../types/workOrder.types";
 
 export type {
@@ -79,3 +88,13 @@ export type {
     IProductTypeForCreate,
     IProductTypeForUpdate,
 } from "../types/productType.types";
+
+export type {
+    IInventoryMove,
+    IInventoryMoveItem,
+    IInventoryMoveForCreate,
+} from "./inventoryMove.types";
+
+export type {
+    IMonthlyRepairTrendByProductTypeReport
+} from "../types/monthlyRepairTrendByProductTypeReport.type";

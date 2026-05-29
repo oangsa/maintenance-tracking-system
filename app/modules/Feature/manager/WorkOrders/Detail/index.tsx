@@ -1,0 +1,162 @@
+import React from "react";
+import { Link, useNavigate, useParams } from "react-router";
+import { ConfirmModal } from "~/components/Common/Modal";
+import type { IDetailSection } from "~/components/Common/DetailSections";
+import Detail from "~/components/Maintain/Detail";
+import { buttonVariants, Button } from "~/components/ui/button";
+import { formatDateTime } from "~/lib/formatters";
+import { deleteWorkOrder, getWorkOrderById } from "~/services/workOrders.service";
+import { cn } from "~/lib/utils";
+
+interface IConfirmState
+{
+    isOpen: boolean;
+}
+
+export default function ManagerWorkOrdersDetailPage()
+{
+    const navigate = useNavigate();
+    const params = useParams();
+
+    const [pageError, setPageError] = React.useState("");
+    const [confirmState, setConfirmState] = React.useState<IConfirmState>({ isOpen: false });
+
+    async function confirmDelete()
+    {
+        const parsedId = Number(params.id);
+
+        if (!Number.isFinite(parsedId))
+        {
+            setPageError("The selected work order id is invalid.");
+            return;
+        }
+
+        try
+        {
+            await deleteWorkOrder(parsedId);
+            navigate("/manager/work-orders", { replace: true });
+        }
+        catch (error)
+        {
+            setPageError((error as Error).message || "Unable to delete the selected work order.");
+        }
+    }
+
+    function handleWorkTaskAction(workOrder: any): void
+    {
+        const parsedWorkOrderId = Number(workOrder?.id);
+        const parsedWorkTaskId = Number(workOrder?.workTaskId);
+        const hasWorkTask = Number.isFinite(parsedWorkTaskId) && parsedWorkTaskId > 0;
+
+        if (hasWorkTask)
+        {
+            navigate(`/manager/work-tasks/${parsedWorkTaskId}/edit`);
+            return;
+        }
+
+        if (!Number.isFinite(parsedWorkOrderId))
+        {
+            setPageError("The selected work order id is invalid.");
+            return;
+        }
+
+        navigate(`/manager/work-tasks/new?workOrderId=${parsedWorkOrderId}`);
+    }
+
+    function ActionButtons(workOrder: any)
+    {
+        return (
+            <>
+                <Link className={cn(buttonVariants({ variant: "outline" }), "gap-1.5 !text-foreground hover:!text-foreground")} to={`/manager/work-orders/${workOrder.id}/edit`}>
+                    Edit Work Order
+                </Link>
+                <Button variant="destructive" onClick={() => setConfirmState({ isOpen: true })} type="button">
+                    Delete Work Order
+                </Button>
+            </>
+        );
+    }
+
+    function sectionBuilder(workOrder: any): IDetailSection[]
+    {
+        return [
+            {
+                title: "Work Order Information",
+                fields: [
+                    { label: "Repair Request Item", value: workOrder.repairRequestItemProductName ?? "-" },
+                    { label: "Status", value: workOrder.repairRequestItemRepairStatusName ?? "-" },
+                    { label: "Order Sequence", value: workOrder.orderSequence ?? "-" },
+                    { label: "Scheduled Start", value: workOrder.scheduledStart ? formatDateTime(workOrder.scheduledStart) : "-" },
+                    { label: "Scheduled End", value: workOrder.scheduledEnd ? formatDateTime(workOrder.scheduledEnd) : "-" },
+                ],
+             },
+             {
+                title: "Work Task Detail",
+                fields: [
+                    { label: "Task Id", value: workOrder.workTaskId ?? "-" },
+                    { label: "Task Description", value: workOrder.workTaskDescription ?? "-" },
+                    { label: "Current Assignee", value: workOrder.workTaskAssigneeName ?? "-" },
+                    { label: "Assigned By", value: workOrder.workTaskAssignedByName ?? "-" },
+                    { label: "Assigned At", value: formatDateTime(workOrder.workTaskAssignmentAssignedAt) },
+                    { label: "Started At", value: formatDateTime(workOrder.workTaskStartedAt) },
+                    { label: "Ended At", value: formatDateTime(workOrder.workTaskEndedAt) },
+                    { label: "Note", value: workOrder.workTaskNote ?? "-" },
+                ],
+            },
+            {
+                title: "Common Information",
+                fields: [
+                    { label: "Created At", value: formatDateTime(workOrder.createdAt) },
+                    { label: "Updated At", value: formatDateTime(workOrder.updatedAt) },
+                    { label: "Created By", value: workOrder.createdBy ?? "-" },
+                    { label: "Updated By", value: workOrder.updatedBy ?? "-" },
+                ],
+            },
+        ];
+    }
+
+    function renderWorkTaskActions(workOrder: any)
+    {
+        const parsedWorkTaskId = Number(workOrder?.workTaskId);
+        const hasWorkTask = Number.isFinite(parsedWorkTaskId) && parsedWorkTaskId > 0;
+
+        return (
+            <div className="flex justify-end">
+                <Button className="!text-foreground hover:!text-foreground" onClick={() => handleWorkTaskAction(workOrder)} type="button" variant="outline">
+                    {hasWorkTask ? "Update Task" : "Create Task"}
+                </Button>
+            </div>
+        );
+    }
+
+    return (
+        <>
+            <ConfirmModal
+                cancelText="Cancel"
+                confirmText="Delete"
+                isOpen={confirmState.isOpen}
+                message="Are you sure you want to delete this work order?"
+                onClose={() => setConfirmState({ isOpen: false })}
+                onConfirm={confirmDelete}
+                title="Delete Work Order"
+            />
+
+            <Detail
+                actions={ActionButtons}
+                backHref="/manager/work-orders"
+                backLabel="Back to Work Orders"
+                buildSections={sectionBuilder}
+                description="Review the selected work order and continue to edit or delete."
+                error={pageError}
+                id={params.id}
+                invalidIdMessage="The requested work order id is invalid."
+                loadData={getWorkOrderById}
+                loadErrorMessage="Unable to load the selected work order."
+                loadingMessage="Loading work order details..."
+                notFoundMessage="Work order not found."
+                content={renderWorkTaskActions}
+                title="Work Order Details"
+            />
+        </>
+    );
+}

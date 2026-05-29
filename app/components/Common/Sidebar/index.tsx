@@ -1,8 +1,9 @@
+export { defaultNavSections, flattenNavItems };
+export type { INavItem, INavSection, ISidebarProfileProps, IAppSidebarProps, TSidebarActionHandler };
 import React from "react";
 import { Link, useLocation } from "react-router";
 import {
     FiClipboard,
-    FiBox,
     FiFileText,
     FiLayers,
     FiHome,
@@ -144,12 +145,15 @@ const defaultNavSections: INavSection[] = [
         items: [
             { label: "Home", path: "/", icon: <FiHome size={18} /> },
             { label: "Repair Requests", path: "/repair-requests", icon: <FiClipboard size={18} /> },
+            { label: "Work Orders", path: "/work-orders", icon: <FiTool size={18} /> },
         ],
     },
     {
         label: "Manager",
         items: [
             { label: "Repair Requests", path: "/manager/repair-requests", icon: <FiClipboard size={18} /> },
+            { label: "Work Orders", path: "/manager/work-orders", icon: <FiTool size={18} /> },
+            { label: "Inventory Moves", path: "/manager/inventory-moves", icon: <FiLayers size={18} /> }, 
         ],
     },
     {
@@ -157,10 +161,11 @@ const defaultNavSections: INavSection[] = [
         items: [
             { label: "Users", path: "/master/users", icon: <FiUsers size={18} /> },
             { label: "Departments", path: "/master/departments", icon: <FiLayers size={18} /> },
+            { label: "Repair Request Item Statuses", path: "/master/repair-request-item-status", icon: <FiFileText size={18} /> },
+            { label: "Repair Statuses", path: "/master/repair-statuses", icon: <FiFileText size={18} /> },
+            { label: "Parts", path: "/master/parts", icon: <FiTool size={18} /> },
             { label: "Product Types", path: "/master/product-types", icon: <FiBox size={18} /> },
             { label: "Products", path: "/master/products", icon: <FiBox size={18} /> },
-            { label: "Repair Request Item Statuses", path: "/master/repair-request-item-status", icon: <FiFileText size={18} /> },
-            { label: "Parts", path: "/master/parts", icon: <FiTool size={18} /> },
         ],
     },
    

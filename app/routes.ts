@@ -9,6 +9,9 @@ export default [
             route("repair-requests/new", "routes/Main/RepairRequests/repair-requests.new.tsx"),
             route("repair-requests/:id", "routes/Main/RepairRequests/repair-requests.$id.tsx"),
 
+            route("work-orders", "routes/Main/WorkOrders/work-orders.tsx"),
+            route("work-orders/:id", "routes/Main/WorkOrders/work-orders.$id.tsx"),
+
             // Region: Master routes
             // departments
             route("master/departments", "routes/Master/Departments/master.departments.tsx"),
@@ -40,12 +43,29 @@ export default [
             route("master/repair-request-item-status/:id/edit", "routes/Master/RepairRequestItemStatus/master.repairRequestItemStatus.$id.edit.tsx"),
             route("master/repair-request-item-status/:id", "routes/Master/RepairRequestItemStatus/master.repairRequestItemStatus.$id.tsx"),
 
+            // repair statuses
+            route("master/repair-statuses", "routes/Master/RepairStatuses/master.repair-statuses.tsx"),
+            route("master/repair-statuses/new", "routes/Master/RepairStatuses/master.repair-statuses.new.tsx"),
+            route("master/repair-statuses/:id/edit", "routes/Master/RepairStatuses/master.repair-statuses.$id.edit.tsx"),
+            route("master/repair-statuses/:id", "routes/Master/RepairStatuses/master.repair-statuses.$id.tsx"),
+
             // End Region: Master routes
 
             // Region: Manager routes
             // repair requests
             route("manager/repair-requests", "routes/Manager/RepairRequests/manager.repair-requests.tsx"),
             route("manager/repair-requests/:id", "routes/Manager/RepairRequests/manager.repair-requests.$id.tsx"),
+
+            // work orders
+            route("manager/work-orders", "routes/Manager/WorkOrders/manager.work-orders.tsx"),
+            route("manager/work-orders/new", "routes/Manager/WorkOrders/manager.work-orders.new.tsx"),
+            route("manager/work-orders/:id/edit", "routes/Manager/WorkOrders/manager.work-orders.$id.edit.tsx"),
+            route("manager/work-orders/:id", "routes/Manager/WorkOrders/manager.work-orders.$id.tsx"),
+
+            // inventory moves
+            route("manager/inventory-moves", "routes/Manager/InventoryMoves/manager.inventory-moves.tsx"),
+            route("manager/inventory-moves/new", "routes/Manager/InventoryMoves/manager.inventory-moves.new.tsx"),
+            route("manager/inventory-moves/:id", "routes/Manager/InventoryMoves/manager.inventory-moves.$id.tsx"),
 
             // End Region: Manager routes
 
