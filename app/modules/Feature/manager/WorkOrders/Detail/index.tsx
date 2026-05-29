@@ -62,7 +62,7 @@ export default function ManagerWorkOrdersDetailPage()
             {
                 title: "Work Order Information",
                 fields: [
-                    { label: "Repair Request Item", value: workOrder.repairRequestItemDescription ?? workOrder.repairRequestItem?.description ?? "-" },
+                    { label: "Repair Request Item", value: workOrder.repairRequestItemProductName ?? "-" },
                     { label: "Status", value: workOrder.repairRequestItemRepairStatusName ?? "-" },
                     { label: "Order Sequence", value: workOrder.orderSequence ?? "-" },
                     { label: "Scheduled Start", value: workOrder.scheduledStart ? formatDateTime(workOrder.scheduledStart) : "-" },
