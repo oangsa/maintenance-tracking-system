@@ -91,6 +91,7 @@ export function useFormItem({
                     controlId: "statusLookupDisplay",
                     key: "status",
                     label: WORK_ORDER_FORM_ITEM.STATUS_LABEL,
+                    lookupKey: "repairStatus",
                     name: "statusName",
                     required: false,
                     disabled: true,
@@ -113,7 +114,7 @@ export function useFormItem({
                         );
                     },
                     span: FORM_FIELD_SPAN.HALF,
-                    type: FORM_TYPE.TEXT,
+                    type: FORM_TYPE.LOOKUP,
                 },
             ],
             key: WORK_ORDER_FORM_ITEM.SECTION_KEY,

@@ -1,4 +1,3 @@
-import type { IProduct } from "./types";
 export interface IWorkOrder
 {
     
@@ -45,4 +44,18 @@ export interface IRepairStatusDisplay
     id: number;
     code: string;
     name: string;
+}
+
+export interface IRepairRequestDisplay
+{
+    id: number;
+    requestNo: string;
+}
+
+export interface IRepairRequestItemDisplay
+{
+    id: number;
+    repairRequestId: number;
+    description: string;
+    productName: string;
 }

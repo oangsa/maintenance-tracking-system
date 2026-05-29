@@ -4,6 +4,7 @@ import type { IFetchParams, IFetchResult } from "~/components/Common/DataTable";
 import Loading from "~/components/Common/Loading";
 import Table from "~/components/Maintain/Table";
 import useTableSearchParams from "~/components/Maintain/Table/useSearchParams";
+import { SEARCH_OPERATOR } from "~/constants";
 import { buildOrderBy } from "~/lib/pageUtils";
 import { useUserContext } from "~/providers/UserProvider";
 import { searchWorkOrders } from "~/services/workOrders.service";
@@ -47,9 +48,19 @@ export default function EmployeeWorkOrdersListPage()
         setSearchParams,
     });
 
+    const currentUserId = currentUser?.id ?? null;
+
     const fetchData = React.useCallback(async (params: IFetchParams): Promise<IFetchResult<IWorkOrderTableRow>> =>
     {
-        const searchConditions = buildFilterSearch(params.search);
+        const searchConditions = [
+            ...buildFilterSearch(params.search),
+            // enable this when work task assignment is implemented
+            /* {
+                condition: SEARCH_OPERATOR.EQUAL,
+                name: "active_assignee_id",
+                value: String(currentUserId),
+            }, */
+        ];
 
         const response = await searchWorkOrders({
             deleted: false,
@@ -74,7 +85,7 @@ export default function EmployeeWorkOrdersListPage()
             total: response.pagination.totalCount,
             totalPages: response.pagination.totalPages,
         };
-    }, [buildFilterSearch, searchTerm]);
+    }, [buildFilterSearch, currentUserId, searchTerm]);
 
     if (isLoadingUser && currentUser === null)
     {
@@ -90,7 +101,7 @@ export default function EmployeeWorkOrdersListPage()
         <Table<IWorkOrderTableRow>
             basePath="/work-orders"
             columns={readOnlyColumns}
-            currentPageValue={currentPage}            
+            currentPageValue={currentPage}
             fetchData={fetchData}
             filterFields={fieldFilters}
             filterValues={currentFiltersRecord}
@@ -103,7 +114,7 @@ export default function EmployeeWorkOrdersListPage()
             showCreateButton={false}
             showEditAction={false}
             showDeleteAction={false}
-            
+
         />
     );
 }
