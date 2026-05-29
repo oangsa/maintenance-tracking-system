@@ -107,6 +107,7 @@ export default function ManagerWorkOrdersListPage()
             onFilterChange={handleFilterChange}
             onSearchChange={handleSearchChange}
             searchValue={currentSearch}
+            showCreateButton={false}
             title="Work Orders"
         />
     );

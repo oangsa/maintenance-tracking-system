@@ -14,7 +14,7 @@ export default function ManagerWorkOrdersCreatePage()
     {
         const safeValues = {
             ...values,
-            repairRequestItemDescription: values.repairRequestItemDescription ?? "",
+            repairRequestItemProductName: values.repairRequestItemProductName ?? "",
             scheduledStart: values.scheduledStart ?? "",
             scheduledEnd: values.scheduledEnd ?? "",
             statusCode: values.statusCode ?? "",
@@ -36,7 +36,7 @@ export default function ManagerWorkOrdersCreatePage()
     const descFromUrl = searchParams.get("desc");
     if (itemIdFromUrl) {
         defaultValues.repairRequestItemId = itemIdFromUrl;
-        defaultValues.repairRequestItemDescription = descFromUrl || `Item #${itemIdFromUrl}`;
+        defaultValues.repairRequestItemProductName = descFromUrl || `Item #${itemIdFromUrl}`;
     }
 
     return (

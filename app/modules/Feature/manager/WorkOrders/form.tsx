@@ -61,13 +61,13 @@ export default function WorkOrderForm({
     const onClearItem = React.useCallback(() =>
     {
         setFieldValue("repairRequestItemId", "");
-        setFieldValue("repairRequestItemDescription", "");
+        setFieldValue("repairRequestItemProductName", "");
     }, [setFieldValue]);
 
     const onSelectItem = React.useCallback((item: IRepairRequestItemLookupRow) =>
     {
         setFieldValue("repairRequestItemId", String(item.id));
-        setFieldValue("repairRequestItemDescription", item.repairRequestItemProductName || item.description || "");
+        setFieldValue("repairRequestItemProductName", item.repairRequestItemProductName || item.description || "");
     }, [setFieldValue]);
 
     const onClearStatus = React.useCallback(() =>
