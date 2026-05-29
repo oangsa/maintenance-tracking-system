@@ -21,9 +21,9 @@ function createEmptyWorkOrderFormValues(): IWorkOrderFormValues
         scheduledStart: "",
         scheduledEnd: "",
         orderSequence: "1",
-        statusId: "1",
-        statusCode: "PENDING",
-        statusName: "Pending / Waiting for review",
+        statusId: "",
+        statusCode: "",
+        statusName: "",
     };
 }
 

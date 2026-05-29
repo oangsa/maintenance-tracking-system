@@ -76,6 +76,9 @@ async function loadManagerLineItems(repairRequestId: number, currentUserDepartme
             productLabel: formatProductLabel(item),
             quantity: item.quantity,
             repairStatus: formatRepairStatusLabel(item),
+            repairStatusCode: item.repairStatusCode,
+            repairStatusId: item.repairStatusId,
+            repairStatusName: item.repairStatusName,
             workOrderId: workOrderByRepairRequestItemId.get(item.id)?.id ?? null,
         })));
 

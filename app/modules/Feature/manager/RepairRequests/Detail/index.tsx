@@ -69,8 +69,11 @@ function ManagerRepairRequestItemsSection({
                         onClick={() => {
                             const productName = item?.productLabel || `${item?.productCode || ""} - ${item?.productName || ""}`;
                             const descText = encodeURIComponent(productName);
+                            const statusId = encodeURIComponent(String(item?.repairStatusId ?? ""));
+                            const statusCode = encodeURIComponent(String(item?.repairStatusCode ?? ""));
+                            const statusName = encodeURIComponent(String(item?.repairStatusName ?? ""));
 
-                            navigate(`/manager/work-orders/new?repairRequestItemId=${item.id}&desc=${descText}`);
+                            navigate(`/manager/work-orders/new?repairRequestItemId=${item.id}&desc=${descText}&statusId=${statusId}&statusCode=${statusCode}&statusName=${statusName}`);
                         }}
                         type="button"
                         variant="outline"

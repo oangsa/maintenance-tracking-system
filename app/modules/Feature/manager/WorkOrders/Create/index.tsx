@@ -34,9 +34,15 @@ export default function ManagerWorkOrdersCreatePage()
     const defaultValues = createEmptyWorkOrderFormValues() as IWorkOrderFormValues;
     const itemIdFromUrl = searchParams.get("repairRequestItemId");
     const descFromUrl = searchParams.get("desc");
+    const statusCodeFromUrl = searchParams.get("statusCode");
+    const statusIdFromUrl = searchParams.get("statusId");
+    const statusNameFromUrl = searchParams.get("statusName");
     if (itemIdFromUrl) {
         defaultValues.repairRequestItemId = itemIdFromUrl;
         defaultValues.repairRequestItemProductName = descFromUrl || `Item #${itemIdFromUrl}`;
+        defaultValues.statusId = statusIdFromUrl || "";
+        defaultValues.statusCode = statusCodeFromUrl || "";
+        defaultValues.statusName = statusNameFromUrl || "";
     }
 
     return (

@@ -8,6 +8,9 @@ export interface IRepairRequestDetailLineItem extends ILineItemValue
     productLabel?: string | null;
     quantity?: number | string | null;
     repairStatus?: string | null;
+    repairStatusCode?: string | null;
+    repairStatusId?: number | null;
+    repairStatusName?: string | null;
     workOrderId?: number | null;
 }
 

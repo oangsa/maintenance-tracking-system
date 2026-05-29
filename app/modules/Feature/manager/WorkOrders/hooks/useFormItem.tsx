@@ -102,7 +102,7 @@ export function useFormItem({
                                 clearButtonLabel={WORK_ORDER_FORM_ITEM.STATUS_CLEAR}
                                 controlId="statusLookupDisplay"
                                 definition={RepairStatusLookupDefinition}
-                                disabled={context.disabled}
+                                disabled
                                 displayValue={context.values.statusName || context.values.statusCode || "-"}
                                 hasError={Boolean(context.errors.statusId)}
                                 lookupButtonLabel={WORK_ORDER_FORM_ITEM.STATUS_LOOKUP}

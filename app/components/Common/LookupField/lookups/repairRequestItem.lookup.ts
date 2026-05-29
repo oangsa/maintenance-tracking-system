@@ -14,6 +14,9 @@ export interface IRepairRequestItemLookupRow extends Record<string, unknown>
     description: string;
     repairRequestItemProductName?: string;
     repairRequestRequestNo?: string;
+    repairRequestItemStatusCode?: string;
+    repairRequestItemStatusId?: number;
+    repairRequestItemStatusName?: string;
 }
 
 const RepairRequestItemLookupColumns: IPickerColumn<IRepairRequestItemLookupRow>[] = LOOKUP_COLUMNS.repairRequestItem.map((col) =>
@@ -65,6 +68,9 @@ async function fetchRepairRequestItemLookupData(params: IFetchParams): Promise<I
         id: item.id,
         description: item.description || "-",
         repairRequestItemProductName: item.productName || item.product?.name || item.productCode || "-",
+        repairRequestItemStatusCode: item.repairStatusCode || "",
+        repairRequestItemStatusId: typeof item.repairStatusId === "number" ? item.repairStatusId : undefined,
+        repairRequestItemStatusName: item.repairStatusName || "",
         repairRequestRequestNo: item.requestNo || item.repairRequest?.requestNo || String(item.repairRequestId || "-")
     }));
 
