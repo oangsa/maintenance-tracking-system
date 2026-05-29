@@ -49,7 +49,7 @@ export default function EmployeeWorkOrdersDetailPage()
 
     return (
         <Detail
-            backHref="/employee/work-orders"
+            backHref="/work-orders"
             backLabel="Back to Work Orders"
             buildSections={sectionBuilder}
             description="View the details and current status of this work order."
