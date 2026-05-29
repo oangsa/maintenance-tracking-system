@@ -1,3 +1,5 @@
+export { defaultNavSections, flattenNavItems };
+export type { INavItem, INavSection, ISidebarProfileProps, IAppSidebarProps, TSidebarActionHandler };
 import React from "react";
 import { Link, useLocation } from "react-router";
 import {
@@ -162,6 +164,8 @@ const defaultNavSections: INavSection[] = [
             { label: "Repair Request Item Statuses", path: "/master/repair-request-item-status", icon: <FiFileText size={18} /> },
             { label: "Repair Statuses", path: "/master/repair-statuses", icon: <FiFileText size={18} /> },
             { label: "Parts", path: "/master/parts", icon: <FiTool size={18} /> },
+            { label: "Product Types", path: "/master/product-types", icon: <FiBox size={18} /> },
+            { label: "Products", path: "/master/products", icon: <FiBox size={18} /> },
         ],
     },
    
