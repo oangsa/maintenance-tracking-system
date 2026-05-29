@@ -55,11 +55,11 @@ export default function EmployeeWorkOrdersListPage()
         const searchConditions = [
             ...buildFilterSearch(params.search),
             // enable this when work task assignment is implemented
-            /* {
+            {
                 condition: SEARCH_OPERATOR.EQUAL,
-                name: "active_assignee_id",
+                name: "work_task_assignee_id",
                 value: String(currentUserId),
-            }, */
+            },
         ];
 
         const response = await searchWorkOrders({
