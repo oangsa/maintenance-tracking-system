@@ -38,24 +38,31 @@ function ManagerRepairRequestItemsSection({
     });
 
     const lineItemColumns = React.useMemo(() => createRepairRequestDetailLineItemColumns({
-        renderAction: (item) => {
-            const statusCode = item?.repairStatusCode || "";
-            const hasWorkOrder = item?.workOrderId != null || item?.work_order_id != null;
+        renderAction: (item: any) => {
+            const statusStr = String(
+                item?.repairStatus || 
+                item?.repairStatusCode || 
+                item?.repairStatusName || 
+                ""
+            ).toUpperCase();
             
-            const isAlreadyAssigned = hasWorkOrder || (statusCode !== "PENDING" && statusCode !== "REQUESTED" && statusCode !== "");
-            if (isAlreadyAssigned) {
-                return null; 
+            if (statusStr.includes("PENDING") || statusStr.includes("REQUESTED")) {
+                return (
+                    <Button 
+                        onClick={() => {
+                            const productName = item?.productLabel || `${item?.productCode || ""} - ${item?.productName || ""}`;
+                            const descText = encodeURIComponent(productName);
+                            
+                            navigate(`/manager/work-orders/new?repairRequestItemId=${item.id}&desc=${descText}`);
+                        }} 
+                        type="button" 
+                        variant="outline"
+                    >
+                        Assign Work Order
+                    </Button>
+                );
             }
-            return (
-                <Button 
-                    onClick={() => navigate(`/manager/work-orders/new?repairRequestItemId=${item.id}`)} 
-                    type="button" 
-                    variant="outline"
-                >
-                    Assign Work Order
-                </Button>
-            );
-        
+            return null;
         }
     }), [navigate]);
         
