@@ -8,6 +8,7 @@ import {
     FiLogOut,
     FiTool,
     FiUsers,
+    FiBox,
 } from "react-icons/fi";
 
 import {
