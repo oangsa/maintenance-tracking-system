@@ -151,6 +151,7 @@ const defaultNavSections: INavSection[] = [
         items: [
             { label: "Repair Requests", path: "/manager/repair-requests", icon: <FiClipboard size={18} /> },
             { label: "Work Orders", path: "/manager/work-orders", icon: <FiTool size={18} /> },
+            { label: "Inventory Moves", path: "/manager/inventory-moves", icon: <FiLayers size={18} /> }, 
         ],
     },
     {

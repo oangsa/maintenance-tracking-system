@@ -88,3 +88,9 @@ export type {
     IProductTypeForCreate,
     IProductTypeForUpdate,
 } from "../types/productType.types";
+
+export type {
+    IInventoryMove,
+    IInventoryMoveItem,
+    IInventoryMoveForCreate,
+} from "./inventoryMove.types";

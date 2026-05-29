@@ -50,6 +50,11 @@ export default [
             route("manager/work-orders/:id/edit", "routes/Manager/WorkOrders/manager.work-orders.$id.edit.tsx"),
             route("manager/work-orders/:id", "routes/Manager/WorkOrders/manager.work-orders.$id.tsx"),
 
+            // inventory moves
+            route("manager/inventory-moves", "routes/Manager/InventoryMoves/manager.inventory-moves.tsx"),
+            route("manager/inventory-moves/new", "routes/Manager/InventoryMoves/manager.inventory-moves.new.tsx"),
+            route("manager/inventory-moves/:id", "routes/Manager/InventoryMoves/manager.inventory-moves.$id.tsx"),
+
             // End Region: Manager routes
 
             // Parts
