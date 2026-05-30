@@ -45,7 +45,13 @@ export default function TableModal<TRow extends object>({
 }: ITableModalProps<TRow>)
 {
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={title}>
+        <Modal
+            defaultHeight={620}
+            defaultWidth={1200}
+            isOpen={isOpen}
+            onClose={onClose}
+            title={title}
+        >
             <div className="space-y-3">
                 {description && (
                     <div className="text-sm text-muted-foreground">
