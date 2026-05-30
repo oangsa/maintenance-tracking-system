@@ -40,7 +40,6 @@ export default function EmployeeWorkOrderPartsPage()
                     { label: "Request No", value: workOrder.repairRequestRequestNo ?? "-" },
                     { label: "Repair Request Item", value: workOrder.repairRequestItemProductName ?? "-" },
                     { label: "Current Status", value: workOrder.repairRequestItemRepairStatusName ?? "-" },
-                    { label: "Order Sequence", value: workOrder.orderSequence ?? "-" },
                     { label: "Scheduled Start", value: workOrder.scheduledStart ? formatDateTime(workOrder.scheduledStart) : "-" },
                     { label: "Scheduled End", value: workOrder.scheduledEnd ? formatDateTime(workOrder.scheduledEnd) : "-" },
                 ],
@@ -50,9 +49,6 @@ export default function EmployeeWorkOrderPartsPage()
                 fields: [
                     { label: "Task Description", value: workOrder.workTaskDescription ?? "-" },
                     { label: "Task Note", value: workOrder.workTaskNote ?? "-" },
-                    { label: "Current Assignee", value: workOrder.workTaskAssigneeName ?? "-" },
-                    { label: "Assigned By", value: workOrder.workTaskAssignedByName ?? "-" },
-                    { label: "Assigned At", value: formatDateTime(workOrder.workTaskAssignmentAssignedAt) },
                     { label: "Assignment Active", value: workOrder.workTaskAssignmentUnassignedAt ? "No" : "Yes" },
                 ],
                 title: "Assignment Information",
@@ -60,6 +56,11 @@ export default function EmployeeWorkOrderPartsPage()
         ];
     }
 
+    // TODO(PLOY-04): IMPLEMENT REAL WORK ORDER PART FLOW HERE.
+    // TODO(PLOY-04): Load real Work Order Parts for this workOrder.id.
+    // TODO(PLOY-04): Pass API-backed handlers into WorkOrderWorkbench:
+    // TODO(PLOY-04): `parts`, `onAddPart`, `onConsumePart`, and `onDeletePlannedPart`.
+    // TODO(PLOY-04): Remove all TODO(PLOY-04) markers in this file after implementation is complete.
     function renderDetailContent(workOrder: IWorkOrder)
     {
         return (

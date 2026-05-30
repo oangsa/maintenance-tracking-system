@@ -103,6 +103,8 @@ Work Order Part UI behavior
 - Keep the employee Work Order detail page as a summary with one Start Work Order Part or Continue Work Order Part button.
 - Keep Work Order Part actions on `/work-orders/:id/work-order-parts`.
 - Do not add a detached global Work Order Part menu or full global CRUD route.
+- Use the existing `TODO(PLOY-04)` markers in `renderDetailContent()` at `app/modules/Feature/employee/WorkOrders/WorkOrderParts/index.tsx` as the main handoff point for loading Work Order Parts and passing real action handlers into `WorkOrderWorkbench`.
+- Remove the `TODO(PLOY-04)` markers after the API-backed Work Order Part implementation is complete.
 - Use shared components where they fit:
     - `LineItemsEditor` for the Work Order Part rows
     - `LookupField` / `ListPickerModal` for Part selection
@@ -192,6 +194,7 @@ Acceptance criteria
 - Work Order Part management is on `/work-orders/:id/work-order-parts`.
 - Work Order Parts load from `POST /api/v1/work-order-part/search` by `work_order_id`.
 - Create, update, delete, and consume actions call real services and refresh backend data.
+- The `TODO(PLOY-04)` markers in `renderDetailContent()` of the Work Order Part page are removed after real loading and action handlers are implemented.
 - Consumed rows are read-only and show their `inventoryMoveItemId`.
 - Planned rows can be updated, deleted, or consumed when the employee is allowed to manage the Work Order.
 - Part picker is department-aware or blocked with a clear error if department filtering cannot be guaranteed.
