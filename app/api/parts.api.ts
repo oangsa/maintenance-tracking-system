@@ -39,6 +39,21 @@ export async function updatePartRequest(id: number, body: IPartForUpdate): Promi
     });
 }
 
+export interface IConsumeStockPayload
+{
+    quantity: number;
+    note?: string;
+    workOrderPartId?: number;
+}
+
+export async function consumeStockRequest(id: number, body: IConsumeStockPayload): Promise<void>
+{
+    return http<void>(`${PREFIX}/${id}/consume-stock`, {
+        method: "POST",
+        body: JSON.stringify(body),
+    });
+}
+
 export async function deletePartRequest(id: number): Promise<void>
 {
     return http<void>(`${PREFIX}/${id}`, {

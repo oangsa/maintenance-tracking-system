@@ -5,6 +5,8 @@ import {
     deletePartRequest,
     deletePartCollectionRequest,
     searchPartsRequest,
+    consumeStockRequest,
+    type IConsumeStockPayload,
 } from "../api/parts.api";
 
 import type {
@@ -44,4 +46,9 @@ export async function deletePart(id: number): Promise<void>
 export async function deleteParts(body: IDeleteCollectionRequest): Promise<void>
 {
     return deletePartCollectionRequest(body);
+}
+
+export async function consumeStock(id: number, payload: IConsumeStockPayload): Promise<void>
+{
+    return consumeStockRequest(id, payload);
 }
