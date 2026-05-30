@@ -5,8 +5,13 @@ export interface IInventoryMoveItem
     id: number;
     inventoryMoveId: number;
     partId: number;
-    partCode: string;
-    partName: string;
+    partCode?: string | null;
+    partName?: string | null;
+    code?: string | null;
+    name?: string | null;
+    workOrderPartId?: number | null;
+    workOrderPartPartCode?: string | null;
+    workOrderPartPartName?: string | null;
     quantityIn: number | null;
     quantityOut: number | null;
 }

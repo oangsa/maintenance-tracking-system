@@ -13,6 +13,23 @@ interface IUseLineItemColumnResult
     lineItemColumns: ILineItemColumn<IInventoryMoveFormLineItem, IPartLookupRow>[];
 }
 
+function parseNumber(value: string | undefined): number | null
+{
+    if (!value)
+    {
+        return null;
+    }
+
+    const parsed = Number(value);
+
+    if (!Number.isFinite(parsed))
+    {
+        return null;
+    }
+
+    return parsed;
+}
+
 function createPartDisplayValue(item: IInventoryMoveFormLineItem): string
 {
     if (item.partCode && item.partName)
@@ -34,6 +51,7 @@ export function createEmptyInventoryMoveLineItem(): IInventoryMoveFormLineItem
         partCode: "",
         partId: "",
         partName: "",
+        partTotalStock: "",
         quantityIn: "",
         quantityOut: "",
     };
@@ -76,6 +94,7 @@ export default function useLineItemColumn(): IUseLineItemColumnResult
                                         partCode: "",
                                         partId: "",
                                         partName: "",
+                                        partTotalStock: "",
                                     })
                                 }
                                 size="icon-sm"
@@ -97,9 +116,25 @@ export default function useLineItemColumn(): IUseLineItemColumnResult
                         partCode: part.code || "",
                         partId: part.id ? String(part.id) : "",
                         partName: part.name || "",
+                        partTotalStock: Number.isFinite(part.totalStock) ? String(part.totalStock) : "",
                     });
                 },
             }),
+        },
+        {
+            cellClassName: "w-[120px] align-top",
+            headerClassName: "w-[120px] text-right",
+            key: "partTotalStock",
+            label: "Current Stock",
+            renderCell: (context) => (
+                <Input
+                    className="text-right"
+                    disabled
+                    readOnly
+                    type="text"
+                    value={String(context.item.partTotalStock || "-")}
+                />
+            ),
         },
         {
             cellClassName: "w-[140px] align-top",
@@ -123,17 +158,36 @@ export default function useLineItemColumn(): IUseLineItemColumnResult
             headerClassName: "w-[140px] text-right",
             key: "quantityOut",
             label: "Quantity Out",
-            renderCell: (context) => (
-                <Input
-                    className="text-right"
-                    disabled={context.disabled}
-                    min={0}
-                    onChange={(event) => context.updateItem({ quantityOut: event.target.value })}
-                    step={1}
-                    type="number"
-                    value={String(context.item.quantityOut || "")}
-                />
-            ),
+            renderCell: (context) =>
+            {
+                const totalStock = parseNumber(context.item.partTotalStock);
+                const quantityOut = parseNumber(context.item.quantityOut);
+                const hasOverStockWarning = totalStock !== null && quantityOut !== null && quantityOut > totalStock;
+
+                return (
+                    <div className="space-y-1">
+                        <Input
+                            className="text-right"
+                            disabled={context.disabled}
+                            min={0}
+                            onChange={(event) => context.updateItem({ quantityOut: event.target.value })}
+                            step={1}
+                            type="number"
+                            value={String(context.item.quantityOut || "")}
+                        />
+                        {totalStock !== null && (
+                            <p className="text-right text-[11px] text-muted-foreground">
+                                Available: {totalStock}
+                            </p>
+                        )}
+                        {hasOverStockWarning && (
+                            <p className="text-right text-[11px] text-destructive">
+                                Quantity Out exceeds current stock.
+                            </p>
+                        )}
+                    </div>
+                );
+            },
         },
         {
             cellClassName: "w-[168px] align-top",

@@ -14,22 +14,6 @@ function useColumns()
             render: (value: unknown, row: IInventoryMoveTableRow) => String(row.moveNo || "-"),
         },
         {
-            key: "parts",
-            label: "Included Parts",
-            render: (value: unknown, row: IInventoryMoveTableRow) =>
-            {
-                if (row.inventoryMoveItems.length === 0)
-                {
-                    return "-";
-                }
-
-                return row.inventoryMoveItems
-                    .map((item: IInventoryMove["inventoryMoveItems"][number]) => item.partCode ? `${item.partCode} (${item.partName || '-'})` : (item.partName || item.partId))
-                    .join(", ");
-            },
-            sortable: false,
-        },
-        {
             key: "reason",
             label: "Reason",
             render: (value: unknown, row: IInventoryMoveTableRow) => String(row.reason || "-"),

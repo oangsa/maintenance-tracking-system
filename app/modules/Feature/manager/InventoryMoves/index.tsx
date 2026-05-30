@@ -8,7 +8,7 @@ import { buildOrderBy } from "~/lib/pageUtils";
 import { useUserContext } from "~/providers/UserProvider";
 import useColumns, { type IInventoryMoveTableRow } from "./hooks/useColumns";
 import useFieldFilter from "./hooks/useFieldFilter";
-import { deleteInventoryMove, searchInventoryMoves } from "~/services/inventoryMoves.service";
+import { searchInventoryMoves } from "~/services/inventoryMoves.service";
 
 export default function ManagerInventoryMovesListPage()
 {
@@ -84,13 +84,6 @@ export default function ManagerInventoryMovesListPage()
             basePath="/manager/inventory-moves"
             columns={columns}
             currentPageValue={currentPage}
-            deleteConfig={{
-                confirmMessage: "Are you sure you want to delete this inventory move transaction? (Note: It is recommended to use Reverse instead of Delete to maintain transaction history).",
-                confirmTitle: "Delete Inventory Move",
-                invalidIdMessage: "The selected transaction has an invalid id and cannot be deleted.",
-                onDelete: deleteInventoryMove,
-                submitErrorMessage: "Unable to delete the selected transaction.",
-            }}
             fetchData={fetchData}
             filterFields={fieldFilters}
             filterValues={currentFiltersRecord}
