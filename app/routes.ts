@@ -62,6 +62,10 @@ export default [
             route("manager/work-orders/:id/edit", "routes/Manager/WorkOrders/manager.work-orders.$id.edit.tsx"),
             route("manager/work-orders/:id", "routes/Manager/WorkOrders/manager.work-orders.$id.tsx"),
 
+            // work tasks
+            route("manager/work-tasks/new", "routes/Manager/WorkTasks/manager.work-tasks.new.tsx"),
+            route("manager/work-tasks/:id/edit", "routes/Manager/WorkTasks/manager.work-tasks.$id.edit.tsx"),
+          
             // inventory moves
             route("manager/inventory-moves", "routes/Manager/InventoryMoves/manager.inventory-moves.tsx"),
             route("manager/inventory-moves/new", "routes/Manager/InventoryMoves/manager.inventory-moves.new.tsx"),

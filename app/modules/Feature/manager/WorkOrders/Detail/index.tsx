@@ -121,8 +121,8 @@ export default function ManagerWorkOrdersDetailPage()
         const hasWorkTask = Number.isFinite(parsedWorkTaskId) && parsedWorkTaskId > 0;
 
         return (
-            <div className="flex justify-end">
-                <Button className="!text-foreground hover:!text-foreground" onClick={() => handleWorkTaskAction(workOrder)} type="button" variant="outline">
+            <div className="mt-6 flex justify-end">
+                <Button className="gap-1.5" onClick={() => handleWorkTaskAction(workOrder)} type="button" variant="default">
                     {hasWorkTask ? "Update Task" : "Create Task"}
                 </Button>
             </div>

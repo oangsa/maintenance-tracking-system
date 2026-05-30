@@ -98,3 +98,9 @@ export type {
 export type {
     IMonthlyRepairTrendByProductTypeReport
 } from "../types/monthlyRepairTrendByProductTypeReport.type";
+
+export type {
+    IWorkTask,
+    IWorkTaskForCreate,
+    IWorkTaskForUpdate,
+} from "../types/workTask.types";
