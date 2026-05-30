@@ -5,13 +5,6 @@ import { ConfirmModal } from "~/components/Common/Modal";
 import type { IDetailSection } from "~/components/Common/DetailSections";
 import Detail from "~/components/Maintain/Detail";
 import { buttonVariants, Button } from "~/components/ui/button";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "~/components/ui/card";
 import { formatDateTime } from "~/lib/formatters";
 import { cn } from "~/lib/utils";
 import { useUserContext } from "~/providers/UserProvider";
@@ -138,28 +131,6 @@ function ManagerWorkTaskAssignmentSection({
                     </Button>
                 )}
             </div>
-
-            {hasWorkTask && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Task Assignment</CardTitle>
-                        <CardDescription>
-                            Manage who is currently responsible for this work task.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="rounded-md border bg-muted/40 p-3">
-                            <div className="text-sm font-medium">Current Responsible Person</div>
-                            <div className="mt-1 text-sm text-muted-foreground">
-                                {activeAssignment?.assigneeName || activeAssignment?.assigneeEmail
-                                    ? `${activeAssignment.assigneeName || "Unnamed User"} (${activeAssignment.assigneeEmail || "No email"})`
-                                    : "No active assignee"
-                                }
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
 
             {hasWorkTask && (
                 <AssignmentModal
