@@ -1,10 +1,17 @@
+export type IInventoryMoveReason = "buy" | "use" | "lost" | "found" | "adjust";
+
 export interface IInventoryMoveItem
 {
     id: number;
     inventoryMoveId: number;
     partId: number;
-    partCode: string;
-    partName: string;
+    partCode?: string | null;
+    partName?: string | null;
+    code?: string | null;
+    name?: string | null;
+    workOrderPartId?: number | null;
+    workOrderPartPartCode?: string | null;
+    workOrderPartPartName?: string | null;
     quantityIn: number | null;
     quantityOut: number | null;
 }
@@ -14,13 +21,17 @@ export interface IInventoryMoveItemForCreate
     partId: number;
     quantityIn: number | null;
     quantityOut: number | null;
+    workOrderPartId?: number | null;
 }
 
-export interface IInventoryMove {
+export interface IInventoryMove
+{
     id: number;
-    moveNo: string;      
-    remark: string | null; 
-    items?: IInventoryMoveItem[]; 
+    moveNo: string;
+    reason: IInventoryMoveReason;
+    moveDate: string;
+    remark: string;
+    inventoryMoveItems: IInventoryMoveItem[];
     createdAt: string | null;
     updatedAt: string | null;
     createdBy: string | null;
@@ -29,6 +40,9 @@ export interface IInventoryMove {
 
 export interface IInventoryMoveForCreate
 {
-    remarks?: string;
+    moveNo?: string;
+    reason: IInventoryMoveReason;
+    moveDate?: string;
+    remark?: string;
     inventoryMoveItems: IInventoryMoveItemForCreate[];
 }

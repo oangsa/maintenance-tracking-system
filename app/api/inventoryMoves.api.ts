@@ -30,10 +30,11 @@ export async function getInventoryMoveByIdRequest(id: number): Promise<IInventor
     return http<IInventoryMove>(`${PREFIX}/${id}`);
 }
 
-export async function reverseInventoryMoveRequest(id: number): Promise<IInventoryMove>
+export async function reverseInventoryMoveRequest(id: number, body: IInventoryMoveForCreate): Promise<IInventoryMove>
 {
     return http<IInventoryMove>(`${PREFIX}/${id}/reverse`, {
         method: "POST",
+        body: JSON.stringify(body),
     });
 }
 

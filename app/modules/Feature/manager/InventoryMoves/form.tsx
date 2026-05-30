@@ -5,9 +5,11 @@ import CommonForm, { FormActions } from "~/components/Common/Form";
 import { useManagedForm } from "~/components/Common/Form/useManagedForm";
 import { InventoryMoveFormSchema } from "~/schemas/inventoryMoveFormSchema";
 import type { IInventoryMoveFormValues } from "~/schemas/inventoryMoveFormSchema";
+import InventoryMoveLineItemsEditor from "./InventoryMoveLineItemsEditor";
 import { useFormItem } from "./hooks/useFormItem";
 
-interface IInventoryMoveFormProps {
+interface IInventoryMoveFormProps
+{
     mode: "create"; 
     initialValues: IInventoryMoveFormValues;
     submitting?: boolean;
@@ -15,12 +17,14 @@ interface IInventoryMoveFormProps {
     onSubmit: (values: IInventoryMoveFormValues) => void | Promise<void>;
 }
 
-interface IInventoryMoveFormErrors {
+interface IInventoryMoveFormErrors
+{
     remarks?: string;
     items?: string;
 }
 
-function mapInventoryMoveFormErrors(fieldErrors: FieldErrors<IInventoryMoveFormValues>): IInventoryMoveFormErrors {
+function mapInventoryMoveFormErrors(fieldErrors: FieldErrors<IInventoryMoveFormValues>): IInventoryMoveFormErrors
+{
     return {
         remarks: fieldErrors.remarks?.message,
         items: fieldErrors.items?.root?.message || fieldErrors.items?.message,
@@ -33,7 +37,8 @@ export default function InventoryMoveForm({
     submitting = false,
     onCancel,
     onSubmit,
-}: IInventoryMoveFormProps) {
+}: IInventoryMoveFormProps)
+{
     const {
         values,
         errors: formErrors,
@@ -47,10 +52,22 @@ export default function InventoryMoveForm({
         resolver: zodResolver(InventoryMoveFormSchema),
     });
 
+    const handleItemsChange = React.useCallback((nextItems: IInventoryMoveFormValues["items"]) =>
+    {
+        setFieldValue("items", nextItems);
+    }, [setFieldValue]);
+
+    const lineItemsEditor = React.useMemo(() => (
+        <InventoryMoveLineItemsEditor
+            disabled={submitting}
+            items={values.items}
+            onChange={handleItemsChange}
+        />
+    ), [handleItemsChange, submitting, values.items]);
+
     const { formItems } = useFormItem({
+        lineItemsEditor,
         mode,
-        values,
-        setFieldValue,
     });
 
     return (
