@@ -1,17 +1,15 @@
-import { Link, useParams } from "react-router";
-import { FiPlay } from "react-icons/fi";
+import { useParams } from "react-router";
 import type { IWorkOrder } from "~/api/types/types";
 import type { IDetailSection } from "~/components/Common/DetailSections";
 import Loading from "~/components/Common/Loading";
 import Detail from "~/components/Maintain/Detail";
 import ErrorCard from "~/components/Maintain/ErrorCard";
-import { buttonVariants } from "~/components/ui/button";
-import { cn } from "~/lib/utils";
 import { formatDateTime } from "~/lib/formatters";
 import { useUserContext } from "~/providers/UserProvider";
 import { getWorkOrderById } from "~/services/workOrders.service";
+import WorkOrderWorkbench from "../Detail/WorkOrderWorkbench";
 
-export default function EmployeeWorkOrdersDetailPage()
+export default function EmployeeWorkOrderPartsPage()
 {
     const params = useParams();
     const { currentUser, isLoadingUser, userError } = useUserContext();
@@ -42,7 +40,6 @@ export default function EmployeeWorkOrdersDetailPage()
                     { label: "Request No", value: workOrder.repairRequestRequestNo ?? "-" },
                     { label: "Repair Request Item", value: workOrder.repairRequestItemProductName ?? "-" },
                     { label: "Current Status", value: workOrder.repairRequestItemRepairStatusName ?? "-" },
-                    { label: "Order Sequence", value: workOrder.orderSequence ?? "-" },
                     { label: "Scheduled Start", value: workOrder.scheduledStart ? formatDateTime(workOrder.scheduledStart) : "-" },
                     { label: "Scheduled End", value: workOrder.scheduledEnd ? formatDateTime(workOrder.scheduledEnd) : "-" },
                 ],
@@ -52,40 +49,25 @@ export default function EmployeeWorkOrdersDetailPage()
                 fields: [
                     { label: "Task Description", value: workOrder.workTaskDescription ?? "-" },
                     { label: "Task Note", value: workOrder.workTaskNote ?? "-" },
-                    { label: "Current Assignee", value: workOrder.workTaskAssigneeName ?? "-" },
-                    { label: "Assigned By", value: workOrder.workTaskAssignedByName ?? "-" },
-                    { label: "Assigned At", value: formatDateTime(workOrder.workTaskAssignmentAssignedAt) },
                     { label: "Assignment Active", value: workOrder.workTaskAssignmentUnassignedAt ? "No" : "Yes" },
                 ],
                 title: "Assignment Information",
             },
-            {
-                fields: [
-                    { label: "Created At", value: formatDateTime(workOrder.createdAt) },
-                    { label: "Updated At", value: formatDateTime(workOrder.updatedAt) },
-                    { label: "Created By", value: workOrder.createdBy ?? "-" },
-                    { label: "Updated By", value: workOrder.updatedBy ?? "-" },
-                ],
-                title: "Common Information",
-            },
         ];
     }
 
+    // TODO(PLOY-04): IMPLEMENT REAL WORK ORDER PART FLOW HERE.
+    // TODO(PLOY-04): Load real Work Order Parts for this workOrder.id.
+    // TODO(PLOY-04): Pass API-backed handlers into WorkOrderWorkbench:
+    // TODO(PLOY-04): `parts`, `onAddPart`, `onConsumePart`, and `onDeletePlannedPart`.
+    // TODO(PLOY-04): Remove all TODO(PLOY-04) markers in this file after implementation is complete.
     function renderDetailContent(workOrder: IWorkOrder)
     {
-        const hasStarted = Boolean(workOrder.workTaskStartedAt);
-        const workOrderPartsHref = `/work-orders/${workOrder.id}/work-order-parts`;
-
         return (
-            <div className="flex justify-end">
-                <Link
-                    className={cn(buttonVariants({ size: "lg" }), "gap-1.5 !text-primary-foreground hover:!text-primary-foreground")}
-                    to={workOrderPartsHref}
-                >
-                    <FiPlay className="size-4" />
-                    {hasStarted ? "Continue Task" : "Start Task"}
-                </Link>
-            </div>
+            <WorkOrderWorkbench
+                currentUserId={resolvedCurrentUser.id}
+                workOrder={workOrder}
+            />
         );
     }
 
@@ -100,7 +82,7 @@ export default function EmployeeWorkOrdersDetailPage()
 
         if (!isActiveAssignee)
         {
-            throw new Error("You can only view work orders assigned to you.");
+            throw new Error("You can only manage parts for work orders assigned to you.");
         }
 
         return workOrder;
@@ -108,18 +90,18 @@ export default function EmployeeWorkOrdersDetailPage()
 
     return (
         <Detail<IWorkOrder>
-            backHref="/work-orders"
-            backLabel="Back to Work Orders"
+            backHref={`/work-orders/${params.id ?? ""}`}
+            backLabel="Back to Work Order"
             buildSections={sectionBuilder}
             content={renderDetailContent}
-            description="View the assigned work order summary before starting or continuing part work."
+            description="Start or continue the assigned work order part flow."
             id={params.id}
             invalidIdMessage="The requested work order id is invalid."
             loadData={loadData}
             loadErrorMessage="Unable to load the selected work order."
-            loadingMessage="Loading work order details..."
+            loadingMessage="Loading work order part flow..."
             notFoundMessage="Work order not found."
-            title="Work Order Details"
+            title="Work Order Parts"
         />
     );
 }

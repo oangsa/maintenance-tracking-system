@@ -1,23 +1,172 @@
 import React from "react";
 import { Link, useNavigate, useParams } from "react-router";
+import { FiUserCheck } from "react-icons/fi";
 import { ConfirmModal } from "~/components/Common/Modal";
 import type { IDetailSection } from "~/components/Common/DetailSections";
 import Detail from "~/components/Maintain/Detail";
 import { buttonVariants, Button } from "~/components/ui/button";
 import { formatDateTime } from "~/lib/formatters";
-import { deleteWorkOrder, getWorkOrderById } from "~/services/workOrders.service";
 import { cn } from "~/lib/utils";
+import { useUserContext } from "~/providers/UserProvider";
+import { deleteWorkOrder, getWorkOrderById } from "~/services/workOrders.service";
+import type { IWorkTaskAssignment } from "~/api/types/types";
+import AssignmentModal from "./AssignmentModal";
+import AssignmentHistoryModal from "./AssignmentHistoryModal";
+import useWorkTaskAssignment from "../hooks/useWorkTaskAssignment";
 
 interface IConfirmState
 {
     isOpen: boolean;
 }
 
+interface ITaskAssignmentSectionProps
+{
+    currentUserId: number | null;
+    onAssignmentSaved: () => void;
+    onWorkTaskAction: () => void;
+    workOrder: Awaited<ReturnType<typeof getWorkOrderById>>;
+}
+
+function buildFallbackActiveAssignment(workOrder: Awaited<ReturnType<typeof getWorkOrderById>>): IWorkTaskAssignment | null
+{
+    const parsedAssigneeId = Number(workOrder.workTaskAssigneeId);
+
+    if (!Number.isFinite(parsedAssigneeId) || parsedAssigneeId <= 0)
+    {
+        return null;
+    }
+
+    if (workOrder.workTaskAssignmentUnassignedAt)
+    {
+        return null;
+    }
+
+    return {
+        assignedAt: workOrder.workTaskAssignmentAssignedAt || new Date().toISOString(),
+        assignedById: workOrder.workTaskAssignedById ?? null,
+        assignedByName: workOrder.workTaskAssignedByName ?? null,
+        assigneeEmail: workOrder.workTaskAssigneeEmail ?? null,
+        assigneeId: parsedAssigneeId,
+        assigneeName: workOrder.workTaskAssigneeName ?? null,
+        id: 0,
+        unassignedAt: null,
+        workTaskId: Number(workOrder.workTaskId),
+    };
+}
+
+function ManagerWorkTaskAssignmentSection({
+    currentUserId,
+    onAssignmentSaved,
+    onWorkTaskAction,
+    workOrder,
+}: ITaskAssignmentSectionProps)
+{
+    const parsedWorkTaskId = Number(workOrder?.workTaskId);
+    const hasWorkTask = Number.isFinite(parsedWorkTaskId) && parsedWorkTaskId > 0;
+
+    const {
+        assignmentHistory,
+        assigneeDepartmentId,
+        fetchAssigneeOptions,
+        isLoading,
+        isSubmitting,
+        loadError,
+        submitError,
+        submitAssignment,
+    } = useWorkTaskAssignment({
+        repairRequestItemId: workOrder.repairRequestItemId,
+        workTaskId: hasWorkTask ? parsedWorkTaskId : null,
+    });
+
+    const [isAssignmentModalOpen, setIsAssignmentModalOpen] = React.useState(false);
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = React.useState(false);
+
+    const sortedAssignmentHistory = React.useMemo(() => [...assignmentHistory].sort((left, right) =>
+    {
+        const leftTime = Date.parse(left.assignedAt || "");
+        const rightTime = Date.parse(right.assignedAt || "");
+
+        return rightTime - leftTime;
+    }), [assignmentHistory]);
+
+    const activeAssignment = React.useMemo(() =>
+    {
+        const assignmentFromHistory = sortedAssignmentHistory.find((historyItem) => !historyItem.unassignedAt) ?? null;
+
+        if (assignmentFromHistory)
+        {
+            return assignmentFromHistory;
+        }
+
+        return buildFallbackActiveAssignment(workOrder);
+    }, [sortedAssignmentHistory, workOrder]);
+
+    const hasActiveAssignee = activeAssignment !== null;
+    const assignmentButtonLabel = hasActiveAssignee ? "Reassign Technician" : "Assign Technician";
+    const assignmentMode = hasActiveAssignee ? "reassign" : "assign";
+
+    async function handleSubmitAssignment(assigneeId: number)
+    {
+        await submitAssignment(assigneeId);
+        onAssignmentSaved();
+    }
+
+    return (
+        <div className="space-y-4">
+            <div className="flex flex-wrap justify-end gap-2">
+                <Button className="gap-1.5" onClick={onWorkTaskAction} type="button" variant="default">
+                    {hasWorkTask ? "Update Task" : "Create Task"}
+                </Button>
+
+                {hasWorkTask && (
+                    <Button className="gap-1.5" onClick={() => setIsAssignmentModalOpen(true)} type="button" variant="outline">
+                        <FiUserCheck size={14} />
+                        {assignmentButtonLabel}
+                    </Button>
+                )}
+
+                {hasWorkTask && (
+                    <Button onClick={() => setIsHistoryModalOpen(true)} type="button" variant="outline">
+                        View Assignment History
+                    </Button>
+                )}
+            </div>
+
+            {hasWorkTask && (
+                <AssignmentModal
+                    currentAssignee={activeAssignment}
+                    currentUserId={currentUserId}
+                    fetchAssigneeOptions={fetchAssigneeOptions}
+                    isDepartmentResolved={assigneeDepartmentId !== null}
+                    isOpen={isAssignmentModalOpen}
+                    isSubmitting={isSubmitting}
+                    mode={assignmentMode}
+                    onClose={() => setIsAssignmentModalOpen(false)}
+                    onSubmit={handleSubmitAssignment}
+                    submitError={submitError}
+                />
+            )}
+
+            {hasWorkTask && (
+                <AssignmentHistoryModal
+                    error={loadError}
+                    history={sortedAssignmentHistory}
+                    isLoading={isLoading}
+                    isOpen={isHistoryModalOpen}
+                    onClose={() => setIsHistoryModalOpen(false)}
+                />
+            )}
+        </div>
+    );
+}
+
 export default function ManagerWorkOrdersDetailPage()
 {
     const navigate = useNavigate();
     const params = useParams();
+    const { currentUser } = useUserContext();
 
+    const [detailRefreshKey, setDetailRefreshKey] = React.useState(0);
     const [pageError, setPageError] = React.useState("");
     const [confirmState, setConfirmState] = React.useState<IConfirmState>({ isOpen: false });
 
@@ -42,10 +191,10 @@ export default function ManagerWorkOrdersDetailPage()
         }
     }
 
-    function handleWorkTaskAction(workOrder: any): void
+    function handleWorkTaskAction(workOrder: Awaited<ReturnType<typeof getWorkOrderById>>): void
     {
-        const parsedWorkOrderId = Number(workOrder?.id);
-        const parsedWorkTaskId = Number(workOrder?.workTaskId);
+        const parsedWorkOrderId = Number(workOrder.id);
+        const parsedWorkTaskId = Number(workOrder.workTaskId);
         const hasWorkTask = Number.isFinite(parsedWorkTaskId) && parsedWorkTaskId > 0;
 
         if (hasWorkTask)
@@ -63,21 +212,21 @@ export default function ManagerWorkOrdersDetailPage()
         navigate(`/manager/work-tasks/new?workOrderId=${parsedWorkOrderId}`);
     }
 
-    function ActionButtons(workOrder: any)
+    function ActionButtons(workOrder: Awaited<ReturnType<typeof getWorkOrderById>>)
     {
         return (
             <>
                 <Link className={cn(buttonVariants({ variant: "outline" }), "gap-1.5 !text-foreground hover:!text-foreground")} to={`/manager/work-orders/${workOrder.id}/edit`}>
                     Edit Work Order
                 </Link>
-                <Button variant="destructive" onClick={() => setConfirmState({ isOpen: true })} type="button">
+                <Button onClick={() => setConfirmState({ isOpen: true })} type="button" variant="destructive">
                     Delete Work Order
                 </Button>
             </>
         );
     }
 
-    function sectionBuilder(workOrder: any): IDetailSection[]
+    function sectionBuilder(workOrder: Awaited<ReturnType<typeof getWorkOrderById>>): IDetailSection[]
     {
         return [
             {
@@ -89,8 +238,8 @@ export default function ManagerWorkOrdersDetailPage()
                     { label: "Scheduled Start", value: workOrder.scheduledStart ? formatDateTime(workOrder.scheduledStart) : "-" },
                     { label: "Scheduled End", value: workOrder.scheduledEnd ? formatDateTime(workOrder.scheduledEnd) : "-" },
                 ],
-             },
-             {
+            },
+            {
                 title: "Work Task Detail",
                 fields: [
                     { label: "Task Id", value: workOrder.workTaskId ?? "-" },
@@ -115,17 +264,18 @@ export default function ManagerWorkOrdersDetailPage()
         ];
     }
 
-    function renderWorkTaskActions(workOrder: any)
+    function RenderWorkTaskSection(workOrder: Awaited<ReturnType<typeof getWorkOrderById>>)
     {
-        const parsedWorkTaskId = Number(workOrder?.workTaskId);
-        const hasWorkTask = Number.isFinite(parsedWorkTaskId) && parsedWorkTaskId > 0;
-
         return (
-            <div className="mt-6 flex justify-end">
-                <Button className="gap-1.5" onClick={() => handleWorkTaskAction(workOrder)} type="button" variant="default">
-                    {hasWorkTask ? "Update Task" : "Create Task"}
-                </Button>
-            </div>
+            <ManagerWorkTaskAssignmentSection
+                currentUserId={currentUser?.id ?? null}
+                onAssignmentSaved={() =>
+                {
+                    setDetailRefreshKey((currentValue) => currentValue + 1);
+                }}
+                onWorkTaskAction={() => handleWorkTaskAction(workOrder)}
+                workOrder={workOrder}
+            />
         );
     }
 
@@ -142,10 +292,12 @@ export default function ManagerWorkOrdersDetailPage()
             />
 
             <Detail
+                key={detailRefreshKey}
                 actions={ActionButtons}
                 backHref="/manager/work-orders"
                 backLabel="Back to Work Orders"
                 buildSections={sectionBuilder}
+                content={RenderWorkTaskSection}
                 description="Review the selected work order and continue to edit or delete."
                 error={pageError}
                 id={params.id}
@@ -154,7 +306,6 @@ export default function ManagerWorkOrdersDetailPage()
                 loadErrorMessage="Unable to load the selected work order."
                 loadingMessage="Loading work order details..."
                 notFoundMessage="Work order not found."
-                content={renderWorkTaskActions}
                 title="Work Order Details"
             />
         </>

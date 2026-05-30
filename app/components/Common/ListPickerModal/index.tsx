@@ -9,12 +9,7 @@ import {
     FiChevronsRight,
 } from "react-icons/fi";
 import { TableLoading } from "../Loading";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from "~/components/ui/dialog";
+import Modal from "../Modal";
 import {
     Table,
     TableBody,
@@ -221,17 +216,23 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
     };
 
     const colCount = columns.length + 1;
+    const footer = (
+        <Button onClick={onClose} type="button" variant="outline">
+            Cancel
+        </Button>
+    );
 
     return (
-        <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-            <DialogContent
-                className="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden"
-                showCloseButton={false}
-            >
-                <div className="flex items-center justify-between flex-wrap gap-3 px-5 py-4 border-b">
-                    <DialogHeader>
-                        <DialogTitle>{title}</DialogTitle>
-                    </DialogHeader>
+        <Modal
+            defaultHeight={680}
+            defaultWidth={1100}
+            footer={footer}
+            isOpen={isOpen}
+            onClose={onClose}
+            title={title}
+        >
+            <div className="flex min-h-0 h-full flex-col gap-3">
+                <div className="flex items-center justify-end flex-wrap gap-3">
                     <div className="flex items-center gap-2">
                         <div className="relative w-52">
                             <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-4 pointer-events-none" />
@@ -262,7 +263,7 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
                     </div>
                 </div>
 
-                <div className="overflow-auto flex-1 min-h-0">
+                <div className="min-h-0 flex-1 overflow-auto rounded-md border">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -341,7 +342,7 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
                     </Table>
                 </div>
 
-                <div className="flex items-center justify-between flex-wrap gap-2 px-5 py-3 border-t">
+                <div className="flex items-center justify-between flex-wrap gap-2 border-t pt-3">
                     <span className="text-sm text-muted-foreground">
                         {total} {itemName}{total !== 1 ? "s" : ""} - Page {page} of {resolvedTotalPages}
                     </span>
@@ -372,11 +373,7 @@ export default function ListPickerModal<T extends Record<string, unknown>>({
                         </div>
                     )}
                 </div>
-
-                <div className="flex justify-end px-5 py-3 border-t">
-                    <Button variant="outline" onClick={onClose}>Cancel</Button>
-                </div>
-            </DialogContent>
-        </Dialog>
+            </div>
+        </Modal>
     );
 }

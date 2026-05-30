@@ -1,6 +1,5 @@
 export interface IWorkOrder
 {
-    
     id: number;
     repairRequestItemId: number;
     scheduledStart: string;
@@ -18,6 +17,18 @@ export interface IWorkOrder
     repairRequestItemRepairStatusName: string;
     repairRequestItemProductName: string;
     repairRequestRequestNo: string;
+    workTaskId?: number | null;
+    workTaskDescription?: string | null;
+    workTaskNote?: string | null;
+    workTaskStartedAt?: string | null;
+    workTaskEndedAt?: string | null;
+    workTaskAssigneeId?: number | null;
+    workTaskAssigneeName?: string | null;
+    workTaskAssigneeEmail?: string | null;
+    workTaskAssignedById?: number | null;
+    workTaskAssignedByName?: string | null;
+    workTaskAssignmentAssignedAt?: string | null;
+    workTaskAssignmentUnassignedAt?: string | null;
 }
 
 export interface IWorkOrderForCreate

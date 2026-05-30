@@ -1,6 +1,8 @@
 import { http, httpPaginated } from "./http";
 import type {
   IWorkTask,
+  IWorkTaskAssignRequest,
+  IWorkTaskAssignment,
   IWorkTaskForCreate,
   IWorkTaskForUpdate,
   IPagedResult,
@@ -34,6 +36,19 @@ export async function updateWorkTaskRequest(id: string, body: IWorkTaskForUpdate
 {
     return http<IWorkTask>(`${PREFIX}/${id}`, {
         method: "PUT",
+        body: JSON.stringify(body),
+    });
+}
+
+export async function getWorkTaskAssignmentHistoryByIdRequest(id: string): Promise<IWorkTaskAssignment[]>
+{
+    return http<IWorkTaskAssignment[]>(`${PREFIX}/${id}/assignment-history`);
+}
+
+export async function assignWorkTaskRequest(id: string, body: IWorkTaskAssignRequest): Promise<IWorkTask>
+{
+    return http<IWorkTask>(`${PREFIX}/${id}/assign`, {
+        method: "POST",
         body: JSON.stringify(body),
     });
 }

@@ -3,8 +3,6 @@
 // Import from here or directly from the individual files.
 // ============================================================
 
-import type { IRepairRequestCountGroupByStatus } from "./repairRequestCountGroupByStatus.type";
-
 export type { IPriority, IRole, ISearchConditionOperator } from "../../constants";
 
 export type {
@@ -34,7 +32,7 @@ export type {
     IProductForUpdate,
 } from "../types/product.types";
 
-export type { 
+export type {
     IRepairStatus,
     IRepairStatusForCreate,
     IRepairStatusForUpdate
@@ -102,6 +100,8 @@ export type {
 
 export type {
     IWorkTask,
+    IWorkTaskAssignRequest,
+    IWorkTaskAssignment,
     IWorkTaskForCreate,
     IWorkTaskForUpdate,
 } from "../types/workTask.types";

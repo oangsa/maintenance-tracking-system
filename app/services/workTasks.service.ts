@@ -1,4 +1,6 @@
 import {
+    assignWorkTaskRequest,
+    getWorkTaskAssignmentHistoryByIdRequest,
     searchWorkTasksRequest,
     getWorkTaskByIdRequest,
     createWorkTaskRequest,
@@ -6,6 +8,8 @@ import {
 } from "../api/workTasks.api";
 import type {
     IWorkTask,
+    IWorkTaskAssignRequest,
+    IWorkTaskAssignment,
     IWorkTaskForCreate,
     IWorkTaskForUpdate,
     IPagedResult,
@@ -30,4 +34,14 @@ export async function createWorkTask(data: IWorkTaskForCreate): Promise<IWorkTas
 export async function updateWorkTask(id: string, data: IWorkTaskForUpdate): Promise<IWorkTask>
 {
     return updateWorkTaskRequest(id, data);
+}
+
+export async function getWorkTaskAssignmentHistoryById(id: string): Promise<IWorkTaskAssignment[]>
+{
+    return getWorkTaskAssignmentHistoryByIdRequest(id);
+}
+
+export async function assignWorkTask(id: string, data: IWorkTaskAssignRequest): Promise<IWorkTask>
+{
+    return assignWorkTaskRequest(id, data);
 }
