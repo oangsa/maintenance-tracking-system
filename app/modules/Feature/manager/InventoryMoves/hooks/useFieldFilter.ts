@@ -47,7 +47,7 @@ export default function useFieldFilter({ searchParams }: IUseFieldFilterProps)
         currentFiltersRecord,
         fieldFilters,
         normalizeFilters,
-        searchTerm: "transactionNo",
+        searchTerm: "move_no",
     };
 }
 
