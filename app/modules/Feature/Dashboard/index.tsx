@@ -3,7 +3,9 @@ import DashboardCard from "~/components/Common/DashboardCard";
 import { dashboardCardDefinitions } from "./config";
 import type { IDashboardCardDefinition, TDashboardCardZone } from "./types";
 import MonthlyRepairTrendCard, { MonthlyRepairTrendFilters } from "./cards/MonthlyRepairTrendCard";
+import TopRepairedProductsCard, { TopRepairedProductsFilters } from "./cards/TopRepairedProductsCard";
 import { useMonthlyRepairTrend } from "./hooks/useMonthlyRepairTrend";
+import { useTopRepairedProducts } from "./hooks/useTopRepairedProducts";
 
 function findCardByZone(zone: TDashboardCardZone): IDashboardCardDefinition | null
 {
@@ -20,6 +22,11 @@ function renderCard(card: IDashboardCardDefinition | null)
     if (card.id === "monthly-repair-trend")
     {
         return <MonthlyRepairTrendDashboardCard card={card} key={card.id} />;
+    }
+
+    if (card.id === "top-repaired-products")
+    {
+        return <TopRepairedProductsDashboardCard card={card} key={card.id} />;
     }
 
     const CardComponent = card.component;
@@ -58,6 +65,31 @@ function MonthlyRepairTrendDashboardCard({ card }: IMonthlyRepairTrendDashboardC
                 hideFilters={true}
                 title={card.title}
                 trendState={trendState}
+            />
+        </DashboardCard>
+    );
+}
+
+interface ITopRepairedProductsDashboardCardProps
+{
+    card: IDashboardCardDefinition;
+}
+
+function TopRepairedProductsDashboardCard({ card }: ITopRepairedProductsDashboardCardProps)
+{
+    const topRepairedProductsState = useTopRepairedProducts();
+
+    return (
+        <DashboardCard
+            actions={<TopRepairedProductsFilters topRepairedProductsState={topRepairedProductsState} />}
+            description={card.description}
+            title={card.title}
+        >
+            <TopRepairedProductsCard
+                description={card.description}
+                hideFilters={true}
+                title={card.title}
+                topRepairedProductsState={topRepairedProductsState}
             />
         </DashboardCard>
     );

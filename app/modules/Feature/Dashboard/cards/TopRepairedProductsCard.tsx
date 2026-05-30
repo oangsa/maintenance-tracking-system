@@ -1,4 +1,5 @@
 import { Badge } from "~/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import {
     Table,
     TableBody,
@@ -8,20 +9,76 @@ import {
     TableRow,
 } from "~/components/ui/table";
 import type { IDashboardCardComponentProps } from "../types";
-import { 
-    useTopRepairedProducts, 
-    type IUseTopRepairedProductsResult 
+import {
+    useTopRepairedProducts,
+    type IUseTopRepairedProductsResult,
 } from "../hooks/useTopRepairedProducts";
 
-interface ITopRepairedProductsCardProps extends IDashboardCardComponentProps {
+interface ITopRepairedProductsCardProps extends IDashboardCardComponentProps
+{
     topRepairedProductsState?: IUseTopRepairedProductsResult;
+    hideFilters?: boolean;
+}
+
+interface ITopRepairedProductsFiltersProps
+{
+    topRepairedProductsState: IUseTopRepairedProductsResult;
+}
+
+export function TopRepairedProductsFilters({ topRepairedProductsState }: ITopRepairedProductsFiltersProps)
+{
+    const {
+        filters,
+        monthOptions,
+        selectedMonth,
+        selectedYear,
+        yearOptions,
+        onMonthChange,
+        onYearChange,
+    } = topRepairedProductsState;
+
+    return (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+            <Select value={selectedMonth} onValueChange={onMonthChange}>
+                <SelectTrigger className="w-[9rem]">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    {monthOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+
+            <Select value={selectedYear} onValueChange={onYearChange}>
+                <SelectTrigger className="w-[7rem]">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    {yearOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+
+            <Badge className="font-mono text-[11px]" variant="outline">
+                {filters.startDate} to {filters.endDate}
+            </Badge>
+        </div>
+    );
 }
 
 export default function TopRepairedProductsCard({
     topRepairedProductsState,
-}: ITopRepairedProductsCardProps) {
-    
-    const resolvedState = topRepairedProductsState ?? useTopRepairedProducts();
+    hideFilters = false,
+}: ITopRepairedProductsCardProps)
+{
+    const internalState = useTopRepairedProducts();
+    const resolvedState = topRepairedProductsState ?? internalState;
     const {
         data: topRepairedProductsData,
         loading,
@@ -30,6 +87,10 @@ export default function TopRepairedProductsCard({
 
     return (
         <div className="space-y-3">
+            {!hideFilters && (
+                <TopRepairedProductsFilters topRepairedProductsState={resolvedState} />
+            )}
+
             {error ? (
                 <div className="flex h-[18rem] w-full items-center justify-center rounded-md border border-destructive/50 bg-destructive/10 text-sm text-destructive">
                     {error}
