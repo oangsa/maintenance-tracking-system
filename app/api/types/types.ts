@@ -102,6 +102,8 @@ export type {
 
 export type {
     IWorkTask,
+    IWorkTaskAssignRequest,
+    IWorkTaskAssignment,
     IWorkTaskForCreate,
     IWorkTaskForUpdate,
 } from "../types/workTask.types";
