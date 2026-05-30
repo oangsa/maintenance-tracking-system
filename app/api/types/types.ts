@@ -91,6 +91,7 @@ export type {
 
 export type {
     IInventoryMove,
+    IInventoryMoveReason,
     IInventoryMoveItem,
     IInventoryMoveForCreate,
 } from "./inventoryMove.types";

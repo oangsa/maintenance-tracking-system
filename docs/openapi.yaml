@@ -3538,7 +3538,7 @@ components:
         - use
         - lost
         - found
-        - adjustment
+        - adjust
 
     InventoryMoveItem:
       type: object

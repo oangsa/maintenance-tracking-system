@@ -21,11 +21,11 @@ export function useFormItem({
 }: IUseFormItemProps): IUseFormItemResult
 {
     const inventoryMoveReasonOptions = React.useMemo(() => [
-        { label: "buy", value: "buy" },
-        { label: "use", value: "use" },
-        { label: "lost", value: "lost" },
-        { label: "found", value: "found" },
-        { label: "adjust", value: "adjust" },
+        { label: "Buy", value: "buy" },
+        { label: "Use", value: "use" },
+        { label: "Lost", value: "lost" },
+        { label: "Found", value: "found" },
+        { label: "Adjustment", value: "adjust" },
     ], []);
 
     const formItems = React.useMemo<IFormSection<IInventoryMoveFormValues>[]>(() => [

@@ -15,19 +15,7 @@ interface IConfirmState
 
 interface IReverseConfirmState extends IConfirmState
 {
-    payload: IInventoryMoveForReverseRequest | null;
-}
-
-interface IInventoryMoveForReverseRequest extends IInventoryMoveForCreate
-{
-    reason: string;
-    remark?: string;
-}
-
-interface IInventoryMoveWithContractFields extends IInventoryMove
-{
-    reason?: string | null;
-    remarks?: string | null;
+    payload: IInventoryMoveForCreate | null;
 }
 
 export default function ManagerInventoryMovesDetailPage()
@@ -42,24 +30,9 @@ export default function ManagerInventoryMovesDetailPage()
         payload: null,
     });
 
-    function getInventoryMoveItems(inventoryMove: IInventoryMove): IInventoryMoveItem[]
+    function buildReversePayload(inventoryMove: IInventoryMove): IInventoryMoveForCreate | null
     {
-        const inventoryMoveWithLegacyItems = inventoryMove as IInventoryMove & {
-            inventoryMoveItems?: IInventoryMoveItem[];
-        };
-
-        return (inventoryMoveWithLegacyItems.inventoryMoveItems || inventoryMove.items || []) as IInventoryMoveItem[];
-    }
-
-    function buildReversePayload(inventoryMove: IInventoryMove): IInventoryMoveForReverseRequest | null
-    {
-        const sourceItems = getInventoryMoveItems(inventoryMove);
-        const inventoryMoveWithReason = inventoryMove as IInventoryMoveWithContractFields;
-        const reasonValue = (
-            inventoryMoveWithReason.reason
-            || inventoryMoveWithReason.remarks
-            || "adjust"
-        ).trim();
+        const sourceItems = inventoryMove.inventoryMoveItems;
 
         if (!sourceItems.length)
         {
@@ -67,8 +40,8 @@ export default function ManagerInventoryMovesDetailPage()
         }
 
         return {
-            reason: reasonValue || "adjust",
-            remark: inventoryMove.remark ?? "",
+            reason: inventoryMove.reason,
+            remark: inventoryMove.remark,
             inventoryMoveItems: sourceItems.map((item) => ({
                 partId: item.partId,
                 quantityIn: item.quantityOut ?? null,
@@ -164,13 +137,15 @@ export default function ManagerInventoryMovesDetailPage()
 
     function sectionBuilder(inventoryMove: IInventoryMove): IDetailSection[]
     {
-        const itemsList = getInventoryMoveItems(inventoryMove);
+        const itemsList = inventoryMove.inventoryMoveItems;
 
         return [
             {
                 title: "Transaction Information",
                 fields: [
                     { label: "Transaction No", value: inventoryMove.moveNo ?? "-" },
+                    { label: "Reason", value: inventoryMove.reason ?? "-" },
+                    { label: "Move Date", value: inventoryMove.moveDate ?? "-" },
                     { label: "Remarks", value: inventoryMove.remark ?? "-" },
                 ],
              },

@@ -1,4 +1,4 @@
-import type { IInventoryMoveForCreate } from "~/api/types/types";
+import type { IInventoryMoveForCreate, IInventoryMoveReason } from "~/api/types/types";
 import type { IInventoryMoveFormValues } from "~/schemas/inventoryMoveFormSchema";
 
 function createEmptyInventoryMoveFormValues(): IInventoryMoveFormValues
@@ -21,10 +21,20 @@ function parseNumberField(value: string | undefined | null): number | null
     return parsed;
 }
 
-function buildCreatePayload(values: IInventoryMoveFormValues): any 
+function normalizeInventoryMoveReason(value: string | undefined): IInventoryMoveReason
 {
-    const payload = {
-        reason: values.remarks?.trim() || "", 
+    if (value === "buy" || value === "use" || value === "lost" || value === "found" || value === "adjust")
+    {
+        return value;
+    }
+
+    return "adjust";
+}
+
+function buildCreatePayload(values: IInventoryMoveFormValues): IInventoryMoveForCreate
+{
+    return {
+        reason: normalizeInventoryMoveReason(values.remarks?.trim()),
         inventoryMoveItems: values.items.map(item => ({
             partId: parseNumberField(item.partId) ?? 0,
             quantityIn: parseNumberField(item.quantityIn) ?? 0,
@@ -32,8 +42,6 @@ function buildCreatePayload(values: IInventoryMoveFormValues): any
             workOrderPartId: null
         })),
     };
-
-    return payload as unknown as IInventoryMoveForCreate;
 }
 
 export {

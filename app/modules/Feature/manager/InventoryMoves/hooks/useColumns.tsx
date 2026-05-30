@@ -16,21 +16,33 @@ function useColumns()
         {
             key: "parts",
             label: "Included Parts",
-            render: (value: unknown, row: IInventoryMoveTableRow) => {
-                const itemsList = (row.inventoryMoveItems || row.items || []) as any[];
-                
-                if (itemsList.length === 0) return "-";
-                
-                return itemsList
-                    .map((item: any) => item.partCode ? `${item.partCode} (${item.partName || '-'})` : (item.partName || item.partId))
+            render: (value: unknown, row: IInventoryMoveTableRow) =>
+            {
+                if (row.inventoryMoveItems.length === 0)
+                {
+                    return "-";
+                }
+
+                return row.inventoryMoveItems
+                    .map((item: IInventoryMove["inventoryMoveItems"][number]) => item.partCode ? `${item.partCode} (${item.partName || '-'})` : (item.partName || item.partId))
                     .join(", ");
             },
             sortable: false,
         },
         {
+            key: "reason",
+            label: "Reason",
+            render: (value: unknown, row: IInventoryMoveTableRow) => String(row.reason || "-"),
+        },
+        {
             key: "remark",
             label: "Remarks",
-            render: (value: unknown, row: any) => String(row.remark || row.remarks || row.reason || "-"),
+            render: (value: unknown, row: IInventoryMoveTableRow) => String(row.remark || "-"),
+        },
+        {
+            key: "move_date",
+            label: "Move Date",
+            render: (value: unknown, row: IInventoryMoveTableRow) => String(row.moveDate || "-"),
         },
         {
             key: "created_by",

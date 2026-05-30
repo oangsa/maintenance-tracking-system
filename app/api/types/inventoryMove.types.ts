@@ -1,3 +1,5 @@
+export type IInventoryMoveReason = "buy" | "use" | "lost" | "found" | "adjust";
+
 export interface IInventoryMoveItem
 {
     id: number;
@@ -14,13 +16,17 @@ export interface IInventoryMoveItemForCreate
     partId: number;
     quantityIn: number | null;
     quantityOut: number | null;
+    workOrderPartId?: number | null;
 }
 
-export interface IInventoryMove {
+export interface IInventoryMove
+{
     id: number;
-    moveNo: string;      
-    remark: string | null; 
-    items?: IInventoryMoveItem[]; 
+    moveNo: string;
+    reason: IInventoryMoveReason;
+    moveDate: string;
+    remark: string;
+    inventoryMoveItems: IInventoryMoveItem[];
     createdAt: string | null;
     updatedAt: string | null;
     createdBy: string | null;
@@ -29,6 +35,9 @@ export interface IInventoryMove {
 
 export interface IInventoryMoveForCreate
 {
-    remarks?: string;
+    moveNo?: string;
+    reason: IInventoryMoveReason;
+    moveDate?: string;
+    remark?: string;
     inventoryMoveItems: IInventoryMoveItemForCreate[];
 }
