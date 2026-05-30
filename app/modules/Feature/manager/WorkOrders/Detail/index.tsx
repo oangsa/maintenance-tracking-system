@@ -4,7 +4,6 @@ import { FiUserCheck } from "react-icons/fi";
 import { ConfirmModal } from "~/components/Common/Modal";
 import type { IDetailSection } from "~/components/Common/DetailSections";
 import Detail from "~/components/Maintain/Detail";
-import { Badge } from "~/components/ui/badge";
 import { buttonVariants, Button } from "~/components/ui/button";
 import {
     Card,
@@ -13,20 +12,13 @@ import {
     CardHeader,
     CardTitle,
 } from "~/components/ui/card";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "~/components/ui/table";
 import { formatDateTime } from "~/lib/formatters";
 import { cn } from "~/lib/utils";
 import { useUserContext } from "~/providers/UserProvider";
 import { deleteWorkOrder, getWorkOrderById } from "~/services/workOrders.service";
 import type { IWorkTaskAssignment } from "~/api/types/types";
 import AssignmentModal from "./AssignmentModal";
+import AssignmentHistoryModal from "./AssignmentHistoryModal";
 import useWorkTaskAssignment from "../hooks/useWorkTaskAssignment";
 
 interface IConfirmState
@@ -94,6 +86,7 @@ function ManagerWorkTaskAssignmentSection({
     });
 
     const [isAssignmentModalOpen, setIsAssignmentModalOpen] = React.useState(false);
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = React.useState(false);
 
     const sortedAssignmentHistory = React.useMemo(() => [...assignmentHistory].sort((left, right) =>
     {
@@ -138,17 +131,23 @@ function ManagerWorkTaskAssignmentSection({
                         {assignmentButtonLabel}
                     </Button>
                 )}
+
+                {hasWorkTask && (
+                    <Button onClick={() => setIsHistoryModalOpen(true)} type="button" variant="outline">
+                        View Assignment History
+                    </Button>
+                )}
             </div>
 
             {hasWorkTask && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Task Assignment History</CardTitle>
+                        <CardTitle>Task Assignment</CardTitle>
                         <CardDescription>
-                            Work Task assignment rows below represent responsibility transactions for this work order task.
+                            Manage who is currently responsible for this work task.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent>
                         <div className="rounded-md border bg-muted/40 p-3">
                             <div className="text-sm font-medium">Current Responsible Person</div>
                             <div className="mt-1 text-sm text-muted-foreground">
@@ -158,56 +157,6 @@ function ManagerWorkTaskAssignmentSection({
                                 }
                             </div>
                         </div>
-
-                        {loadError && <div className="alert alert-error">{loadError}</div>}
-
-                        {isLoading
-                            ? <div className="text-sm text-muted-foreground">Loading assignment history...</div>
-                            : (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Technician</TableHead>
-                                            <TableHead>Assigned By</TableHead>
-                                            <TableHead>Assigned At</TableHead>
-                                            <TableHead>Unassigned At</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {sortedAssignmentHistory.length === 0 && (
-                                            <TableRow>
-                                                <TableCell className="text-muted-foreground" colSpan={5}>
-                                                    No assignment history yet.
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-
-                                        {sortedAssignmentHistory.map((historyItem) =>
-                                        {
-                                            const isActive = !historyItem.unassignedAt;
-                                            const assigneeText = historyItem.assigneeName || historyItem.assigneeEmail
-                                                ? `${historyItem.assigneeName || "Unnamed User"} (${historyItem.assigneeEmail || "No email"})`
-                                                : "-";
-
-                                            return (
-                                                <TableRow key={historyItem.id}>
-                                                    <TableCell>
-                                                        <Badge variant={isActive ? "default" : "outline"}>
-                                                            {isActive ? "Active" : "Closed"}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell>{assigneeText}</TableCell>
-                                                    <TableCell>{historyItem.assignedByName || "-"}</TableCell>
-                                                    <TableCell>{formatDateTime(historyItem.assignedAt)}</TableCell>
-                                                    <TableCell>{formatDateTime(historyItem.unassignedAt)}</TableCell>
-                                                </TableRow>
-                                            );
-                                        })}
-                                    </TableBody>
-                                </Table>
-                            )
-                        }
                     </CardContent>
                 </Card>
             )}
@@ -224,6 +173,16 @@ function ManagerWorkTaskAssignmentSection({
                     onClose={() => setIsAssignmentModalOpen(false)}
                     onSubmit={handleSubmitAssignment}
                     submitError={submitError}
+                />
+            )}
+
+            {hasWorkTask && (
+                <AssignmentHistoryModal
+                    error={loadError}
+                    history={sortedAssignmentHistory}
+                    isLoading={isLoading}
+                    isOpen={isHistoryModalOpen}
+                    onClose={() => setIsHistoryModalOpen(false)}
                 />
             )}
         </div>
