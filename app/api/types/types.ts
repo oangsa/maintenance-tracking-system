@@ -105,3 +105,7 @@ export type {
     IWorkTaskForCreate,
     IWorkTaskForUpdate,
 } from "../types/workTask.types";
+
+export type {
+    ITopRepairedProductsPerformanceReportItem
+} from "./topRepairedProductsPerformanceReport.type";
