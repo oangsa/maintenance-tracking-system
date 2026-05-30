@@ -25,6 +25,18 @@ export default [
             route("master/users/:id/edit", "routes/Master/Users/master.users.$id.edit.tsx"),
             route("master/users/:id", "routes/Master/Users/master.users.$id.tsx"),
 
+            // product types
+            route("master/product-types", "routes/Master/ProductTypes/master.product-types.tsx"),
+            route("master/product-types/new", "routes/Master/ProductTypes/master.product-types.new.tsx"),
+            route("master/product-types/:id/edit", "routes/Master/ProductTypes/master.product-types.$id.edit.tsx"),
+            route("master/product-types/:id", "routes/Master/ProductTypes/master.product-types.$id.tsx"),
+
+            // products
+            route("master/products", "routes/Master/Products/master.products.tsx"),
+            route("master/products/new", "routes/Master/Products/master.products.new.tsx"),
+            route("master/products/:id/edit", "routes/Master/Products/master.products.$id.edit.tsx"),
+            route("master/products/:id", "routes/Master/Products/master.products.$id.tsx"),
+
             // repair request item status
             route("master/repair-request-item-status", "routes/Master/RepairRequestItemStatus/master.repairRequestItemStatus.tsx"),
             route("master/repair-request-item-status/new", "routes/Master/RepairRequestItemStatus/master.repairRequestItemStatus.new.tsx"),
@@ -53,6 +65,11 @@ export default [
             // work tasks
             route("manager/work-tasks/new", "routes/Manager/WorkTasks/manager.work-tasks.new.tsx"),
             route("manager/work-tasks/:id/edit", "routes/Manager/WorkTasks/manager.work-tasks.$id.edit.tsx"),
+          
+            // inventory moves
+            route("manager/inventory-moves", "routes/Manager/InventoryMoves/manager.inventory-moves.tsx"),
+            route("manager/inventory-moves/new", "routes/Manager/InventoryMoves/manager.inventory-moves.new.tsx"),
+            route("manager/inventory-moves/:id", "routes/Manager/InventoryMoves/manager.inventory-moves.$id.tsx"),
 
             // End Region: Manager routes
 

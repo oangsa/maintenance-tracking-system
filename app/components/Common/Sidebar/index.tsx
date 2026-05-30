@@ -8,6 +8,7 @@ import {
     FiLogOut,
     FiTool,
     FiUsers,
+    FiBox,
 } from "react-icons/fi";
 
 import {
@@ -151,6 +152,7 @@ const defaultNavSections: INavSection[] = [
         items: [
             { label: "Repair Requests", path: "/manager/repair-requests", icon: <FiClipboard size={18} /> },
             { label: "Work Orders", path: "/manager/work-orders", icon: <FiTool size={18} /> },
+            { label: "Inventory Moves", path: "/manager/inventory-moves", icon: <FiLayers size={18} /> },
         ],
     },
     {
@@ -161,9 +163,11 @@ const defaultNavSections: INavSection[] = [
             { label: "Repair Request Item Statuses", path: "/master/repair-request-item-status", icon: <FiFileText size={18} /> },
             { label: "Repair Statuses", path: "/master/repair-statuses", icon: <FiFileText size={18} /> },
             { label: "Parts", path: "/master/parts", icon: <FiTool size={18} /> },
+            { label: "Product Types", path: "/master/product-types", icon: <FiBox size={18} /> },
+            { label: "Products", path: "/master/products", icon: <FiBox size={18} /> },
         ],
     },
-   
+
 ];
 
 function flattenNavItems(navSections: INavSection[]): INavItem[]

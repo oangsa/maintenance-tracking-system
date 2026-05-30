@@ -1,5 +1,5 @@
 import type { IProductType } from "~/api/types/types";
-import { buildLookupPayload, LOOKUP_COLUMNS } from "~/constants";
+import { buildLookupPayload } from "~/constants/lookupQuery.constants";
 import { searchProductTypes } from "~/services/productTypes.service";
 import type {
     IFetchParams,
@@ -10,7 +10,11 @@ import type { ILookupDefinition } from "~/components/Common/LookupField";
 
 export type IProductTypeLookupRow = IProductType & Record<string, unknown>;
 
-const ProductTypeLookupColumns: IPickerColumn<IProductTypeLookupRow>[] = [...LOOKUP_COLUMNS.productType];
+const ProductTypeLookupColumns: IPickerColumn<IProductTypeLookupRow>[] = [
+    { label: "Code", key: "code" },
+    { label: "Name", key: "name" },
+    { label: "Department", key: "departmentName" },
+];
 
 async function fetchProductTypeLookupData(params: IFetchParams): Promise<IFetchResult<IProductTypeLookupRow>>
 {
@@ -32,7 +36,7 @@ export const ProductTypeLookupDefinition: ILookupDefinition<IProductTypeLookupRo
     emptyDefault: "No product types found.",
     emptySearch: "No matching product types found.",
     fetchData: fetchProductTypeLookupData,
-    itemName: "productType",
-    searchPlaceholder: "Search product type code or name...",
+    itemName: "product type",
+    searchPlaceholder: "Search product type by code or name...",
     title: "Select Product Type",
 };
