@@ -49,8 +49,10 @@ Real employee flow to implement
     - Work Order information
     - Repair Request / Repair Request Item business labels
     - the single Work Task description and assignment information
-    - Work Order Parts for that Work Order
-- The Work Order Part area loads real rows from `POST /api/v1/work-order-part/search` filtered by `work_order_id`.
+    - one Start Work Order Part or Continue Work Order Part button
+- Employee opens `/work-orders/:id/work-order-parts` from that button.
+- The separate Work Order Part page shows the Work Order Part workbench for that Work Order.
+- The Work Order Part page loads real rows from `POST /api/v1/work-order-part/search` filtered by `work_order_id`.
 - The employee can manage parts only when:
     - the Work Order has a Work Task
     - the current user is the active assignee
@@ -98,7 +100,8 @@ Work Order Part API and service layer
     - after consuming, reload Work Order Parts because the endpoint returns Part data, not the updated Work Order Part row.
 
 Work Order Part UI behavior
-- Keep Work Order Parts embedded in the employee Work Order detail page.
+- Keep the employee Work Order detail page as a summary with one Start Work Order Part or Continue Work Order Part button.
+- Keep Work Order Part actions on `/work-orders/:id/work-order-parts`.
 - Do not add a detached global Work Order Part menu or full global CRUD route.
 - Use shared components where they fit:
     - `LineItemsEditor` for the Work Order Part rows
@@ -164,7 +167,8 @@ Department-aware Part selection
 Suggested route shape
 - `GET /work-orders`
 - `GET /work-orders/:id`
-- Work Order Part create/update/delete/consume actions happen inside `/work-orders/:id`.
+- `GET /work-orders/:id/work-order-parts`
+- Work Order Part create/update/delete/consume actions happen inside `/work-orders/:id/work-order-parts`.
 
 Exact touchpoints
 - `app/api/types/workOrderPart.types.ts`
@@ -184,6 +188,8 @@ Acceptance criteria
 - No frontend-generated `inventoryMoveItemId`, Part labels, audit values, or sample-only copy exists.
 - Employee Work Order list is scoped to the current active assignee.
 - Employee Work Order detail rejects Work Orders assigned to another user.
+- Employee Work Order detail only shows the summary plus a Start Work Order Part or Continue Work Order Part button for part work.
+- Work Order Part management is on `/work-orders/:id/work-order-parts`.
 - Work Order Parts load from `POST /api/v1/work-order-part/search` by `work_order_id`.
 - Create, update, delete, and consume actions call real services and refresh backend data.
 - Consumed rows are read-only and show their `inventoryMoveItemId`.
