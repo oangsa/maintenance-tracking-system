@@ -5,8 +5,10 @@ import { getTopRepairedProductsReport } from "~/services/repairRequests.service"
 
 export interface ITopRepairedProductsItem
 {
+    rowKey: string;
+    rank: number;
     productName: string;
-    value: number;
+    repairCount: number;
 }
 
 export interface ITopRepairedProductsYearOption
@@ -131,11 +133,16 @@ export function useTopRepairedProducts(): IUseTopRepairedProductsResult
 
                 if (isMounted)
                 {
-                    setData(response.data.map((item) =>
+                    setData(response.data.map((item, index) =>
                     {
+                        const productName = item.productName || "-";
+                        const productIdSegment = item.productId ?? "unknown";
+
                         return {
-                            productName: item.productName || "-",
-                            value: item.value,
+                            rowKey: `${productIdSegment}-${productName}-${index + 1}`,
+                            rank: index + 1,
+                            productName,
+                            repairCount: item.value,
                         };
                     }));
                 }

@@ -10,7 +10,6 @@ import {
 } from "~/components/ui/table";
 import type { IDashboardCardComponentProps } from "../types";
 import {
-    useTopRepairedProducts,
     type IUseTopRepairedProductsResult,
 } from "../hooks/useTopRepairedProducts";
 
@@ -77,8 +76,16 @@ export default function TopRepairedProductsCard({
     hideFilters = false,
 }: ITopRepairedProductsCardProps)
 {
-    const internalState = useTopRepairedProducts();
-    const resolvedState = topRepairedProductsState ?? internalState;
+    if (topRepairedProductsState === undefined)
+    {
+        return (
+            <div className="flex h-[18rem] w-full items-center justify-center rounded-md border border-destructive/50 bg-destructive/10 text-sm text-destructive">
+                Top repaired products state is unavailable.
+            </div>
+        );
+    }
+
+    const resolvedState = topRepairedProductsState;
     const {
         data: topRepairedProductsData,
         loading,
@@ -114,14 +121,14 @@ export default function TopRepairedProductsCard({
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {topRepairedProductsData.map((item, index) => (
-                                <TableRow key={`${item.productName}-${index}`}>
+                            {topRepairedProductsData.map((item) => (
+                                <TableRow key={item.rowKey}>
                                     <TableCell className="font-medium text-muted-foreground">
-                                        {index + 1}
+                                        {item.rank}
                                     </TableCell>
                                     <TableCell className="font-medium">{item.productName}</TableCell>
                                     <TableCell className="text-right">
-                                        <Badge variant="secondary">{item.value}</Badge>
+                                        <Badge variant="secondary">{item.repairCount}</Badge>
                                     </TableCell>
                                 </TableRow>
                             ))}
