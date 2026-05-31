@@ -13,6 +13,7 @@ import {
 import { ConfirmModal } from "~/components/Common/Modal";
 import { formatDateTime } from "~/lib/formatters";
 import WorkOrderPartLineItemsEditor, { type IWorkOrderPartLineItem } from "./WorkOrderPartLineItemsEditor";
+import { isConsumedWorkOrderPart } from "./workOrderPartUsage.utils";
 
 interface IEmployeeWorkOrderWorkbenchProps
 {
@@ -38,20 +39,6 @@ interface IEmployeeWorkOrderWorkbenchProps
 interface IFinishState
 {
     isOpen: boolean;
-}
-
-function isPartConsumed(part: IWorkOrderPartLineItem): boolean
-{
-    const rawValue = part.inventoryMoveItemId ?? part.inventory_move_item_id;
-    let parsedInventoryMoveItemId = Number(rawValue);
-
-    if (!Number.isFinite(parsedInventoryMoveItemId) && rawValue && typeof rawValue === "object")
-    {
-        const objectValue = rawValue as Record<string, unknown>;
-        parsedInventoryMoveItemId = Number(objectValue.id ?? objectValue.inventoryMoveItemId ?? objectValue.inventory_move_item_id);
-    }
-
-    return Number.isFinite(parsedInventoryMoveItemId) && parsedInventoryMoveItemId > 0;
 }
 
 export default function WorkOrderWorkbench({
@@ -113,7 +100,7 @@ export default function WorkOrderWorkbench({
     {
         return parts.reduce((totalQuantity, part) =>
         {
-            if (isPartConsumed(part))
+            if (isConsumedWorkOrderPart(part))
             {
                 return totalQuantity;
             }

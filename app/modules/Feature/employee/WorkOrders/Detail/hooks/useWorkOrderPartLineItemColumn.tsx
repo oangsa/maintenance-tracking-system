@@ -6,6 +6,10 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { formatJoinedLabel } from "~/lib/formatters";
 import type { IWorkOrderPartLineItem } from "../WorkOrderPartLineItemsEditor";
+import {
+    isConsumedWorkOrderPart,
+    resolveInventoryMoveItemIdFromPart,
+} from "../workOrderPartUsage.utils";
 
 interface IUseWorkOrderPartLineItemColumnProps
 {
@@ -38,35 +42,9 @@ function resolvePersistedId(item: IWorkOrderPartLineItem): number | null
     return item.id;
 }
 
-function resolveInventoryMoveItemId(item: IWorkOrderPartLineItem): number | null
-{
-    const rawValue = item.inventoryMoveItemId ?? item.inventory_move_item_id;
-
-    if (rawValue && typeof rawValue === "object")
-    {
-        const objectValue = rawValue as Record<string, unknown>;
-        const nestedValue = objectValue.id ?? objectValue.inventoryMoveItemId ?? objectValue.inventory_move_item_id;
-        const nestedParsedValue = Number(nestedValue);
-
-        if (Number.isFinite(nestedParsedValue) && nestedParsedValue > 0)
-        {
-            return nestedParsedValue;
-        }
-    }
-
-    const parsedInventoryMoveItemId = Number(rawValue);
-
-    if (!Number.isFinite(parsedInventoryMoveItemId) || parsedInventoryMoveItemId <= 0)
-    {
-        return null;
-    }
-
-    return parsedInventoryMoveItemId;
-}
-
 function renderUsageBadge(item: IWorkOrderPartLineItem)
 {
-    if (resolveInventoryMoveItemId(item) !== null)
+    if (isConsumedWorkOrderPart(item))
     {
         return <Badge>Consumed</Badge>;
     }
@@ -209,7 +187,7 @@ export default function useWorkOrderPartLineItemColumn({
                     return context.renderReadOnlyValue("-");
                 }
 
-                return context.renderReadOnlyValue(resolveInventoryMoveItemId(context.item) ?? "-");
+                return context.renderReadOnlyValue(resolveInventoryMoveItemIdFromPart(context.item) ?? "-");
             },
         },
         {
@@ -246,7 +224,7 @@ export default function useWorkOrderPartLineItemColumn({
             {
                 const isNew = context.item.id < 0;
                 const persistedId = resolvePersistedId(context.item);
-                const isConsumed = resolveInventoryMoveItemId(context.item) !== null;
+                const isConsumed = isConsumedWorkOrderPart(context.item);
                 const isEditingPersisted = context.item.id > 0 && editingRowId === context.item.id;
 
                 if (isNew)

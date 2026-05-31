@@ -50,32 +50,6 @@ export function createEmptyWorkOrderPartLineItem(): IWorkOrderPartLineItem
     };
 }
 
-function resolveInventoryMoveItemId(part: IWorkOrderPartLineItem): number | null
-{
-    const rawValue = part.inventoryMoveItemId ?? part.inventory_move_item_id;
-
-    if (rawValue && typeof rawValue === "object")
-    {
-        const objectValue = rawValue as Record<string, unknown>;
-        const nestedValue = objectValue.id ?? objectValue.inventoryMoveItemId ?? objectValue.inventory_move_item_id;
-        const nestedParsedValue = Number(nestedValue);
-
-        if (Number.isFinite(nestedParsedValue) && nestedParsedValue > 0)
-        {
-            return nestedParsedValue;
-        }
-    }
-
-    const parsedId = Number(rawValue);
-
-    if (!Number.isFinite(parsedId) || parsedId <= 0)
-    {
-        return null;
-    }
-
-    return parsedId;
-}
-
 export default function WorkOrderPartLineItemsEditor({
     canManageParts,
     canOpenPartPicker,

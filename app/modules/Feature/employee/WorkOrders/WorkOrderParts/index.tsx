@@ -32,6 +32,11 @@ import {
     createEmptyWorkOrderPartLineItem,
     type IWorkOrderPartLineItem,
 } from "../Detail/WorkOrderPartLineItemsEditor";
+import {
+    isConsumedWorkOrderPart,
+    resolveInventoryMoveItemId,
+    resolveInventoryMoveItemIdFromPart,
+} from "../Detail/workOrderPartUsage.utils";
 
 interface IEmployeeWorkOrderPartsContentProps
 {
@@ -64,6 +69,8 @@ interface IInventoryMoveRecord extends Record<string, unknown>
 interface IInventoryMoveItemRecord extends Record<string, unknown>
 {
     id?: unknown;
+    inventoryMoveItemId?: unknown;
+    inventory_move_item_id?: unknown;
     workOrderPartId?: unknown;
     work_order_part_id?: unknown;
 }
@@ -91,38 +98,6 @@ function buildWorkOrderPartSections(workOrder: IWorkOrder): IDetailSection[]
             title: "Assignment Information",
         },
     ];
-}
-
-function resolveInventoryMoveItemId(value: unknown): number | null
-{
-    if (value && typeof value === "object")
-    {
-        const objectValue = value as Record<string, unknown>;
-        const nestedCandidates: unknown[] = [
-            objectValue.id,
-            objectValue.inventoryMoveItemId,
-            objectValue.inventory_move_item_id,
-        ];
-
-        for (const candidate of nestedCandidates)
-        {
-            const nestedResolvedId = resolveInventoryMoveItemId(candidate);
-
-            if (nestedResolvedId !== null)
-            {
-                return nestedResolvedId;
-            }
-        }
-    }
-
-    const parsedInventoryMoveItemId = Number(value);
-
-    if (!Number.isFinite(parsedInventoryMoveItemId) || parsedInventoryMoveItemId <= 0)
-    {
-        return null;
-    }
-
-    return parsedInventoryMoveItemId;
 }
 
 function resolveWorkOrderPartIdFromInventoryMoveItem(item: IInventoryMoveItemRecord): number | null
@@ -162,50 +137,9 @@ function resolveWorkOrderPartIdFromInventoryMoveItem(item: IInventoryMoveItemRec
     return null;
 }
 
-function resolveWorkOrderPartInventoryMoveItemId(item: IWorkOrderPart): number | null
-{
-    const rawItem = item as unknown as Record<string, unknown>;
-    const directCandidates: unknown[] = [
-        item.inventoryMoveItemId,
-        rawItem.inventory_move_item_id,
-        rawItem.inventoryMoveItemID,
-        rawItem.inventoryMoveItem,
-        rawItem.inventory_move_item,
-    ];
-
-    for (const candidate of directCandidates)
-    {
-        const resolvedId = resolveInventoryMoveItemId(candidate);
-
-        if (resolvedId !== null)
-        {
-            return resolvedId;
-        }
-    }
-
-    for (const [key, value] of Object.entries(rawItem))
-    {
-        const normalizedKey = key.toLowerCase().replace(/[_-]/g, "");
-
-        if (normalizedKey !== "inventorymoveitemid" && normalizedKey !== "inventorymoveitem")
-        {
-            continue;
-        }
-
-        const resolvedId = resolveInventoryMoveItemId(value);
-
-        if (resolvedId !== null)
-        {
-            return resolvedId;
-        }
-    }
-
-    return null;
-}
-
 function normalizeWorkOrderPart(part: IWorkOrderPart): IWorkOrderPartLineItem
 {
-    const resolvedInventoryMoveItemId = resolveWorkOrderPartInventoryMoveItemId(part);
+    const resolvedInventoryMoveItemId = resolveInventoryMoveItemIdFromPart(part as unknown as Record<string, unknown>);
 
     return {
         createdAt: part.createdAt ?? null,
@@ -222,11 +156,6 @@ function normalizeWorkOrderPart(part: IWorkOrderPart): IWorkOrderPartLineItem
         updatedBy: part.updatedBy ?? null,
         workOrderId: Number(part.workOrderId),
     };
-}
-
-function isPartConsumed(part: IWorkOrderPartLineItem): boolean
-{
-    return resolveInventoryMoveItemId(part.inventoryMoveItemId ?? part.inventory_move_item_id) !== null;
 }
 
 function resolveDepartmentId(workOrder: IWorkOrder): number | null
@@ -384,11 +313,23 @@ function EmployeeWorkOrderPartsContent({
         consumeTarget: null,
         deleteTarget: null,
     });
+    const fallbackCheckedPartIdsRef = React.useRef<Set<number>>(new Set<number>());
+    const fallbackResolvedMoveIdMapRef = React.useRef<Map<number, number>>(new Map<number, number>());
 
     React.useEffect(() =>
     {
         setWorkOrderSnapshot(workOrder);
     }, [workOrder]);
+
+    function hardReloadPage()
+    {
+        if (typeof window === "undefined")
+        {
+            return;
+        }
+
+        window.location.reload();
+    }
 
     const resolveScope = React.useCallback(async (targetWorkOrder: IWorkOrder): Promise<IResolvedScopeState> =>
     {
@@ -501,18 +442,7 @@ function EmployeeWorkOrderPartsContent({
 
         try
         {
-            const productType = await getProductTypeById(Number(productTypeId));
-
-            if (Number(productType.departmentId) !== Number(departmentId))
-            {
-                return {
-                    blockedMessage: "Part selection is blocked because product type does not match the Work Order department scope.",
-                    canOpenPicker: false,
-                    departmentId,
-                    productTypeId,
-                    status: "blocked",
-                };
-            }
+            await getProductTypeById(Number(productTypeId));
         }
         catch (error)
         {
@@ -549,10 +479,28 @@ function EmployeeWorkOrderPartsContent({
 
     const reconcileConsumedLinks = React.useCallback(async (lineItems: IWorkOrderPartLineItem[]): Promise<IWorkOrderPartLineItem[]> =>
     {
-        const unresolvedPartIds = lineItems
+        const lineItemsWithCachedMoveId = lineItems.map((part) =>
+        {
+            const cachedMoveItemId = fallbackResolvedMoveIdMapRef.current.get(part.id);
+
+            if (!cachedMoveItemId || isConsumedWorkOrderPart(part))
+            {
+                return part;
+            }
+
+            return {
+                ...part,
+                inventoryMoveItemId: cachedMoveItemId,
+                inventory_move_item_id: cachedMoveItemId,
+            };
+        });
+
+        const unresolvedPartIds = lineItemsWithCachedMoveId
             .filter((part) =>
             {
-                return part.id > 0 && resolveInventoryMoveItemId(part.inventoryMoveItemId ?? part.inventory_move_item_id) === null;
+                return part.id > 0
+                    && !isConsumedWorkOrderPart(part)
+                    && !fallbackCheckedPartIdsRef.current.has(part.id);
             })
             .map((part) => Number(part.id))
             .filter((partId) => Number.isFinite(partId) && partId > 0);
@@ -560,13 +508,13 @@ function EmployeeWorkOrderPartsContent({
 
         if (targetPartIdSet.size === 0)
         {
-            return lineItems;
+            return lineItemsWithCachedMoveId;
         }
 
         const resolvedMoveIdMap = new Map<number, number>();
         let pageNumber = 1;
         const pageSize = 200;
-        const maxPagesToScan = 20;
+        const maxPagesToScan = 5;
 
         while (pageNumber <= maxPagesToScan)
         {
@@ -615,6 +563,7 @@ function EmployeeWorkOrderPartsContent({
                         }
 
                         resolvedMoveIdMap.set(workOrderPartId, resolvedInventoryMoveItemId);
+                        fallbackResolvedMoveIdMapRef.current.set(workOrderPartId, resolvedInventoryMoveItemId);
                     }
                 }
 
@@ -636,12 +585,17 @@ function EmployeeWorkOrderPartsContent({
             }
         }
 
-        if (resolvedMoveIdMap.size === 0)
+        for (const partId of targetPartIdSet)
         {
-            return lineItems;
+            fallbackCheckedPartIdsRef.current.add(partId);
         }
 
-        return lineItems.map((part) =>
+        if (resolvedMoveIdMap.size === 0)
+        {
+            return lineItemsWithCachedMoveId;
+        }
+
+        return lineItemsWithCachedMoveId.map((part) =>
         {
             const resolvedMoveItemId = resolvedMoveIdMap.get(part.id);
 
@@ -653,25 +607,43 @@ function EmployeeWorkOrderPartsContent({
             return {
                 ...part,
                 inventoryMoveItemId: resolvedMoveItemId,
+                inventory_move_item_id: resolvedMoveItemId,
             };
         });
     }, []);
 
     const loadWorkOrderParts = React.useCallback(async (workOrderId: number): Promise<void> =>
     {
-        const response = await searchWorkOrderParts({
-            pageNumber: 1,
-            pageSize: 200,
-            search: [
-                {
-                    condition: SEARCH_OPERATOR.EQUAL,
-                    name: "work_order_id",
-                    value: String(workOrderId),
-                },
-            ],
-        });
+        const allParts: IWorkOrderPart[] = [];
+        let pageNumber = 1;
+        const pageSize = 200;
+        const maxPagesToScan = 20;
 
-        const normalizedItems = response.data.map((item) => normalizeWorkOrderPart(item));
+        while (pageNumber <= maxPagesToScan)
+        {
+            const response = await searchWorkOrderParts({
+                pageNumber,
+                pageSize,
+                search: [
+                    {
+                        condition: SEARCH_OPERATOR.EQUAL,
+                        name: "work_order_id",
+                        value: String(workOrderId),
+                    },
+                ],
+            });
+
+            allParts.push(...response.data);
+
+            if (!response.pagination.hasNext)
+            {
+                break;
+            }
+
+            pageNumber += 1;
+        }
+
+        const normalizedItems = allParts.map((item) => normalizeWorkOrderPart(item));
         const reconciledItems = await reconcileConsumedLinks(normalizedItems);
 
         setParts(reconciledItems);
@@ -806,7 +778,7 @@ function EmployeeWorkOrderPartsContent({
 
     async function handleUpdatePlannedPart(part: IWorkOrderPartLineItem): Promise<void>
     {
-        if (isPartConsumed(part))
+        if (isConsumedWorkOrderPart(part))
         {
             throw new Error("Consumed rows cannot be updated.");
         }
@@ -855,7 +827,7 @@ function EmployeeWorkOrderPartsContent({
             return;
         }
 
-        if (isPartConsumed(part))
+        if (isConsumedWorkOrderPart(part))
         {
             setActionError("Consumed rows cannot be deleted from this page.");
             return;
@@ -874,7 +846,7 @@ function EmployeeWorkOrderPartsContent({
             return;
         }
 
-        if (isPartConsumed(part))
+        if (isConsumedWorkOrderPart(part))
         {
             setActionError("This part has already been consumed.");
             return;
@@ -959,6 +931,8 @@ function EmployeeWorkOrderPartsContent({
                 quantity: consumeQuantity,
                 workOrderPartId: consumeTarget.id,
             });
+            fallbackCheckedPartIdsRef.current.delete(consumeTarget.id);
+            fallbackResolvedMoveIdMapRef.current.delete(consumeTarget.id);
             setModalState((currentState) => ({
                 ...currentState,
                 consumeTarget: null,
@@ -1017,7 +991,7 @@ function EmployeeWorkOrderPartsContent({
 
             setWorkOrderSnapshot(result.workOrder);
             setActionWarning(result.warningMessage || "");
-            await loadWorkOrderParts(result.workOrder.id);
+            hardReloadPage();
         }
         catch (error)
         {
