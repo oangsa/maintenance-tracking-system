@@ -6,17 +6,33 @@ import useTableSearchParams from "~/components/Maintain/Table/useSearchParams";
 import { buildOrderBy } from "~/lib/pageUtils";
 import { deleteProductType, searchProductTypes } from "~/services/productTypes.service";
 import useColumns, { type IProductTypeTableRow } from "./hooks/useColumns";
+import useFieldFilter from "./hooks/useFieldFilter";
 
 export default function ProductTypeList()
 {
     const [searchParams, setSearchParams] = useSearchParams();
     const columns = useColumns();
+    
+    const {
+        buildFilterParams,
+        buildFilterSearch,
+        currentFilters,
+        currentFiltersRecord,
+        fieldFilters,
+        normalizeFilters,
+        searchTerm,
+    } = useFieldFilter({ searchParams });
+
     const {
         currentPage,
         currentSearch,
         handleCurrentPageChange,
+        handleFilterChange,
         handleSearchChange,
     } = useTableSearchParams({
+        buildFilterParams,
+        currentFilters,
+        normalizeFilters,
         searchParams,
         setSearchParams,
     });
@@ -28,9 +44,10 @@ export default function ProductTypeList()
             orderBy: buildOrderBy(params.sortBy, params.sortDir, "code asc"),
             pageNumber: params.page,
             pageSize: params.limit,
+            search: buildFilterSearch(params.search),
             searchTerm: params.searchTerm
                 ? {
-                    name: "code,name",
+                    name: searchTerm,
                     value: params.searchTerm,
                 }
                 : undefined,
@@ -45,7 +62,7 @@ export default function ProductTypeList()
             hasNext: response.pagination.hasNext,
             hasPrevious: response.pagination.hasPrevious,
         };
-    }, []);
+    }, [buildFilterSearch, searchTerm]);
 
     return (
         <Table<IProductTypeTableRow>
@@ -61,9 +78,12 @@ export default function ProductTypeList()
             }}
             emptyMessage="No product types found. Create one to get started."
             fetchData={fetchData}
+            filterFields={fieldFilters}
+            filterValues={currentFiltersRecord}
             itemKey="id"
             itemName="product types"
             onCurrentPageChange={handleCurrentPageChange}
+            onFilterChange={handleFilterChange}
             onSearchChange={handleSearchChange}
             searchPlaceholder="Search code or product type name..."
             searchValue={currentSearch}
