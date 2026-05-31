@@ -40,6 +40,7 @@ function ManagerRepairRequestItemsSection({
     const lineItemColumns = React.useMemo(() => createRepairRequestDetailLineItemColumns({
         renderAction: (item: any) => {
             const existingWorkOrderId = Number(item?.workOrderId);
+            const isWorkOrderDone = Boolean(item?.isWorkOrderDone);
             const statusStr = String(
                 item?.repairStatus || 
                 item?.repairStatusCode || 
@@ -49,6 +50,11 @@ function ManagerRepairRequestItemsSection({
 
             if (Number.isFinite(existingWorkOrderId) && existingWorkOrderId > 0)
             {
+                if (isWorkOrderDone)
+                {
+                    return null;
+                }
+
                 return (
                     <Button
                         onClick={() => {

@@ -12,6 +12,7 @@ export interface IRepairRequestDetailLineItem extends ILineItemValue
     repairStatusId?: number | null;
     repairStatusName?: string | null;
     workOrderId?: number | null;
+    isWorkOrderDone?: boolean;
 }
 
 interface ICreateRepairRequestDetailLineItemColumnsOptions

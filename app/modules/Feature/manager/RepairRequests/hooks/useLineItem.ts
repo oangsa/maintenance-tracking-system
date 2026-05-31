@@ -8,6 +8,7 @@ import type { IWorkOrder } from "~/api/types/types";
 const MANAGER_ITEM_SEARCH_FIELD = "department_id";
 const REPAIR_REQUEST_ITEMS_PAGE_SIZE = 100;
 const WORK_ORDERS_PAGE_SIZE = 100;
+const DONE_STATUS_CODE_CANDIDATES = ["DONE", "COMPLETED", "COMPLETE", "FINISHED", "RESOLVED", "CLOSED"];
 
 interface IUseLineItemProps
 {
@@ -23,9 +24,37 @@ interface IUseLineItemResult
     emptyMessage: string;
 }
 
+interface IWorkOrderLineItemState
+{
+    workOrderId: number | null;
+    isWorkOrderDone: boolean;
+}
+
+function normalizeStatusToken(value: string | null | undefined): string
+{
+    return String(value ?? "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+function isDoneWorkOrder(workOrder: IWorkOrder): boolean
+{
+    const normalizedStatusCode = normalizeStatusToken(workOrder.repairRequestItemRepairStatusCode);
+
+    if (DONE_STATUS_CODE_CANDIDATES.includes(normalizedStatusCode))
+    {
+        return true;
+    }
+
+    if (workOrder.workTaskEndedAt)
+    {
+        return true;
+    }
+
+    return false;
+}
+
 async function loadManagerLineItems(repairRequestId: number, currentUserDepartmentId: number): Promise<IRepairRequestDetailLineItem[]>
 {
-    const workOrderByRepairRequestItemId = new Map<number, IWorkOrder>();
+    const workOrderByRepairRequestItemId = new Map<number, IWorkOrderLineItemState>();
     const lineItems: IRepairRequestDetailLineItem[] = [];
     let currentPage = 1;
     let totalPages = 1;
@@ -40,10 +69,31 @@ async function loadManagerLineItems(repairRequestId: number, currentUserDepartme
 
         response.data.forEach((workOrder) =>
         {
-            if (typeof workOrder.repairRequestItemId === "number" && !workOrderByRepairRequestItemId.has(workOrder.repairRequestItemId))
+            if (typeof workOrder.repairRequestItemId !== "number")
             {
-                workOrderByRepairRequestItemId.set(workOrder.repairRequestItemId, workOrder);
+                return;
             }
+
+            const existingState = workOrderByRepairRequestItemId.get(workOrder.repairRequestItemId);
+            const parsedWorkOrderId = Number(workOrder.id);
+            const resolvedWorkOrderId = Number.isFinite(parsedWorkOrderId) && parsedWorkOrderId > 0
+                ? parsedWorkOrderId
+                : null;
+
+            if (!existingState)
+            {
+                workOrderByRepairRequestItemId.set(workOrder.repairRequestItemId, {
+                    isWorkOrderDone: isDoneWorkOrder(workOrder),
+                    workOrderId: resolvedWorkOrderId,
+                });
+
+                return;
+            }
+
+            workOrderByRepairRequestItemId.set(workOrder.repairRequestItemId, {
+                isWorkOrderDone: existingState.isWorkOrderDone || isDoneWorkOrder(workOrder),
+                workOrderId: existingState.workOrderId ?? resolvedWorkOrderId,
+            });
         });
 
         totalPages = response.pagination.totalPages;
@@ -70,7 +120,11 @@ async function loadManagerLineItems(repairRequestId: number, currentUserDepartme
             }),
         });
 
-        lineItems.push(...response.data.map((item) => ({
+        lineItems.push(...response.data.map((item) =>
+        {
+            const workOrderState = workOrderByRepairRequestItemId.get(item.id);
+
+            return {
             description: item.description,
             id: item.id,
             productLabel: formatProductLabel(item),
@@ -79,8 +133,10 @@ async function loadManagerLineItems(repairRequestId: number, currentUserDepartme
             repairStatusCode: item.repairStatusCode,
             repairStatusId: item.repairStatusId,
             repairStatusName: item.repairStatusName,
-            workOrderId: workOrderByRepairRequestItemId.get(item.id)?.id ?? null,
-        })));
+            isWorkOrderDone: workOrderState?.isWorkOrderDone ?? false,
+            workOrderId: workOrderState?.workOrderId ?? null,
+        };
+        }));
 
         totalPages = response.pagination.totalPages;
         currentPage += 1;
