@@ -4,6 +4,7 @@ import type {
     IPart,
     IPartForCreate,
     IPartForUpdate,
+    IPartStockConsumeRequest,
     IPagedResult,
     ISearchRequest,
 } from "./types/types";
@@ -39,18 +40,27 @@ export async function updatePartRequest(id: number, body: IPartForUpdate): Promi
     });
 }
 
-export interface IConsumeStockPayload
+export async function consumeStockRequest(id: number, body: IPartStockConsumeRequest): Promise<IPart>
 {
-    quantity: number;
-    note?: string;
-    workOrderPartId?: number;
-}
+    const payload: Record<string, unknown> = {
+        quantity: body.quantity,
+    };
 
-export async function consumeStockRequest(id: number, body: IConsumeStockPayload): Promise<void>
-{
-    return http<void>(`${PREFIX}/${id}/consume-stock`, {
+    if (body.note)
+    {
+        payload.note = body.note;
+    }
+
+    if (typeof body.workOrderPartId === "number" && Number.isFinite(body.workOrderPartId) && body.workOrderPartId > 0)
+    {
+        // Keep both keys for backend compatibility across camel/snake parsing.
+        payload.workOrderPartId = body.workOrderPartId;
+        payload.work_order_part_id = body.workOrderPartId;
+    }
+
+    return http<IPart>(`${PREFIX}/${id}/consume-stock`, {
         method: "POST",
-        body: JSON.stringify(body),
+        body: JSON.stringify(payload),
     });
 }
 

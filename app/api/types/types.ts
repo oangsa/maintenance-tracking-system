@@ -44,6 +44,7 @@ export type {
     IRepairRequestForUpdate,
     IRepairRequestItem,
     IRepairRequestItemForCreate,
+    IRepairRequestItemStatusUpdateRequest,
     IRepairRequestStatusLog,
 } from "../types/repairRequest.types";
 
@@ -79,6 +80,7 @@ export type {
     IPart,
     IPartForCreate,
     IPartForUpdate,
+    IPartStockConsumeRequest,
 } from "../types/part.types";
 
 export type {

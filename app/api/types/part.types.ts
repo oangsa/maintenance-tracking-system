@@ -25,4 +25,11 @@ export interface IPartForUpdate
     code?: string;
     name?: string;
     productTypeId?: number;
-}   
+}
+
+export interface IPartStockConsumeRequest
+{
+    quantity: number;
+    note?: string;
+    workOrderPartId?: number;
+}

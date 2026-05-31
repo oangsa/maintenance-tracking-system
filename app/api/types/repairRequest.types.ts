@@ -71,3 +71,9 @@ export interface IRepairRequestForUpdate
     priority?: IPriority;
     currentStatusId?: number;
 }
+
+export interface IRepairRequestItemStatusUpdateRequest
+{
+    repairStatusId: number;
+    note?: string;
+}

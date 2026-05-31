@@ -6,7 +6,6 @@ import {
     deletePartCollectionRequest,
     searchPartsRequest,
     consumeStockRequest,
-    type IConsumeStockPayload,
 } from "../api/parts.api";
 
 import type {
@@ -14,6 +13,7 @@ import type {
     IPart,
     IPartForCreate,
     IPartForUpdate,
+    IPartStockConsumeRequest,
     IPagedResult,
     ISearchRequest,
 } from "../api/types/types";
@@ -48,7 +48,7 @@ export async function deleteParts(body: IDeleteCollectionRequest): Promise<void>
     return deletePartCollectionRequest(body);
 }
 
-export async function consumeStock(id: number, payload: IConsumeStockPayload): Promise<void>
+export async function consumeStock(id: number, payload: IPartStockConsumeRequest): Promise<IPart>
 {
     return consumeStockRequest(id, payload);
 }

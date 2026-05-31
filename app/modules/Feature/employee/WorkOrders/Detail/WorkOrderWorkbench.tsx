@@ -1,5 +1,5 @@
 import React from "react";
-import { FiCheckCircle, FiClock, FiPackage, FiPlay } from "react-icons/fi";
+import { FiCheckCircle, FiClock, FiPackage, FiPlay, FiPlusCircle } from "react-icons/fi";
 import type { IWorkOrder } from "~/api/types/types";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -16,17 +16,23 @@ import WorkOrderPartLineItemsEditor, { type IWorkOrderPartLineItem } from "./Wor
 
 interface IEmployeeWorkOrderWorkbenchProps
 {
+    canOpenPartPicker?: boolean;
     currentUserId: number | null;
-    parts?: IWorkOrderPartLineItem[];
-    workOrder: IWorkOrder;
+    isFinishing?: boolean;
+    isPartActionSubmitting?: boolean;
+    isStarting?: boolean;
     onChangeParts?: (parts: IWorkOrderPartLineItem[]) => void;
-    onConsumePart?: (partId: number) => void;
-    onDeletePlannedPart?: (partId: number) => void;
-    onSavePart?: (part: IWorkOrderPartLineItem) => void;
+    onCreatePart?: (part: IWorkOrderPartLineItem) => Promise<void> | void;
+    parts?: IWorkOrderPartLineItem[];
+    productTypeId?: number;
+    readOnlyReason?: string | null;
+    workOrder: IWorkOrder;
+    onAddPart?: () => void;
+    onConsumePart?: (part: IWorkOrderPartLineItem) => void;
+    onDeletePlannedPart?: (part: IWorkOrderPartLineItem) => void;
     onFinishWork?: () => void;
     onStartWork?: () => void;
-    departmentId?: number;
-    productTypeId?: number;
+    onUpdatePlannedPart?: (part: IWorkOrderPartLineItem) => void;
 }
 
 interface IFinishState
@@ -34,23 +40,41 @@ interface IFinishState
     isOpen: boolean;
 }
 
+function isPartConsumed(part: IWorkOrderPartLineItem): boolean
+{
+    const rawValue = part.inventoryMoveItemId ?? part.inventory_move_item_id;
+    let parsedInventoryMoveItemId = Number(rawValue);
+
+    if (!Number.isFinite(parsedInventoryMoveItemId) && rawValue && typeof rawValue === "object")
+    {
+        const objectValue = rawValue as Record<string, unknown>;
+        parsedInventoryMoveItemId = Number(objectValue.id ?? objectValue.inventoryMoveItemId ?? objectValue.inventory_move_item_id);
+    }
+
+    return Number.isFinite(parsedInventoryMoveItemId) && parsedInventoryMoveItemId > 0;
+}
+
 export default function WorkOrderWorkbench({
+    canOpenPartPicker = false,
     currentUserId,
-    parts = [],
-    workOrder,
+    isFinishing = false,
+    isPartActionSubmitting = false,
+    isStarting = false,
     onChangeParts,
+    onCreatePart,
+    parts = [],
+    productTypeId,
+    readOnlyReason,
+    workOrder,
+    onAddPart,
     onConsumePart,
     onDeletePlannedPart,
-    onSavePart,
     onFinishWork,
     onStartWork,
-    departmentId,
-    productTypeId,
+    onUpdatePlannedPart,
 }: IEmployeeWorkOrderWorkbenchProps)
 {
     const [finishState, setFinishState] = React.useState<IFinishState>({ isOpen: false });
-    const [consumePartId, setConsumePartId] = React.useState<number | null>(null);
-    const [deletePartId, setDeletePartId] = React.useState<number | null>(null);
 
     const parsedAssigneeId = Number(workOrder.workTaskAssigneeId);
     const hasWorkTask = Number.isFinite(Number(workOrder.workTaskId)) && Number(workOrder.workTaskId) > 0;
@@ -63,40 +87,45 @@ export default function WorkOrderWorkbench({
     const hasStarted = Boolean(workOrder.workTaskStartedAt);
     const hasEnded = Boolean(workOrder.workTaskEndedAt);
 
+    const isProcessingStartOrFinish = isStarting || isFinishing;
     const canStartWork = hasWorkTask
         && isCurrentUserActiveAssignee
         && !hasStarted
         && !hasEnded
         && !isFinalWorkOrder
+        && !isProcessingStartOrFinish
         && Boolean(onStartWork);
     const canFinishWork = hasWorkTask
         && isCurrentUserActiveAssignee
         && hasStarted
         && !hasEnded
         && !isFinalWorkOrder
+        && !isProcessingStartOrFinish
         && Boolean(onFinishWork);
     const canManageParts = isCurrentUserActiveAssignee && hasStarted && !hasEnded && !isFinalWorkOrder;
-
-    let workOrderStatus = "Pending";
-    let statusVariant: "default" | "secondary" | "outline" = "outline";
-    if (hasEnded) {
-        workOrderStatus = "Finished";
-        statusVariant = "secondary";
-    } else if (hasStarted) {
-        workOrderStatus = "In Progress";
-        statusVariant = "default";
-    }
+    const canAddPart = canManageParts
+        && canOpenPartPicker
+        && !isPartActionSubmitting
+        && !isProcessingStartOrFinish
+        && Boolean(onAddPart);
 
     const plannedPartsCount = React.useMemo(() =>
     {
-        return parts.reduce((total, part) =>
+        return parts.reduce((totalQuantity, part) =>
         {
-            if (part.inventoryMoveItemId === null || part.inventoryMoveItemId === undefined)
+            if (isPartConsumed(part))
             {
-                return total + (Number(part.quantity) || 0);
+                return totalQuantity;
             }
 
-            return total;
+            const parsedQuantity = Number(part.quantity);
+
+            if (!Number.isFinite(parsedQuantity) || parsedQuantity <= 0)
+            {
+                return totalQuantity;
+            }
+
+            return totalQuantity + parsedQuantity;
         }, 0);
     }, [parts]);
 
@@ -136,43 +165,6 @@ export default function WorkOrderWorkbench({
         <div className="space-y-6">
             <ConfirmModal
                 cancelText="Cancel"
-                confirmText="Consume Part"
-                isOpen={consumePartId !== null}
-                message="Are you sure you want to consume this part? This action cannot be undone and will deduct actual inventory stock."
-                onClose={() => setConsumePartId(null)}
-                onConfirm={() =>
-                {
-                    if (consumePartId !== null)
-                    {
-                        onConsumePart?.(consumePartId);
-                        setConsumePartId(null);
-                    }
-                }}
-                title="Confirm Consume Part"
-                variant="primary"
-            />
-
-            <ConfirmModal
-                cancelText="Cancel"
-                confirmText="Delete Planned Part"
-                isOpen={deletePartId !== null}
-                message="Are you sure you want to delete this planned part?"
-                onClose={() => setDeletePartId(null)}
-                onConfirm={() =>
-                {
-                    if (deletePartId !== null)
-                    {
-                        onDeletePlannedPart?.(deletePartId);
-                        setDeletePartId(null);
-                    }
-                }}
-                title="Confirm Delete"
-                variant="danger"
-            />
-
-
-            <ConfirmModal
-                cancelText="Cancel"
                 confirmText="Finish Work"
                 isOpen={finishState.isOpen}
                 message="This work order still has planned but unconsumed parts. Continue to finish work?"
@@ -189,16 +181,12 @@ export default function WorkOrderWorkbench({
                         Work Process Actions
                     </CardTitle>
                     <CardDescription>
-                        Start and finish execution as the active assignee when the real task actions are available.
+                        Start and finish execution as the active assignee.
                     </CardDescription>
                 </CardHeader>
 
                 <CardContent className="space-y-4">
                     <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant={statusVariant}>
-                            Status: {workOrderStatus}
-                        </Badge>
-
                         <Badge variant={isCurrentUserActiveAssignee ? "default" : "destructive"}>
                             {isCurrentUserActiveAssignee ? "You are active assignee" : "You are not active assignee"}
                         </Badge>
@@ -228,12 +216,12 @@ export default function WorkOrderWorkbench({
                     <div className="flex flex-wrap gap-2">
                         <Button className="gap-1.5" disabled={!canStartWork} onClick={handleStartWork} type="button">
                             <FiPlay className="size-4" />
-                            Start Work
+                            {isStarting ? "Starting..." : "Start Work"}
                         </Button>
 
                         <Button className="gap-1.5" disabled={!canFinishWork} onClick={handleFinishWork} type="button" variant="outline">
                             <FiCheckCircle className="size-4" />
-                            Finish Work
+                            {isFinishing ? "Finishing..." : "Finish Work"}
                         </Button>
                     </div>
                 </CardContent>
@@ -250,18 +238,31 @@ export default function WorkOrderWorkbench({
                             Manage planned parts and consume them when actually used.
                         </CardDescription>
                     </div>
+
+                    <Button className="gap-1.5" disabled={!canAddPart} onClick={onAddPart} type="button">
+                        <FiPlusCircle className="size-4" />
+                        Add Needed Part
+                    </Button>
                 </CardHeader>
 
-                <CardContent>
+                <CardContent className="space-y-4">
+                    {readOnlyReason && (
+                        <div className="rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+                            {readOnlyReason}
+                        </div>
+                    )}
+
                     <WorkOrderPartLineItemsEditor
+                        canOpenPartPicker={canOpenPartPicker}
                         canManageParts={canManageParts}
-                        departmentId={departmentId}
-                        productTypeId={productTypeId}
+                        isActionSubmitting={isPartActionSubmitting || isProcessingStartOrFinish}
                         items={parts}
                         onChange={onChangeParts ?? (() => { return; })}
-                        onConsume={setConsumePartId}
-                        onDeletePlanned={setDeletePartId}
-                        onSavePart={onSavePart}
+                        onConsume={onConsumePart}
+                        onCreatePart={onCreatePart}
+                        onDeletePlanned={onDeletePlannedPart}
+                        onUpdatePlanned={onUpdatePlannedPart}
+                        productTypeId={productTypeId}
                     />
                 </CardContent>
             </Card>

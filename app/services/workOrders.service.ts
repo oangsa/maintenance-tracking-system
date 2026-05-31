@@ -36,6 +36,36 @@ export async function updateWorkOrder(id: number, data: IWorkOrderForUpdate): Pr
     return updateWorkOrderRequest(id, data);
 }
 
+function buildWorkOrderUpdatePayload(workOrder: IWorkOrder, statusId: number): IWorkOrderForUpdate
+{
+    const payload: IWorkOrderForUpdate = {
+        orderSequence: workOrder.orderSequence,
+        statusId,
+    };
+
+    if (workOrder.scheduledStart)
+    {
+        payload.scheduledStart = workOrder.scheduledStart;
+    }
+
+    if (workOrder.scheduledEnd)
+    {
+        payload.scheduledEnd = workOrder.scheduledEnd;
+    }
+
+    return payload;
+}
+
+export async function markWorkOrderInProgress(workOrder: IWorkOrder, statusId: number): Promise<IWorkOrder>
+{
+    return updateWorkOrder(workOrder.id, buildWorkOrderUpdatePayload(workOrder, statusId));
+}
+
+export async function markWorkOrderFinished(workOrder: IWorkOrder, statusId: number): Promise<IWorkOrder>
+{
+    return updateWorkOrder(workOrder.id, buildWorkOrderUpdatePayload(workOrder, statusId));
+}
+
 export async function deleteWorkOrder(id: number): Promise<void>
 {
     return deleteWorkOrderRequest(id);

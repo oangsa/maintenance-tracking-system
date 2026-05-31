@@ -36,6 +36,20 @@ export async function updateWorkTask(id: string, data: IWorkTaskForUpdate): Prom
     return updateWorkTaskRequest(id, data);
 }
 
+export async function startWorkTask(id: number | string, startedAt: string): Promise<IWorkTask>
+{
+    return updateWorkTask(String(id), {
+        startedAt,
+    });
+}
+
+export async function finishWorkTask(id: number | string, endedAt: string): Promise<IWorkTask>
+{
+    return updateWorkTask(String(id), {
+        endedAt,
+    });
+}
+
 export async function getWorkTaskAssignmentHistoryById(id: string): Promise<IWorkTaskAssignment[]>
 {
     return getWorkTaskAssignmentHistoryByIdRequest(id);

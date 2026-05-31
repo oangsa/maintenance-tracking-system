@@ -11,6 +11,7 @@ import {
     updateRepairRequestRequest,
     getRepairRequestCountGroupByStatusRequest,
     searchAllRepairRequestItemsRequest,
+    updateRepairRequestItemStatusRequest,
     getMonthlyRepairTrendByProductTypeReportRequest,
     getTopRepairedProductsReportRequest
 } from "../api/repairRequests.api";
@@ -22,6 +23,7 @@ import type {
     IRepairRequestForUpdate,
     IRepairRequestItem,
     IRepairRequestItemForCreate,
+    IRepairRequestItemStatusUpdateRequest,
     IRepairRequestStatusLog,
     ISearchRequest,
     IWorkOrder,
@@ -88,6 +90,11 @@ export async function getRepairRequestCountGroupByStatus(params: ISearchRequest)
 export async function searchAllRepairRequestItems(body: ISearchRequest): Promise<IPagedResult<IRepairRequestItem>>
 {
     return searchAllRepairRequestItemsRequest(body);
+}
+
+export async function updateRepairRequestItemStatus(id: number, payload: IRepairRequestItemStatusUpdateRequest): Promise<IRepairRequestItem>
+{
+    return updateRepairRequestItemStatusRequest(id, payload);
 }
 
 export async function getMonthlyRepairTrendByProductTypeReport(params: ISearchRequest): Promise<IPagedResult<IMonthlyRepairTrendByProductTypeReport>>

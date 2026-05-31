@@ -11,18 +11,24 @@ interface IUseWorkOrderPartLineItemColumnProps
 {
     canConsumeParts: boolean;
     canDeletePlannedParts: boolean;
-    onConsume?: (partId: number) => void;
-    onDeletePlanned?: (partId: number) => void;
-    onSavePart?: (part: IWorkOrderPartLineItem) => void;
+    canSaveInlineParts: boolean;
+    editingRowId: number | null;
     itemMessages: Record<number, string | undefined>;
+    onBeginEdit: (item: IWorkOrderPartLineItem) => void;
+    onCancelEdit: (index: number, item: IWorkOrderPartLineItem) => void;
+    onFinishEdit: (index: number) => void;
     onClearPartSelection: (index: number, updateFn: (patch: Partial<IWorkOrderPartLineItem>) => void) => void;
     onCodeBlur: (index: number, draftItem: IWorkOrderPartLineItem, updateFn: (patch: Partial<IWorkOrderPartLineItem>) => void) => void;
-    resolvingRows: Record<number, boolean>;
-    onRemovePart: (index: number) => void;
+    onConsume?: (part: IWorkOrderPartLineItem) => void;
+    onCreatePart?: (part: IWorkOrderPartLineItem) => Promise<void> | void;
+    onDeletePlanned?: (part: IWorkOrderPartLineItem) => void;
     onOpenLov: (index: number, updateFn: (patch: Partial<IWorkOrderPartLineItem>) => void) => void;
+    onRemovePart: (index: number) => void;
+    onUpdatePlanned?: (part: IWorkOrderPartLineItem) => Promise<void> | void;
+    resolvingRows: Record<number, boolean>;
 }
 
-function resolvePartId(item: IWorkOrderPartLineItem): number | null
+function resolvePersistedId(item: IWorkOrderPartLineItem): number | null
 {
     if (typeof item.id !== "number" || !Number.isFinite(item.id) || item.id <= 0)
     {
@@ -34,8 +40,21 @@ function resolvePartId(item: IWorkOrderPartLineItem): number | null
 
 function resolveInventoryMoveItemId(item: IWorkOrderPartLineItem): number | null
 {
-    const rawId = item.inventoryMoveItemId ?? (item as any).inventory_move_item_id;
-    const parsedInventoryMoveItemId = Number(rawId);
+    const rawValue = item.inventoryMoveItemId ?? item.inventory_move_item_id;
+
+    if (rawValue && typeof rawValue === "object")
+    {
+        const objectValue = rawValue as Record<string, unknown>;
+        const nestedValue = objectValue.id ?? objectValue.inventoryMoveItemId ?? objectValue.inventory_move_item_id;
+        const nestedParsedValue = Number(nestedValue);
+
+        if (Number.isFinite(nestedParsedValue) && nestedParsedValue > 0)
+        {
+            return nestedParsedValue;
+        }
+    }
+
+    const parsedInventoryMoveItemId = Number(rawValue);
 
     if (!Number.isFinite(parsedInventoryMoveItemId) || parsedInventoryMoveItemId <= 0)
     {
@@ -58,15 +77,21 @@ function renderUsageBadge(item: IWorkOrderPartLineItem)
 export default function useWorkOrderPartLineItemColumn({
     canConsumeParts,
     canDeletePlannedParts,
-    onConsume,
-    onDeletePlanned,
-    onSavePart,
+    canSaveInlineParts,
+    editingRowId,
     itemMessages,
+    onBeginEdit,
+    onCancelEdit,
+    onFinishEdit,
     onClearPartSelection,
     onCodeBlur,
-    resolvingRows,
-    onRemovePart,
+    onConsume,
+    onCreatePart,
+    onDeletePlanned,
     onOpenLov,
+    onRemovePart,
+    onUpdatePlanned,
+    resolvingRows,
 }: IUseWorkOrderPartLineItemColumnProps): ILineItemColumn<IWorkOrderPartLineItem>[]
 {
     return React.useMemo<ILineItemColumn<IWorkOrderPartLineItem>[]>(() => [
@@ -90,34 +115,42 @@ export default function useWorkOrderPartLineItemColumn({
                 {
                     return context.renderReadOnlyValue(formatJoinedLabel([context.item.partCode, context.item.partName]) || "-");
                 }
-                
+
                 return (
                     <div>
                         <div className="flex gap-2">
                             <Input
-                                disabled={resolvingRows[context.index]}
+                                disabled={resolvingRows[context.index] || !canSaveInlineParts}
                                 onBlur={() => onCodeBlur(context.index, context.item, context.updateItem)}
-                                onChange={(e) => context.updateItem({ partCode: e.target.value })}
+                                onChange={(event) => context.updateItem({ partCode: event.target.value })}
                                 placeholder="Part code..."
                                 value={context.item.partCode || ""}
                             />
                             <Button
+                                className="shrink-0"
+                                disabled={!canSaveInlineParts}
                                 onClick={() => onOpenLov(context.index, context.updateItem)}
+                                size="icon"
                                 type="button"
                                 variant="outline"
-                                size="icon"
-                                className="shrink-0"
                             >
                                 <FiSearch className="size-4" />
                             </Button>
                             {context.item.partId ? (
-                                <Button onClick={() => onClearPartSelection(context.index, context.updateItem)} type="button" variant="outline" size="sm" className="px-2">
+                                <Button
+                                    className="px-2"
+                                    disabled={!canSaveInlineParts}
+                                    onClick={() => onClearPartSelection(context.index, context.updateItem)}
+                                    size="sm"
+                                    type="button"
+                                    variant="outline"
+                                >
                                     Clear
                                 </Button>
                             ) : null}
                         </div>
-                        {context.item.partName && <div className="text-sm text-muted-foreground mt-1">{context.item.partName}</div>}
-                        {itemMessages[context.index] && <div className="text-sm text-destructive mt-1">{itemMessages[context.index]}</div>}
+                        {context.item.partName && <div className="mt-1 text-sm text-muted-foreground">{context.item.partName}</div>}
+                        {itemMessages[context.index] && <div className="mt-1 text-sm text-destructive">{itemMessages[context.index]}</div>}
                     </div>
                 );
             },
@@ -130,19 +163,21 @@ export default function useWorkOrderPartLineItemColumn({
             renderCell: (context) =>
             {
                 const isNew = context.item.id < 0;
+                const isEditingPersisted = context.item.id > 0 && editingRowId === context.item.id;
+                const canInlineEdit = canSaveInlineParts && (isNew || isEditingPersisted);
 
-                if (!isNew)
+                if (!canInlineEdit)
                 {
                     return context.renderReadOnlyValue(context.item.quantity, "text-right");
                 }
 
                 return (
                     <Input
-                        type="number"
-                        min="1"
                         className="text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        min="1"
+                        onChange={(event) => context.updateItem({ quantity: event.target.value ? Number(event.target.value) : "" })}
+                        type="number"
                         value={context.item.quantity === "" ? "" : String(context.item.quantity)}
-                        onChange={(e) => context.updateItem({ quantity: e.target.value ? Number(e.target.value) : "" })}
                     />
                 );
             },
@@ -154,9 +189,7 @@ export default function useWorkOrderPartLineItemColumn({
             label: "Usage Status",
             renderCell: (context) =>
             {
-                const isNew = context.item.id < 0;
-
-                if (isNew)
+                if (context.item.id < 0)
                 {
                     return context.renderReadOnlyValue(<Badge variant="secondary">New</Badge>);
                 }
@@ -171,9 +204,7 @@ export default function useWorkOrderPartLineItemColumn({
             label: "Inventory Move Item",
             renderCell: (context) =>
             {
-                const isNew = context.item.id < 0;
-
-                if (isNew)
+                if (context.item.id < 0)
                 {
                     return context.renderReadOnlyValue("-");
                 }
@@ -189,50 +220,58 @@ export default function useWorkOrderPartLineItemColumn({
             renderCell: (context) =>
             {
                 const isNew = context.item.id < 0;
+                const isEditingPersisted = context.item.id > 0 && editingRowId === context.item.id;
+                const canInlineEdit = canSaveInlineParts && (isNew || isEditingPersisted);
 
-                if (!isNew)
+                if (!canInlineEdit)
                 {
                     return context.renderReadOnlyValue(context.item.note || "-");
                 }
 
                 return (
                     <Input
-                        value={context.item.note || ""}
-                        onChange={(e) => context.updateItem({ note: e.target.value })}
+                        onChange={(event) => context.updateItem({ note: event.target.value })}
                         placeholder="Optional note"
+                        value={context.item.note || ""}
                     />
                 );
             },
         },
         {
-            cellClassName: "w-[260px] align-top",
-            headerClassName: "w-[260px] text-right",
+            cellClassName: "w-[340px] align-top",
+            headerClassName: "w-[340px] text-right",
             key: "actions",
             label: "Actions",
             renderCell: (context) =>
             {
                 const isNew = context.item.id < 0;
-                
+                const persistedId = resolvePersistedId(context.item);
+                const isConsumed = resolveInventoryMoveItemId(context.item) !== null;
+                const isEditingPersisted = context.item.id > 0 && editingRowId === context.item.id;
+
                 if (isNew)
                 {
-                    const canSave = Boolean(context.item.partId) && Boolean(context.item.quantity) && Number(context.item.quantity) > 0;
+                    const canSaveNew = canSaveInlineParts
+                        && Boolean(context.item.partId)
+                        && Boolean(context.item.quantity)
+                        && Number(context.item.quantity) > 0;
 
                     return (
                         <div className="flex flex-wrap justify-end gap-2">
                             <Button
-                                disabled={!canSave}
-                                onClick={() => onSavePart?.(context.item)}
+                                disabled={!canSaveNew}
+                                onClick={() => onCreatePart?.(context.item)}
+                                size="sm"
                                 type="button"
                                 variant="default"
-                                size="sm"
                             >
                                 Save
                             </Button>
                             <Button
                                 onClick={() => onRemovePart(context.index)}
+                                size="sm"
                                 type="button"
                                 variant="destructive"
-                                size="sm"
                             >
                                 Remove
                             </Button>
@@ -240,56 +279,117 @@ export default function useWorkOrderPartLineItemColumn({
                     );
                 }
 
-                const parsedPartId = resolvePartId(context.item);
-                const isConsumed = resolveInventoryMoveItemId(context.item) !== null;
-                const isConsumeDisabled = parsedPartId === null || isConsumed || !canConsumeParts;
-                const isDeleteDisabled = parsedPartId === null || isConsumed || !canDeletePlannedParts;
+                if (isEditingPersisted)
+                {
+                    const canSaveUpdate = canSaveInlineParts && !isConsumed && Number(context.item.quantity) > 0;
+
+                    return (
+                        <div className="flex flex-wrap justify-end gap-2">
+                            <Button
+                                disabled={!canSaveUpdate}
+                                onClick={async () =>
+                                {
+                                    if (!onUpdatePlanned)
+                                    {
+                                        return;
+                                    }
+
+                                    await onUpdatePlanned(context.item);
+                                    onFinishEdit(context.index);
+                                }}
+                                size="sm"
+                                type="button"
+                                variant="default"
+                            >
+                                Save Changes
+                            </Button>
+                            <Button
+                                onClick={() => onCancelEdit(context.index, context.item)}
+                                size="sm"
+                                type="button"
+                                variant="outline"
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    );
+                }
+
+                const isUpdateDisabled = persistedId === null || isConsumed || !canSaveInlineParts;
+                const isConsumeDisabled = persistedId === null || isConsumed || !canConsumeParts;
+                const isDeleteDisabled = persistedId === null || isConsumed || !canDeletePlannedParts;
 
                 return (
                     <div className="flex flex-wrap justify-end gap-2">
+                        <Button
+                            disabled={isUpdateDisabled}
+                            onClick={() => onBeginEdit(context.item)}
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                        >
+                            Update Planned
+                        </Button>
+
                         <Button
                             className="gap-1.5"
                             disabled={isConsumeDisabled}
                             onClick={() =>
                             {
-                                if (parsedPartId === null || !onConsume)
+                                if (!onConsume)
                                 {
                                     return;
                                 }
 
-                                onConsume(parsedPartId);
+                                onConsume(context.item);
                             }}
+                            size="sm"
                             type="button"
                             variant={isConsumed ? "default" : "outline"}
-                            size="sm"
                         >
                             <FiCheckCircle className="size-4" />
                             {isConsumed ? "Consumed" : "Consume"}
                         </Button>
 
-                        {!isConsumed && (
-                            <Button
-                                className="gap-1.5"
-                                disabled={isDeleteDisabled}
-                                onClick={() =>
+                        <Button
+                            className="gap-1.5"
+                            disabled={isDeleteDisabled}
+                            onClick={() =>
+                            {
+                                if (!onDeletePlanned)
                                 {
-                                    if (parsedPartId === null || !onDeletePlanned)
-                                    {
-                                        return;
-                                    }
+                                    return;
+                                }
 
-                                    onDeletePlanned(parsedPartId);
-                                }}
-                                type="button"
-                                variant="destructive"
-                                size="sm"
-                            >
-                                Delete Planned
-                            </Button>
-                        )}
+                                onDeletePlanned(context.item);
+                            }}
+                            size="sm"
+                            type="button"
+                            variant="destructive"
+                        >
+                            Delete Planned
+                        </Button>
                     </div>
                 );
             },
         },
-    ], [canConsumeParts, canDeletePlannedParts, onConsume, onDeletePlanned, onSavePart, itemMessages, onClearPartSelection, onCodeBlur, resolvingRows, onRemovePart, onOpenLov]);
+    ], [
+        canConsumeParts,
+        canDeletePlannedParts,
+        canSaveInlineParts,
+        editingRowId,
+        itemMessages,
+        onBeginEdit,
+        onCancelEdit,
+        onFinishEdit,
+        onClearPartSelection,
+        onCodeBlur,
+        onConsume,
+        onCreatePart,
+        onDeletePlanned,
+        onOpenLov,
+        onRemovePart,
+        onUpdatePlanned,
+        resolvingRows,
+    ]);
 }

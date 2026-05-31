@@ -8,6 +8,7 @@ import type {
     IRepairRequestForUpdate,
     IRepairRequestItem,
     IRepairRequestItemForCreate,
+    IRepairRequestItemStatusUpdateRequest,
     IRepairRequestStatusLog,
     ISearchRequest,
     IWorkOrder,
@@ -106,6 +107,14 @@ export async function searchAllRepairRequestItemsRequest(body: ISearchRequest): 
 {
     return httpPaginated<IRepairRequestItem>(`${PREFIX}/items/search`, { 
         method: "POST",
+        body: JSON.stringify(body),
+    });
+}
+
+export async function updateRepairRequestItemStatusRequest(id: number, body: IRepairRequestItemStatusUpdateRequest): Promise<IRepairRequestItem>
+{
+    return http<IRepairRequestItem>(`/api/v1/repair-request-items/${id}/status`, {
+        method: "PUT",
         body: JSON.stringify(body),
     });
 }
