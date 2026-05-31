@@ -3,8 +3,10 @@ import DashboardCard from "~/components/Common/DashboardCard";
 import { dashboardCardDefinitions } from "./config";
 import type { IDashboardCardDefinition, TDashboardCardZone } from "./types";
 import MonthlyRepairTrendCard, { MonthlyRepairTrendFilters } from "./cards/MonthlyRepairTrendCard";
+import RepairsByDepartmentCard, { RepairsByDepartmentFilters } from "./cards/RepairsByDepartmentCard";
 import TopRepairedProductsCard, { TopRepairedProductsFilters } from "./cards/TopRepairedProductsCard";
 import { useMonthlyRepairTrend } from "./hooks/useMonthlyRepairTrend";
+import { useRepairsByDepartment } from "./hooks/useRepairsByDepartment";
 import { useTopRepairedProducts } from "./hooks/useTopRepairedProducts";
 
 function findCardByZone(zone: TDashboardCardZone): IDashboardCardDefinition | null
@@ -22,6 +24,11 @@ function renderCard(card: IDashboardCardDefinition | null)
     if (card.id === "monthly-repair-trend")
     {
         return <MonthlyRepairTrendDashboardCard card={card} key={card.id} />;
+    }
+
+    if (card.id === "repairs-by-department")
+    {
+        return <RepairsByDepartmentDashboardCard card={card} key={card.id} />;
     }
 
     if (card.id === "top-repaired-products")
@@ -45,12 +52,32 @@ function renderCard(card: IDashboardCardDefinition | null)
     );
 }
 
-interface IMonthlyRepairTrendDashboardCardProps
+interface IDashboardReportCardProps
 {
     card: IDashboardCardDefinition;
 }
 
-function MonthlyRepairTrendDashboardCard({ card }: IMonthlyRepairTrendDashboardCardProps)
+function RepairsByDepartmentDashboardCard({ card }: IDashboardReportCardProps)
+{
+    const repairsByDepartmentState = useRepairsByDepartment();
+
+    return (
+        <DashboardCard
+            actions={<RepairsByDepartmentFilters repairsByDepartmentState={repairsByDepartmentState} />}
+            description={card.description}
+            title={card.title}
+        >
+            <RepairsByDepartmentCard
+                description={card.description}
+                hideFilters={true}
+                title={card.title}
+                repairsByDepartmentState={repairsByDepartmentState}
+            />
+        </DashboardCard>
+    );
+}
+
+function MonthlyRepairTrendDashboardCard({ card }: IDashboardReportCardProps)
 {
     const trendState = useMonthlyRepairTrend();
 
