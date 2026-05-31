@@ -4,6 +4,7 @@ import {
     FiPlus,
     FiSearch,
     FiFilter,
+    FiCheck,
     FiChevronUp,
     FiChevronDown,
     FiEdit2,
@@ -40,10 +41,20 @@ import {
     DialogHeader,
     DialogTitle,
 } from "~/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "~/components/ui/command";
 import { cn } from "~/lib/utils";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const ALL_FILTER_OPTION = "All";
+const MULTI_VALUE_SEPARATOR = ",";
 const EMPTY_FILTER_FIELDS: IDataTableFilterField[] = [];
 
 export interface IColumn<T = Record<string, unknown>>
@@ -77,7 +88,7 @@ export interface IDataTableFilterField
     key: string;
     label: string;
     placeholder?: string;
-    type: "text" | "select";
+    type: "text" | "select" | "date" | "multi-select";
     options?: IDataTableFilterOption[];
 }
 
@@ -157,6 +168,44 @@ function hasActiveFilterValue(value?: string): boolean
     return Boolean(value?.trim());
 }
 
+function splitMultiSelectValues(value?: string): string[]
+{
+    const values = String(value ?? "")
+        .split(MULTI_VALUE_SEPARATOR)
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+    return Array.from(new Set(values));
+}
+
+function joinMultiSelectValues(values: string[]): string
+{
+    return values.join(MULTI_VALUE_SEPARATOR);
+}
+
+function getFilterDisplayValue(field: IDataTableFilterField, rawValue: string): string
+{
+    if (field.type === "select")
+    {
+        return field.options?.find((option) => option.value === rawValue)?.label ?? rawValue;
+    }
+
+    if (field.type === "multi-select")
+    {
+        const selectedValues = splitMultiSelectValues(rawValue);
+        const selectedLabels = selectedValues.map((value) => field.options?.find((option) => option.value === value)?.label ?? value);
+
+        if (selectedLabels.length <= 2)
+        {
+            return selectedLabels.join(", ");
+        }
+
+        return `${selectedLabels.slice(0, 2).join(", ")} +${selectedLabels.length - 2} more`;
+    }
+
+    return rawValue;
+}
+
 function areFilterValuesEqual(left: Record<string, string>, right: Record<string, string>): boolean
 {
     const leftKeys = Object.keys(left);
@@ -234,9 +283,7 @@ export default function DataTable<T extends Record<string, unknown>>({
         .map((field) =>
         {
             const rawValue = filters[field.key];
-            const displayValue = field.type === "select"
-                ? field.options?.find((option) => option.value === rawValue)?.label ?? rawValue
-                : rawValue;
+            const displayValue = getFilterDisplayValue(field, rawValue);
 
             return {
                 displayValue,
@@ -444,6 +491,29 @@ export default function DataTable<T extends Record<string, unknown>>({
             ...currentValues,
             [fieldKey]: value,
         }));
+    };
+
+    const handleFilterDraftMultiSelectToggle = (fieldKey: string, optionValue: string) =>
+    {
+        setFilterDraft((currentValues) =>
+        {
+            const selectedValues = splitMultiSelectValues(currentValues[fieldKey]);
+            const valueSet = new Set<string>(selectedValues);
+
+            if (valueSet.has(optionValue))
+            {
+                valueSet.delete(optionValue);
+            }
+            else
+            {
+                valueSet.add(optionValue);
+            }
+
+            return {
+                ...currentValues,
+                [fieldKey]: joinMultiSelectValues(Array.from(valueSet)),
+            };
+        });
     };
 
     const handleApplyFilters = () =>
@@ -759,14 +829,61 @@ export default function DataTable<T extends Record<string, unknown>>({
                                                     </SelectContent>
                                                 </Select>
                                             )
-                                            : (
+                                            : field.type === "multi-select"
+                                                ? (
+                                                    <Popover>
+                                                        <PopoverTrigger
+                                                            render={<div />}
+                                                            className={cn(
+                                                                "relative flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-2.5 py-1 text-sm shadow-xs cursor-pointer transition-[color,box-shadow] outline-none",
+                                                                "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+                                                            )}
+                                                        >
+                                                            <span className={cn("flex-1 truncate text-left", !filterDraft[field.key] && "text-muted-foreground")}>
+                                                                {hasActiveFilterValue(filterDraft[field.key])
+                                                                    ? getFilterDisplayValue(field, filterDraft[field.key])
+                                                                    : "Select options..."
+                                                                }
+                                                            </span>
+                                                            <FiChevronDown size={13} className="ml-1 shrink-0 text-muted-foreground" />
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-[var(--anchor-width)] p-0" align="start" sideOffset={2}>
+                                                            <Command>
+                                                                <CommandInput placeholder={field.placeholder || `Search ${field.label.toLowerCase()}...`} />
+                                                                <CommandList>
+                                                                    <CommandEmpty>No options found.</CommandEmpty>
+                                                                    <CommandGroup>
+                                                                        {field.options?.map((option) =>
+                                                                        {
+                                                                            const selectedValues = splitMultiSelectValues(filterDraft[field.key]);
+                                                                            const isSelected = selectedValues.includes(option.value);
+
+                                                                            return (
+                                                                                <CommandItem
+                                                                                    key={option.value}
+                                                                                    value={option.label}
+                                                                                    onSelect={() => handleFilterDraftMultiSelectToggle(field.key, option.value)}
+                                                                                >
+                                                                                    <FiCheck size={14} className={cn("mr-2 shrink-0", isSelected ? "opacity-100" : "opacity-0")} />
+                                                                                    <span className="truncate">{option.label}</span>
+                                                                                </CommandItem>
+                                                                            );
+                                                                        })}
+                                                                    </CommandGroup>
+                                                                </CommandList>
+                                                            </Command>
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                )
+                                                : (
                                                 <Input
                                                     id={`filter-${field.key}`}
+                                                    type={field.type === "date" ? "date" : "text"}
                                                     placeholder={field.placeholder}
                                                     value={filterDraft[field.key] ?? ""}
                                                     onChange={(e) => handleFilterDraftChange(field.key, e.target.value)}
                                                 />
-                                            )}
+                                                )}
                                     </div>
                                 ))}
                             </div>

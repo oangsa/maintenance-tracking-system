@@ -1,4 +1,6 @@
 const DATA_TABLE_FILTER_TYPE = {
+    DATE: "date",
+    MULTI_SELECT: "multi-select",
     SELECT: "select",
     TEXT: "text",
 } as const;
@@ -30,20 +32,27 @@ const USER_FIELD_FILTER = {
 
 const REPAIR_REQUEST_FIELD_FILTER = {
     FIELD_KEY: {
+        REQUESTED_AT_FROM: "requestedAtFrom",
+        REQUESTED_AT_TO: "requestedAtTo",
         PRIORITY: "priority",
         STATUS: "status",
     },
     LABEL: {
+        REQUESTED_AT_FROM: "Requested Date From",
+        REQUESTED_AT_TO: "Requested Date To",
         PRIORITY: "Priority",
         STATUS: "Status",
     },
     PARAM_KEY: {
+        REQUESTED_AT_FROM: "filterRequestedAtFrom",
+        REQUESTED_AT_TO: "filterRequestedAtTo",
         PRIORITY: "filterPriority",
         STATUS: "filterStatus",
     },
     SEARCH_FIELD: {
         PRIORITY: "priority",
         REQUESTER_ID: "requester_id",
+        REQUESTED_AT: "requested_at",
         STATUS: "current_status_code",
     },
     SEARCH_TERM: "request_no",
