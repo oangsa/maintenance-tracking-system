@@ -109,3 +109,9 @@ export type {
 export type {
     ITopRepairedProductsPerformanceReportItem
 } from "./topRepairedProductsPerformanceReport.type";
+
+export type {
+    IWorkOrderPart,
+    IWorkOrderPartForCreate,
+    IWorkOrderPartForUpdate,
+} from "../types/workOrderPart.types";
