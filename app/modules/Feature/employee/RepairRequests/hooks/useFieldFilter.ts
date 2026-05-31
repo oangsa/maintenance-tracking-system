@@ -13,6 +13,8 @@ import { searchRepairStatuses } from "@/services/repairStatuses.service";
 
 interface IRepairRequestFilterValues
 {
+    requestedAtFrom: string;
+    requestedAtTo: string;
     priority: string;
     status: string;
 }
@@ -31,6 +33,8 @@ interface IStatusOption
 function getFilterValues(searchParams: URLSearchParams): IRepairRequestFilterValues
 {
     return {
+        requestedAtFrom: searchParams.get(REPAIR_REQUEST_FIELD_FILTER.PARAM_KEY.REQUESTED_AT_FROM) ?? "",
+        requestedAtTo: searchParams.get(REPAIR_REQUEST_FIELD_FILTER.PARAM_KEY.REQUESTED_AT_TO) ?? "",
         priority: searchParams.get(REPAIR_REQUEST_FIELD_FILTER.PARAM_KEY.PRIORITY) ?? "",
         status: searchParams.get(REPAIR_REQUEST_FIELD_FILTER.PARAM_KEY.STATUS) ?? "",
     };
@@ -39,9 +43,33 @@ function getFilterValues(searchParams: URLSearchParams): IRepairRequestFilterVal
 function buildFilterParams(filters: IRepairRequestFilterValues): Record<string, string | undefined>
 {
     return {
+        [REPAIR_REQUEST_FIELD_FILTER.PARAM_KEY.REQUESTED_AT_FROM]: filters.requestedAtFrom,
+        [REPAIR_REQUEST_FIELD_FILTER.PARAM_KEY.REQUESTED_AT_TO]: filters.requestedAtTo,
         [REPAIR_REQUEST_FIELD_FILTER.PARAM_KEY.PRIORITY]: filters.priority,
         [REPAIR_REQUEST_FIELD_FILTER.PARAM_KEY.STATUS]: filters.status,
     };
+}
+
+function normalizeDateInput(value: string | undefined): string
+{
+    const normalizedValue = String(value ?? "").trim();
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedValue))
+    {
+        return "";
+    }
+
+    return normalizedValue;
+}
+
+function toStartOfDayUtc(value: string): string
+{
+    return `${value}T00:00:00.000Z`;
+}
+
+function toEndOfDayUtc(value: string): string
+{
+    return `${value}T23:59:59.999Z`;
 }
 
 function buildFilterSearch(filters: Record<string, string> | undefined, requesterId: number): ISearchCondition[]
@@ -53,6 +81,26 @@ function buildFilterSearch(filters: Record<string, string> | undefined, requeste
             value: String(requesterId),
         },
     ];
+    const requestedAtFrom = normalizeDateInput(filters?.requestedAtFrom);
+    const requestedAtTo = normalizeDateInput(filters?.requestedAtTo);
+
+    if (requestedAtFrom)
+    {
+        searchFilters.push({
+            condition: SEARCH_OPERATOR.GREATEROREQUAL,
+            name: REPAIR_REQUEST_FIELD_FILTER.SEARCH_FIELD.REQUESTED_AT,
+            value: toStartOfDayUtc(requestedAtFrom),
+        });
+    }
+
+    if (requestedAtTo)
+    {
+        searchFilters.push({
+            condition: SEARCH_OPERATOR.LESSEROREQUAL,
+            name: REPAIR_REQUEST_FIELD_FILTER.SEARCH_FIELD.REQUESTED_AT,
+            value: toEndOfDayUtc(requestedAtTo),
+        });
+    }
 
     if (filters?.priority?.trim())
     {
@@ -78,6 +126,8 @@ function buildFilterSearch(filters: Record<string, string> | undefined, requeste
 function normalizeFilters(filters: Record<string, string>): IRepairRequestFilterValues
 {
     return {
+        requestedAtFrom: filters.requestedAtFrom ?? "",
+        requestedAtTo: filters.requestedAtTo ?? "",
         priority: filters.priority ?? "",
         status: filters.status ?? "",
     };
@@ -147,6 +197,16 @@ export default function useFieldFilter({ searchParams }: IUseFieldFilterProps)
     }, []);
 
     const fieldFilters = React.useMemo<IDataTableFilterField[]>(() => [
+        {
+            key: REPAIR_REQUEST_FIELD_FILTER.FIELD_KEY.REQUESTED_AT_FROM,
+            label: REPAIR_REQUEST_FIELD_FILTER.LABEL.REQUESTED_AT_FROM,
+            type: DATA_TABLE_FILTER_TYPE.DATE,
+        },
+        {
+            key: REPAIR_REQUEST_FIELD_FILTER.FIELD_KEY.REQUESTED_AT_TO,
+            label: REPAIR_REQUEST_FIELD_FILTER.LABEL.REQUESTED_AT_TO,
+            type: DATA_TABLE_FILTER_TYPE.DATE,
+        },
         {
             key: REPAIR_REQUEST_FIELD_FILTER.FIELD_KEY.PRIORITY,
             label: REPAIR_REQUEST_FIELD_FILTER.LABEL.PRIORITY,
