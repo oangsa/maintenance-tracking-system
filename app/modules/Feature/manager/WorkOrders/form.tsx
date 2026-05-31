@@ -13,6 +13,7 @@ import type { IRepairStatusLookupRow } from "~/components/Common/LookupField/loo
 interface IWorkOrderFormProps
 {
     mode: "create" | "edit";
+    lockRepairRequestItem?: boolean;
     initialValues: IWorkOrderFormValues;
     submitting?: boolean;
     onCancel: () => void;
@@ -39,6 +40,7 @@ function mapWorkOrderFormErrors(fieldErrors: FieldErrors<IWorkOrderFormValues>):
 
 export default function WorkOrderForm({
     mode,
+    lockRepairRequestItem = false,
     initialValues,
     submitting = false,
     onCancel,
@@ -92,6 +94,7 @@ export default function WorkOrderForm({
 
     
     const { formItems } = useFormItem({
+        lockRepairRequestItem,
         mode,
         onClearItem,
         onSelectItem,

@@ -15,6 +15,7 @@ interface IUseFormItemResult
 interface IUseFormItemProps
 {
     mode: "create" | "edit";
+    lockRepairRequestItem: boolean;
     onClearItem: () => void;
     onSelectItem: (item: IRepairRequestItemLookupRow) => void;
     onClearStatus: () => void;
@@ -23,6 +24,7 @@ interface IUseFormItemProps
 
 export function useFormItem({
     mode,
+    lockRepairRequestItem,
     onClearItem,
     onSelectItem,
     onClearStatus,
@@ -48,7 +50,7 @@ export function useFormItem({
                                 clearButtonLabel={WORK_ORDER_FORM_ITEM.REPAIR_REQUEST_ITEM_CLEAR}
                                 controlId="itemLookupDisplay"
                                 definition={RepairRequestItemLookupDefinition}
-                                disabled={context.disabled || mode === "edit"}
+                                disabled={context.disabled || mode === "edit" || lockRepairRequestItem}
                                 displayValue={context.values.repairRequestItemProductName || "-"}
                                 hasError={Boolean(context.errors.repairRequestItemId)}
                                 lookupButtonLabel={WORK_ORDER_FORM_ITEM.REPAIR_REQUEST_ITEM_LOOKUP}
@@ -120,6 +122,7 @@ export function useFormItem({
             key: WORK_ORDER_FORM_ITEM.SECTION_KEY,
         },
     ], [
+        lockRepairRequestItem,
         mode,
         onClearItem,
         onClearStatus,

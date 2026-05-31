@@ -5,10 +5,28 @@ import WorkOrderForm from "../form";
 import { buildCreatePayload, createEmptyWorkOrderFormValues } from "../hooks/helpers";
 import type { IWorkOrderFormValues } from "~/schemas/workOrderFormSchema";
 
+function resolveSafeReturnPath(rawReturnTo: string | null): string
+{
+    if (!rawReturnTo)
+    {
+        return "/manager/work-orders";
+    }
+
+    const normalizedPath = rawReturnTo.trim();
+
+    if (!normalizedPath.startsWith("/") || normalizedPath.startsWith("//"))
+    {
+        return "/manager/work-orders";
+    }
+
+    return normalizedPath;
+}
+
 export default function ManagerWorkOrdersCreatePage()
 {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const returnTo = resolveSafeReturnPath(searchParams.get("returnTo"));
 
     async function handleSubmit(values: IWorkOrderFormValues)
     {
@@ -23,12 +41,12 @@ export default function ManagerWorkOrdersCreatePage()
 
         await createWorkOrder(buildCreatePayload(safeValues));
 
-        navigate("/manager/work-orders", { replace: true });
+        navigate(returnTo, { replace: true });
     }
 
     async function handleCancel()
     {
-        navigate("/manager/work-orders");
+        navigate(returnTo);
     }
 
     const defaultValues = createEmptyWorkOrderFormValues() as IWorkOrderFormValues;
@@ -47,11 +65,14 @@ export default function ManagerWorkOrdersCreatePage()
 
     return (
         <Create
-            backHref="/manager/work-orders"
-            backLabel="Back to Work Orders"
+            backHref={returnTo}
+            backLabel={returnTo.startsWith("/manager/repair-requests/") ? "Back to Repair Request" : "Back to Work Orders"}
             description="Create a new work order for a repair request item."
             Form={WorkOrderForm}
-            formProps={{ mode: "create" } as const}
+            formProps={{
+                lockRepairRequestItem: Boolean(itemIdFromUrl?.trim()),
+                mode: "create",
+            } as const}
             initialValues={defaultValues}
             onCancel={handleCancel}
             onSubmit={handleSubmit}

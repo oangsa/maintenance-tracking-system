@@ -1,6 +1,6 @@
 import React from "react";
 import { FiFileText } from "react-icons/fi";
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate, useLocation } from "react-router";
 import LineItemsEditor from "~/components/Common/LineItemsEditor";
 import type { IDetailSection } from "~/components/Common/DetailSections";
 import Loading from "~/components/Common/Loading";
@@ -26,6 +26,7 @@ function ManagerRepairRequestItemsSection({
 }: IManagerRepairRequestItemsSectionProps)
 {
     const navigate = useNavigate();
+    const location = useLocation();
 
     const {
         emptyMessage,
@@ -74,12 +75,16 @@ function ManagerRepairRequestItemsSection({
                     <Button
                         onClick={() => {
                             const productName = item?.productLabel || `${item?.productCode || ""} - ${item?.productName || ""}`;
-                            const descText = encodeURIComponent(productName);
-                            const statusId = encodeURIComponent(String(item?.repairStatusId ?? ""));
-                            const statusCode = encodeURIComponent(String(item?.repairStatusCode ?? ""));
-                            const statusName = encodeURIComponent(String(item?.repairStatusName ?? ""));
+                            const query = new URLSearchParams({
+                                desc: productName,
+                                repairRequestItemId: String(item.id),
+                                returnTo: `${location.pathname}${location.search}`,
+                                statusCode: String(item?.repairStatusCode ?? ""),
+                                statusId: String(item?.repairStatusId ?? ""),
+                                statusName: String(item?.repairStatusName ?? ""),
+                            });
 
-                            navigate(`/manager/work-orders/new?repairRequestItemId=${item.id}&desc=${descText}&statusId=${statusId}&statusCode=${statusCode}&statusName=${statusName}`);
+                            navigate(`/manager/work-orders/new?${query.toString()}`);
                         }}
                         type="button"
                         variant="outline"
