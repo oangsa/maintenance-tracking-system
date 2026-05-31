@@ -117,3 +117,7 @@ export type {
     IWorkOrderPartForCreate,
     IWorkOrderPartForUpdate,
 } from "../types/workOrderPart.types";
+
+export type {
+    IRepairRequestGroupByDepartmentReport
+} from "../types/repairRequestGroupByDepartmentReport.type";

@@ -14,6 +14,7 @@ import type {
     IWorkOrder,
     IMonthlyRepairTrendByProductTypeReport,
     ITopRepairedProductsPerformanceReportItem,
+    IRepairRequestGroupByDepartmentReport
 } from "./types/types";
 
 const PREFIX = "/api/v1/repair-requests";
@@ -132,6 +133,16 @@ export async function getMonthlyRepairTrendByProductTypeReportRequest(body: ISea
 export async function getTopRepairedProductsReportRequest(body: ISearchRequest): Promise<IPagedResult<ITopRepairedProductsPerformanceReportItem>>
 {
     return httpPaginated<ITopRepairedProductsPerformanceReportItem>(`${PREFIX}/reports/top-repaired-products/search`,
+        {
+            method: "POST",
+            body: JSON.stringify(body),
+        }
+    );
+}
+
+export async function getRepairRequestGroupByDepartmentReportRequest(body: ISearchRequest): Promise<IPagedResult<IRepairRequestGroupByDepartmentReport>>
+{
+    return httpPaginated<IRepairRequestGroupByDepartmentReport>(`${PREFIX}/reports/by-department/search`,
         {
             method: "POST",
             body: JSON.stringify(body),
